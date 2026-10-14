@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Dépendances d'abord : cette couche reste en cache tant que requirements.txt ne change pas.
+# Dépendances d'abord
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
