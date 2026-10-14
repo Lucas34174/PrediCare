@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', Inter, sans-serif;
+  --font-heading: 'Inter Variable', Inter, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * .65);
+  --radius-md: calc(var(--radius) * .82);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.7);
+}
+
+:root {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --canvas: #f7f8f5;
+  --surface: #ffffff;
+  --surface-soft: #f0f4f0;
+  --ink: #182522;
+  --ink-muted: #687671;
+  --green: #176b57;
+  --green-dark: #104d40;
+  --green-light: #d9eee7;
+  --amber: #c88a2d;
+  --line: #e5eae5;
+  --red: #b74d46;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --primary: var(--green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-soft);
+  --muted: var(--surface-soft);
+  --muted-foreground: var(--ink-muted);
+  --border: var(--line);
+  --ring: #51a58c;
+  --radius: 0.8rem;
+  --shadow-soft: 0 14px 38px -28px rgb(16 51 39 / 20%);
+}
+
+.app-root.dark {
+  color-scheme: dark;
+  --canvas: #111916;
+  --surface: #18221e;
+  --surface-soft: #202d27;
+  --ink: #edf4ef;
+  --ink-muted: #a1afa7;
+  --green: #78c6a8;
+  --green-dark: #b5e9d4;
+  --green-light: #203f34;
+  --amber: #e4b761;
+  --line: #2a3730;
+  --red: #f39a90;
+  --shadow-soft: 0 14px 38px -28px rgb(0 0 0 / 50%);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { min-width: 320px; min-height: 100%; font-family: var(--font-sans); }
+  body { @apply bg-background text-foreground; margin: 0; min-width: 320px; min-height: 100vh; }
+  button, input { font: inherit; }
+  button { color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+  ::selection { background: var(--green-light); color: var(--ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
