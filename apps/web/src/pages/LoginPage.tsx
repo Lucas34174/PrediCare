@@ -61,13 +61,13 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
           <p>Un tiers payant plus simple, pensé pour accompagner chaque parcours de santé à Madagascar.</p>
           <div className="story-points"><div><span><Check size={14} /></span> Un suivi transparent</div><div><span><Check size={14} /></span> Des décisions expliquées</div></div>
         </div>
-        <div className="story-art" aria-hidden="true"><div className="art-sun" /><div className="art-ring ring-a" /><div className="art-ring ring-b" /><div className="art-cross"><span /><i /></div><span className="art-caption">UN MÊME ENGAGEMENT, POUR TOUS</span><span className="art-serial">PC — 014 / MG</span></div>
+        <div className="story-art" aria-hidden="true"><div className="art-sun" /><div className="art-ring ring-a" /><div className="art-ring ring-b" /><div className="art-cross"><span /><i /></div><span className="art-caption">UN MÊME ENGAGEMENT, POUR TOUS</span><span className="art-serial"></span></div>
         <div className="story-footer"><span>© 2026 PrediCare Madagascar</span><span>Une plateforme de confiance <span className="footer-dot">·</span> 01</span></div>
       </section>
       <section className="login-panel" aria-label="Connexion à votre espace">
         <div className="login-panel-top"><span className="secure-label"><span /> Accès sécurisé</span><div className="login-top-actions"><button type="button" className="icon-button login-theme-button" onClick={onToggleTheme} aria-label={dark ? 'Activer le mode clair' : 'Activer le mode sombre'}>{dark ? <Sun size={17} /> : <Moon size={17} />}</button><button type="button" className="login-help" title="Accès de démonstration">Aide à la connexion <ArrowRight aria-hidden="true" size={14} /></button></div></div>
         <div className="login-form-wrap">
-          <div className="form-intro"><span className="form-icon"><LockKeyhole aria-hidden="true" size={19} /></span><p className="eyebrow">VOTRE ESPACE, EN UN INSTANT</p><h2>Content de vous revoir.</h2><p>Connectez-vous pour accéder à votre espace PrediCare.</p></div>
+          <div className="form-intro"><span className="form-icon"><LockKeyhole aria-hidden="true" size={19} /></span><p className="eyebrow">VOTRE ESPACE, EN UN INSTANT</p><h2>Content de vous revoir.</h2><p>Connectez-vous pour accéder à votre espace PrediCare.</p></div>dev
           <form className="login-form" onSubmit={handleSubmit}>
             <label htmlFor="email">Adresse e-mail</label>
             <div className="input-wrap"><input id="email" name="email" type="email" autoComplete="username" placeholder="nom@exemple.mg" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
