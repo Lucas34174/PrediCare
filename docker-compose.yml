@@ -14,7 +14,6 @@ services:
       N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Scripts exécutés une seule fois, à la création du volume.
       - ./infra/db/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
@@ -33,6 +32,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
     environment:
       APP_ENV: ${APP_ENV:-dev}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -48,10 +49,14 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       LLM_API_KEY: ${LLM_API_KEY:-}
       DATA_DIR: /data/raw
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
+      RAG_CORPUS_DIR: ${RAG_CORPUS_DIR:-/data/raw}
     volumes:
-      # Jeu de données fourni, en lecture seule (hors Git).
       - ./data/raw:/data/raw:ro
-      - ./migrations:/app/migrations  
+      - ./migrations:/app/migrations
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
@@ -85,7 +90,7 @@ services:
       GENERIC_TIMEZONE: ${TZ:-Indian/Antananarivo}
       TZ: ${TZ:-Indian/Antananarivo}
       WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
-      N8N_SECURE_COOKIE: "false" # accès en http (démo locale)
+      N8N_SECURE_COOKIE: "false"
       N8N_DIAGNOSTICS_ENABLED: "false"
     volumes:
       - n8n_data:/home/node/.n8n
@@ -126,8 +131,23 @@ services:
       timeout: 5s
       retries: 6
       start_period: 5s
-# Volumes nommés : les données survivent à `docker compose down`.
-# Seul `docker compose down -v` les supprime.
+
+  ollama:
+    image: ollama/ollama:0.3.14
+    container_name: predicare-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
 volumes:
   pgdata:
   n8n_data:
+  ollama_data:
