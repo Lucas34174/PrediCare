@@ -28,7 +28,7 @@ Alembic a été retenu (document des choix technologiques) : migrations versionn
 
 Le schéma est découpé en trois révisions : (1) référentiels et prestataires, (2) données métier, (3) plateforme IA (prédictions, SHAP, décisions, vecteurs, audit).
 
-Les tables métier reprennent exactement les colonnes des CSV fournis, noms compris, pour que le chargement (PB-19) soit direct. Choix liés aux données :
+Les tables métier reprennent exactement les colonnes des CSV fournis, noms compris, pour que le chargement () soit direct. Choix liés aux données :
 
 - montants en ariary : entiers (`BIGINT`) ;
 - pas de clé étrangère sur `code` dans `lignes_facture`, `ordonnance_lignes` et `grille_tarifaire` : un code désigne un acte ou un médicament (deux référentiels) ; le chargement doit vérifier l'absence d'orphelins (0 constaté) ;
@@ -42,11 +42,26 @@ Données personnelles : `identites_pii` contient uniquement nom, prénoms, date 
 Choix en suspens :
 
 - les fichiers de labels (`labels_fraude.csv`, `labels_prestataires.csv`) ne sont pas chargés en base : ils servent à l'entraînement et sont lus depuis les CSV ;
-- `decisions_gestionnaire.gestionnaire_id` et `journal_audit.utilisateur_id` n'ont pas de clé étrangère : la table des utilisateurs arrive avec PB-20 ;
+- `decisions_gestionnaire.gestionnaire_id` et `journal_audit.utilisateur_id` n'ont pas de clé étrangère : la table des utilisateurs arrive avec ;
 - `vector(1024)` (e5-large / bge-m3) : dimension à confirmer avec le choix du modèle d'embedding ; la changer impose de recréer les colonnes.
 
 Tests : `tests/test_migrations.py` rejoue `upgrade` / `downgrade` / `upgrade` sur une base temporaire (jamais la base de développement) ; la CI fournit une base PostgreSQL pgvector, et `PREDICARE_REQUIRE_DB=1` fait échouer le test si la base est absente.
 
-### API FastAPI – Squelette et mocks (PB-18) :
+### API FastAPI – Squelette et mocks :
 
-Les 16 endpoints définis dans `contrats_interface.md` sont implémentés avec des réponses mock dans `src/predicare/api/routers/` (auth, claims, dashboard, assistant, admin). Les schémas Pydantic v2 (`schemas.py`) valident les requêtes et les réponses à la frontière HTTP. Le validator `montant_coherent` sur `LigneFacture` rejette dès maintenant les factures incohérentes (422). Les mocks seront remplacés par la vraie logique dans les tâches chargement données, auth JWT et modèle XGBoost.
+Les 16 endpoints de `docs/contrats_interface.md` sont implémentés dans `src/predicare/api/routers/` (auth, claims, dashboard, assistant, admin). Les schémas Pydantic v2 (`schemas.py`) valident les requêtes et les réponses. Les réponses sont simulées (mock) : elles seront remplacées par la vraie logique dans les tâches suivantes (authentification , soumission de facture , modèle et SHAP , configuration , versionnement ).
+
+Comportement des mocks, à connaître pour le front :
+
+- `/health` interroge réellement PostgreSQL (`SELECT 1`, timeout de 2 s) : 200 si la base répond, 503 avec `database: "disconnected"` sinon.
+- `POST /auth/login` accepte les identifiants `gestionnaire1`, `assure1`, `admin1` et `pro1` avec n'importe quel mot de passe non vide ; tout autre identifiant renvoie 401. Le jeton mock a la forme `mock-token-<identifiant>`, et `GET /auth/me` le relit (401 s'il manque ou s'il est invalide).
+- `GET /claims/{id}`, `/prediction` et `/decision` renvoient 404 pour tout id hors `FAC-00005637` et `FAC-00084700` ; `POST /admin/models/{id}/activate` renvoie 404 pour une version inconnue.
+- Les paramètres sont validés (422) : `page ≥ 1`, `page_size` entre 1 et 100, `statut` limité aux trois valeurs fermées, `periode` parmi `7d`, `30d`, `all`.
+
+Limites connues, volontairement reportées :
+
+- Les rôles ne sont pas appliqués : n'importe qui peut appeler `/admin/*`, y compris sans jeton. Ne pas exposer cette API hors d'un poste de développement tant que n'est pas fait.
+- `PUT /admin/config` et `POST /admin/models/{id}/activate` ne persistent rien : un `GET` ultérieur renvoie les valeurs d'origine
+- Le validator `montant_coherent` ne contrôle que `quantite × prix_unitaire` par ligne. Les contrôles de la facture entière (somme des lignes, part assuré, dates) relèvent de .
+
+Incohérences à traiter dans des PR `docs/` séparées : `distribution_fraudes` du contrat cite des types (`TARIF_ABUSIF`, `PRESCRIPTION_NON_CONFORME`) absents des 14 types de fraude du dictionnaire de données, et le document « Choix technologiques » mentionne Streamlit alors que le front est en React.
