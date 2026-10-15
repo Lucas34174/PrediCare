@@ -12,4 +12,3 @@ def test_health_returns_ok():
     assert data["status"] == "ok"
     assert data["version"] == "0.1.0"
     assert data["database"] == "connected"
-
