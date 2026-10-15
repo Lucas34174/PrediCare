@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
 import { roleLabels, roleMenus } from './navigation'
@@ -11,6 +11,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ dark, onToggleTheme }: AppLayoutProps) {
   const { user, logout } = useAuth()
+  const { pathname } = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   if (!user) return null
 
@@ -25,7 +26,10 @@ export function AppLayout({ dark, onToggleTheme }: AppLayoutProps) {
         <p className="nav-label">ESPACE DE TRAVAIL</p>
         <nav className="primary-nav">
           {roleMenus[user.role].map(({ label, path, icon: Icon }) => (
-            <NavLink key={path} to={path} aria-label={label} title={label} end={path === '/app'} onClick={() => setMobileOpen(false)} className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}>
+            <NavLink key={path} to={path} aria-label={label} title={label} end onClick={() => setMobileOpen(false)} className={({ isActive }) => {
+              const isClaimRoute = path === '/gestionnaire/factures/nouvelle' && pathname.startsWith('/gestionnaire/factures/')
+              return `nav-item ${isActive || isClaimRoute ? 'nav-item-active' : ''}`
+            }}>
               <Icon aria-hidden="true" size={18} /><span>{label}</span>{path !== '/app' && <span className="nav-arrow">↗</span>}
             </NavLink>
           ))}

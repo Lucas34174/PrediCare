@@ -4,6 +4,7 @@ import { request } from '@/api/request'
 import type { Kpis, Prediction } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { roleTitles } from '@/components/navigation'
+import { normalizeFactors } from '@/lib/normalizeFactors'
 
 const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 
@@ -14,6 +15,7 @@ export function DashboardPage() {
     queryKey: ['prediction'],
     queryFn: () => request<Prediction>('/predictions/latest'),
   })
+  const factors = normalizeFactors(prediction?.explanation.top_factors)
 
   if (!user) return null
 
@@ -73,7 +75,7 @@ export function DashboardPage() {
               <div className="signal-score"><span>Score de risque</span><strong>{Math.round(prediction.fraud_probability * 100)}<small>%</small></strong><div className="score-track"><span style={{ width: `${Math.round(prediction.fraud_probability * 100)}%` }} /></div></div>
               <p className="claim-reference">Dossier <strong>{prediction.claim_id}</strong><span>Version {prediction.model_version}</span></p>
               <p className="signal-disclaimer">Un score élevé est un signal à examiner, jamais une preuve de fraude.</p>
-              <ul className="factor-list">{prediction.explanation.top_factors.slice(0, 2).map((factor) => <li key={factor}><ArrowUpRight aria-hidden="true" size={15} />{factor}</li>)}</ul>
+              <ul className="factor-list">{factors.slice(0, 2).map((factor) => <li key={factor.feature}><ArrowUpRight aria-hidden="true" size={15} />{factor.label}</li>)}</ul>
             </div>
           ) : (
             <div className="empty-signal"><CircleAlert aria-hidden="true" /><strong>Aucun signal à afficher</strong><span>Les nouvelles analyses apparaîtront ici.</span></div>

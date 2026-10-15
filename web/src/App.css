@@ -292,3 +292,90 @@ button:disabled { cursor: progress; }
   .metric-card > strong { font-size: 21px; }
   .claim-reference { flex-wrap: wrap; }
 }
+
+/* Formulaire de facture */
+.claim-page { width: min(100%, 1000px); margin: 0 auto; }
+.claim-back { display: inline-flex; align-items: center; gap: 8px; padding: 7px 0; border: 0; background: transparent; color: var(--ink-muted); font-size: 12px; }
+.claim-back:hover { color: var(--green); }
+.claim-page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 19px 0 23px; }
+.claim-page-heading > div { display: flex; align-items: center; gap: 14px; }
+.claim-heading-icon { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border-radius: 13px; background: var(--green-light); color: var(--green); }
+.claim-kicker { margin: 0 0 5px; color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: .8px; }
+.claim-page-heading h1, .claim-receipt h1 { margin: 0; color: var(--ink); font-size: 26px; font-weight: 610; letter-spacing: -.8px; }
+.claim-page-heading p:last-child { margin: 5px 0 0; color: var(--ink-muted); font-size: 12px; }
+.synthetic-note { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-muted); font-size: 11px; white-space: nowrap; }
+.synthetic-note svg { color: var(--green); }
+.claim-form { display: grid; gap: 15px; }
+.claim-section { padding: 21px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: var(--shadow-soft); }
+.claim-section-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+.claim-section-index { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; background: var(--green-light); color: var(--green); font-size: 10px; font-weight: 700; }
+.claim-section-heading h2 { margin: 1px 0 4px; color: var(--ink); font-size: 15px; font-weight: 620; }
+.claim-section-heading p { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.5; }
+.claim-fields-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 13px; }
+.claim-field { display: flex; min-width: 0; flex-direction: column; align-items: stretch; gap: 6px; }
+.claim-field > label { color: var(--ink); font-size: 11px; font-weight: 590; }
+.claim-field > label span { color: var(--green); }
+.claim-field > input, .claim-field > select { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 12px; }
+.claim-field > input::placeholder { color: var(--ink-muted); opacity: .75; }
+.claim-field > input:focus-visible, .claim-field > select:focus-visible { border-color: var(--green); outline: 3px solid color-mix(in srgb, var(--green) 17%, transparent); outline-offset: 1px; }
+.claim-field > [aria-invalid="true"] { border-color: var(--red); }
+.claim-hint { color: var(--ink-muted); font-size: 10px; line-height: 1.4; }
+.claim-field-error { color: var(--red); font-size: 11px; line-height: 1.45; }
+.claim-toggle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 20px; }
+.claim-toggle { display: flex; min-height: 59px; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--canvas); cursor: pointer; }
+.claim-toggle input { width: 17px; height: 17px; flex: 0 0 17px; accent-color: var(--green); }
+.claim-toggle span { display: grid; gap: 4px; }
+.claim-toggle strong { color: var(--ink); font-size: 11px; font-weight: 600; }
+.claim-toggle small { color: var(--ink-muted); font-size: 10px; }
+.claim-lines-heading { align-items: center; }
+.claim-lines-heading > div { flex: 1; }
+.add-claim-line { display: inline-flex; min-height: 35px; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--green); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.add-claim-line:hover { background: var(--green-light); }
+.claim-line-list { display: grid; gap: 10px; }
+.claim-line { min-width: 0; margin: 0; padding: 13px; border: 1px solid var(--line); border-radius: 10px; }
+.claim-line legend { padding: 0 5px; color: var(--ink-muted); font-size: 10px; font-weight: 600; }
+.claim-line-fields { display: grid; grid-template-columns: 1fr 1.15fr .7fr 1.15fr 1fr 35px; align-items: end; gap: 10px; }
+.claim-line-fields .claim-field > input, .claim-line-fields .claim-field > select { min-height: 38px; }
+.claim-line-amount { display: grid; min-height: 38px; align-content: center; gap: 4px; padding: 0 9px; border-radius: 7px; background: var(--surface-soft); }
+.claim-line-amount > span { color: var(--ink-muted); font-size: 9px; }
+.claim-line-amount > strong { color: var(--ink); font-size: 11px; font-weight: 620; white-space: nowrap; }
+.remove-claim-line { display: grid; width: 35px; height: 38px; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-muted); }
+.remove-claim-line:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+.remove-claim-line:disabled { cursor: not-allowed; opacity: .45; }
+.claim-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; padding: 14px 16px; border-radius: 9px; background: var(--green-light); color: var(--green-dark); font-size: 12px; font-weight: 600; }
+.claim-total strong { font-size: 19px; font-weight: 680; letter-spacing: -.4px; white-space: nowrap; }
+.claim-total small { font-size: 11px; font-weight: 600; }
+.claim-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 2px 0 20px; }
+.claim-form-footer > p { max-width: 490px; margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.5; }
+.claim-submit { display: inline-flex; min-height: 43px; align-items: center; justify-content: center; gap: 14px; padding: 0 15px; border: 0; border-radius: 9px; background: var(--green); color: white; font-size: 11px; font-weight: 620; transition: background .15s ease, transform .15s ease; }
+.claim-submit:hover:not(:disabled) { transform: translateY(-1px); background: var(--green-dark); }
+.claim-submit:disabled { opacity: .7; }
+.claim-summary { display: grid; gap: 4px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--amber) 30%, var(--line)); border-left: 3px solid var(--amber); border-radius: 8px; background: color-mix(in srgb, var(--amber) 8%, var(--surface)); color: var(--ink); }
+.claim-summary-error { border-color: color-mix(in srgb, var(--red) 30%, var(--line)); border-left-color: var(--red); background: color-mix(in srgb, var(--red) 7%, var(--surface)); }
+.claim-summary strong { font-size: 12px; }
+.claim-summary span { font-size: 11px; line-height: 1.5; }
+.claim-receipt { display: grid; justify-items: start; gap: 14px; width: min(100%, 620px); margin: 50px auto; padding: 28px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+.claim-receipt p { margin: 0; color: var(--ink-muted); font-size: 13px; line-height: 1.6; }
+.claim-receipt p strong { color: var(--ink); }
+@media (max-width: 820px) {
+  .claim-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .claim-line-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .claim-line-amount { min-height: 38px; }
+  .remove-claim-line { justify-self: end; }
+}
+@media (max-width: 600px) {
+  .claim-page-heading { align-items: flex-start; }
+  .claim-page-heading h1 { font-size: 22px; }
+  .claim-page-heading p:last-child { max-width: 290px; font-size: 11px; line-height: 1.5; }
+  .synthetic-note { padding-top: 7px; font-size: 0; }
+  .synthetic-note svg { width: 19px; height: 19px; }
+  .claim-section { padding: 15px 13px; }
+  .claim-section-heading { gap: 9px; }
+  .claim-section-heading h2 { font-size: 14px; }
+  .claim-fields-grid, .claim-toggle-grid { grid-template-columns: 1fr; }
+  .claim-lines-heading { flex-wrap: wrap; }
+  .claim-lines-heading > div { min-width: calc(100% - 43px); }
+  .add-claim-line { margin-left: 37px; }
+  .claim-form-footer { align-items: stretch; flex-direction: column; }
+  .claim-submit { width: 100%; }
+}
