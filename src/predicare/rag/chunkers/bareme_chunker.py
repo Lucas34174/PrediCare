@@ -31,9 +31,7 @@ class BaremeChunker(BaseChunker):
         return chunks
 
     def _chunk_acte(self, idx: int, block: dict[str, Any]) -> Chunk:
-        prefix = (
-            f"[Barème | Catégorie: {block['categorie']} | Code: {block['code']}]"
-        )
+        prefix = f"[Barème | Catégorie: {block['categorie']} | Code: {block['code']}]"
         contenu = (
             f"{prefix}\n"
             f"Libellé : {block['libelle']}\n"

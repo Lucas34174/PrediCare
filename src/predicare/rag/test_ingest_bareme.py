@@ -11,6 +11,7 @@ from predicare.rag.ingest import Ingestor
 
 logging.basicConfig(level=logging.INFO)
 
+
 def main() -> None:
     config = RagConfig.from_env()
     engine = create_engine(database_url())

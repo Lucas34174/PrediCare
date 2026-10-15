@@ -34,6 +34,7 @@ TABLES_ATTENDUES = {
     "documents_vectorises",
     "semantic_cache",
     "journal_audit",
+    "documents",
 }
 
 
