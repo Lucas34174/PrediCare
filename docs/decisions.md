@@ -24,11 +24,25 @@ Les secrets viennent de `.env` (jamais commité, modèle dans `.env.example`). L
 
 ### Schéma de données et migrations (Alembic) :
 
-Le schéma PostgreSQL est géré par des migrations versionnées via Alembic et appliqué dans l'environnement conteneurisé.
+Alembic a été retenu (document des choix technologiques) : migrations versionnées, rejouables (`upgrade` / `downgrade`), sans modèles ORM (chaque migration décrit le schéma explicitement). La connexion vient des variables `DB_*` (`predicare/core/config.py`), jamais d'`alembic.ini`. Les migrations s'exécutent dans l'image `api` (`make migrate`).
 
-- Les tables couvrent l'intégralité du cycle métier : référentiels d'actes et médicaments, prestataires conventionnés, grilles tarifaires, contrats et garanties, assurés, ordonnances, factures et lignes de facturation.
-- Conformité RGPD et sécurité : les PII (nom, prénom, téléphone, numéro de sécurité sociale, etc.) sont isolées dans la table `identites_pii` au format binaire chiffré (`pgcrypto`), le reste du système ne manipulant que l'identifiant pseudonymisé `assure_id`.
-- Modèle ML et explicabilité : les tables `predictions` et `explications_shap` stockent les scores de risque, les seuils appliqués et les contributions SHAP au format JSON. Les arbitrages manuels sont tracés dans `decisions_gestionnaire`.
-- RAG et cache sémantique : la table `documents_vectorises` stocke les sections des contrats d'assurance et leurs embeddings vectoriels (`vector(1024)` via `pgvector`). La table `semantic_cache` permet d'éviter les appels LLM redondants.
-- Gouvernance : un `journal_audit` enregistre toutes les actions sensibles avec horodatage et rôle utilisateur.
-- Des index stratégiques sont posés sur `factures` (`assure_id`, `prestataire_id`, `ordonnance_id`, `date_soin`) pour permettre la détection rapide des anomalies (doublons, réutilisations d'ordonnances).
+Le schéma est découpé en trois révisions : (1) référentiels et prestataires, (2) données métier, (3) plateforme IA (prédictions, SHAP, décisions, vecteurs, audit).
+
+Les tables métier reprennent exactement les colonnes des CSV fournis, noms compris, pour que le chargement (PB-19) soit direct. Choix liés aux données :
+
+- montants en ariary : entiers (`BIGINT`) ;
+- pas de clé étrangère sur `code` dans `lignes_facture`, `ordonnance_lignes` et `grille_tarifaire` : un code désigne un acte ou un médicament (deux référentiels) ; le chargement doit vérifier l'absence d'orphelins (0 constaté) ;
+- `factures.numero_facture` n'est pas unique : 553 numéros apparaissent en double (fraude DOUBLON) ;
+- aucune contrainte métier (dates, prix) : le jeu contient des fraudes injectées qu'il faut pouvoir charger ; seules des contraintes d'intégrité et des valeurs fermées observées (statuts, rangs, sexes, types de ligne) sont posées ;
+- `statut`, `motif_rejet`, `montant_pris_en_charge` et `date_traitement` (factures) portent un commentaire PostgreSQL « fuite de données » : à exclure des variables du modèle ;
+- `jours_ouverture` (prestataires) et `actes_exclus` (garanties) sont des tableaux PostgreSQL ; le chargement convertit `12345` en `{1,2,3,4,5}` et sépare `actes_exclus` sur `|`.
+
+Données personnelles : `identites_pii` contient uniquement nom, prénoms, date de naissance, téléphone, e-mail, adresse et numéro CIN, en binaire chiffré (`pgcrypto`, `pgp_sym_encrypt`, clé `PII_ENCRYPTION_KEY`). Le sexe et la ville restent dans `assures` ; le reste du système n'utilise que `assure_id`.
+
+Choix en suspens :
+
+- les fichiers de labels (`labels_fraude.csv`, `labels_prestataires.csv`) ne sont pas chargés en base : ils servent à l'entraînement et sont lus depuis les CSV ;
+- `decisions_gestionnaire.gestionnaire_id` et `journal_audit.utilisateur_id` n'ont pas de clé étrangère : la table des utilisateurs arrive avec PB-20 ;
+- `vector(1024)` (e5-large / bge-m3) : dimension à confirmer avec le choix du modèle d'embedding ; la changer impose de recréer les colonnes.
+
+Tests : `tests/test_migrations.py` rejoue `upgrade` / `downgrade` / `upgrade` sur une base temporaire (jamais la base de développement) ; la CI fournit une base PostgreSQL pgvector, et `PREDICARE_REQUIRE_DB=1` fait échouer le test si la base est absente.
