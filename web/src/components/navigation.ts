@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   FileHeart,
   Gauge,
+  FilePlus2,
   type LucideIcon,
 } from 'lucide-react'
 import type { Role } from '@/api/types'
@@ -31,6 +32,7 @@ export const roleTitles: Record<Role, string> = {
 export const roleMenus: Record<Role, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
+    { label: 'Factures', path: '/gestionnaire/factures/nouvelle', icon: FilePlus2 },
     { label: 'À examiner', path: '/gestionnaire', icon: ClipboardCheck },
   ],
   professionnel_sante: [
