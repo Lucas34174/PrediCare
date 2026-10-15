@@ -51,6 +51,7 @@ services:
     volumes:
       # Jeu de données fourni, en lecture seule (hors Git).
       - ./data/raw:/data/raw:ro
+      - ./migrations:/app/migrations  
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
