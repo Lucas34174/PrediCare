@@ -1,8 +1,9 @@
 """Router factures – /claims."""
 
 from datetime import UTC, date, datetime
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 
 from ..schemas import (
     ClaimCreateRequest,
@@ -59,12 +60,23 @@ _MOCK_CLAIM = ClaimDetail(
     ],
 )
 
+_KNOWN_CLAIM_IDS = {"FAC-00005637", "FAC-00084700"}  # 00084700 : id renvoyé par POST /claims
+
+
+def _get_or_404(facture_id: str) -> ClaimDetail:
+    """Retourne la facture mock, ou lève un 404 si l'id est inconnu (mock)."""
+    if facture_id not in _KNOWN_CLAIM_IDS:
+        raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
+    return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
+
 
 @router.get("", response_model=ClaimsListResponse)
 def list_claims(
-    page: int = 1,
-    page_size: int = 20,
-    statut: str | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    statut: StatutFacture | None = None,
+    date_debut: date | None = None,
+    date_fin: date | None = None,
     fraud_alert_only: bool = False,
 ) -> ClaimsListResponse:
     """Liste paginée des factures (mock)."""
@@ -85,10 +97,14 @@ def list_claims(
     return ClaimsListResponse(total=1, page=page, page_size=page_size, items=[item])
 
 
-@router.get("/{facture_id}", response_model=ClaimDetail)
+@router.get(
+    "/{facture_id}",
+    response_model=ClaimDetail,
+    responses={404: {"description": "Facture inexistante."}},
+)
 def get_claim(facture_id: str) -> ClaimDetail:
     """Détail d'une facture (mock)."""
-    return _MOCK_CLAIM
+    return _get_or_404(facture_id)
 
 
 @router.post("", response_model=ClaimCreateResponse, status_code=201)
@@ -104,9 +120,14 @@ def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
     )
 
 
-@router.get("/{facture_id}/prediction", response_model=PredictionResponse)
+@router.get(
+    "/{facture_id}/prediction",
+    response_model=PredictionResponse,
+    responses={404: {"description": "Facture inexistante."}},
+)
 def get_prediction(facture_id: str) -> PredictionResponse:
     """Score de fraude et explicabilité SHAP (mock)."""
+    _get_or_404(facture_id)
     return PredictionResponse(
         facture_id=facture_id,
         prediction=PredictionInfo(
@@ -136,9 +157,14 @@ def get_prediction(facture_id: str) -> PredictionResponse:
     )
 
 
-@router.post("/{facture_id}/decision", response_model=DecisionResponse)
+@router.post(
+    "/{facture_id}/decision",
+    response_model=DecisionResponse,
+    responses={404: {"description": "Facture inexistante."}},
+)
 def post_decision(facture_id: str, body: DecisionRequest) -> DecisionResponse:
     """Arbitrage gestionnaire (mock)."""
+    _get_or_404(facture_id)
     statut_map = {
         DecisionValeur.VALIDE: StatutFacture.PAYEE,
         DecisionValeur.REJETE: StatutFacture.REJETEE,

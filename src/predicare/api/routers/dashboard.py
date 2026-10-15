@@ -1,5 +1,7 @@
 """Router tableau de bord – /dashboard/kpis."""
 
+from typing import Literal
+
 from fastapi import APIRouter
 
 from ..schemas import DashboardKpisResponse, FraudeDistribution, KpiMetrics
@@ -8,7 +10,7 @@ router = APIRouter(prefix="/dashboard", tags=["Tableau de bord"])
 
 
 @router.get("/kpis", response_model=DashboardKpisResponse)
-def kpis(periode: str = "30d") -> DashboardKpisResponse:
+def kpis(periode: Literal["7d", "30d", "all"] = "30d") -> DashboardKpisResponse:
     """Indicateurs de pilotage métier (mock)."""
     return DashboardKpisResponse(
         periode=periode,

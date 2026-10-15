@@ -232,3 +232,57 @@ def test_get_audit_default():
 def test_get_audit_filtre_type_action():
     data = client.get("/admin/audit?type_action=DECISION_FRAUDE").json()
     assert data["items"][0]["type_action"] == "DECISION_FRAUDE"
+
+
+# Erreurs et paramètres (contrat §3.3 à §3.7)
+
+_DECISION_OK = {"decision": "VALIDE", "motif": "Dossier conforme", "montant_accorde": 36000}
+
+
+def test_get_claim_inconnue_404():
+    assert client.get("/claims/FAC-99999999").status_code == 404
+
+
+def test_get_claim_id_renvoye_par_post_accessible():
+    resp = client.get("/claims/FAC-00084700")
+    assert resp.status_code == 200
+    assert resp.json()["facture_id"] == "FAC-00084700"
+
+
+def test_prediction_facture_inconnue_404():
+    assert client.get("/claims/FAC-99999999/prediction").status_code == 404
+
+
+def test_decision_facture_inconnue_404():
+    assert client.post("/claims/FAC-99999999/decision", json=_DECISION_OK).status_code == 404
+
+
+def test_decision_valeur_invalide_422():
+    payload = {**_DECISION_OK, "decision": "PEUT_ETRE"}
+    assert client.post("/claims/FAC-00005637/decision", json=payload).status_code == 422
+
+
+def test_list_claims_page_size_max_100():
+    assert client.get("/claims?page_size=101").status_code == 422
+    assert client.get("/claims?page=0").status_code == 422
+
+
+def test_list_claims_statut_invalide_422():
+    assert client.get("/claims?statut=INCONNU").status_code == 422
+
+
+def test_list_claims_filtres_dates():
+    resp = client.get("/claims?date_debut=2025-01-01&date_fin=2025-12-31")
+    assert resp.status_code == 200
+
+
+def test_dashboard_periode_invalide_422():
+    assert client.get("/dashboard/kpis?periode=1an").status_code == 422
+
+
+def test_activate_model_inconnu_404():
+    assert client.post("/admin/models/v9.9.9/activate").status_code == 404
+
+
+def test_audit_page_invalide_422():
+    assert client.get("/admin/audit?page=0").status_code == 422

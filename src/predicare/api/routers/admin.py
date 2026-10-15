@@ -1,8 +1,9 @@
 """Router administration – /admin."""
 
 from datetime import UTC, date, datetime
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 
 from ..schemas import (
     AdminAuditResponse,
@@ -28,6 +29,8 @@ _CONFIG = AdminConfig(
     semantic_cache_enabled=True,
     semantic_cache_threshold=0.85,
 )
+
+_KNOWN_VERSIONS = {"v1.0.0-xgb", "v0.9.0-baseline"}
 
 
 @router.get("/config", response_model=AdminConfig)
@@ -72,9 +75,15 @@ def list_models() -> AdminModelsResponse:
     )
 
 
-@router.post("/models/{version_id}/activate", response_model=ModelActivateResponse)
+@router.post(
+    "/models/{version_id}/activate",
+    response_model=ModelActivateResponse,
+    responses={404: {"description": "Version de modèle inconnue."}},
+)
 def activate_model(version_id: str) -> ModelActivateResponse:
     """Bascule vers une version de modèle (mock)."""
+    if version_id not in _KNOWN_VERSIONS:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.")
     return ModelActivateResponse(
         message="Bascule effectuée avec succès.",
         active_version=version_id,
@@ -103,8 +112,8 @@ def get_metrics() -> AdminMetricsResponse:
 
 @router.get("/audit", response_model=AdminAuditResponse)
 def get_audit(
-    page: int = 1,
-    page_size: int = 50,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
     type_action: str | None = None,
 ) -> AdminAuditResponse:
     """Journaux d'audit (mock)."""
