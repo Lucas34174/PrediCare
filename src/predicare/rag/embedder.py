@@ -43,16 +43,12 @@ class Embedder:
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
-            logger.debug(
-                "Embedding batch %d-%d / %d", i, i + len(batch), len(texts)
-            )
+            logger.debug("Embedding batch %d-%d / %d", i, i + len(batch), len(texts))
             for text in batch:
                 vectors.append(self._embed_single_http(text))
 
         if len(vectors) != len(texts):
-            raise RuntimeError(
-                f"Nombre de vecteurs incohérent : {len(vectors)} != {len(texts)}"
-            )
+            raise RuntimeError(f"Nombre de vecteurs incohérent : {len(vectors)} != {len(texts)}")
         return vectors
 
     def _embed_single_http(self, text: str) -> list[float]:
