@@ -9,3 +9,5 @@ test:
 	pytest --cov=predicare
 run:
 	uvicorn predicare.api.main:app --reload
+migrate:
+	docker compose run --rm --build api alembic upgrade head

@@ -9,6 +9,21 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    # Base éphémère pour les tests de migrations (détruite à la fin du job).
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: predicare
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: predicare
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U predicare"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,4 +38,8 @@ jobs:
           ruff check .
           ruff format --check .
       - name: Tests (pytest)
+        env:
+          DB_HOST: localhost
+          DB_PASSWORD: ci_password
+          PREDICARE_REQUIRE_DB: "1"
         run: pytest --cov=predicare --cov-report=term-missing

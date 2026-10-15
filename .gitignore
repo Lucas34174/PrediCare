@@ -47,6 +47,7 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+agent-ressources/*
 
 # Artefacts de modèles volumineux (à versionner via registre/volume/DVC/MLflow)
 models/*
