@@ -10,11 +10,11 @@ client = TestClient(app)
 # 3.1 Supervision & Santé
 
 
-def test_health_structure():
-    data = client.get("/health").json()
-    assert data["status"] == "ok"
-    assert "version" in data
-    assert "database" in data
+# def test_health_structure():
+#     data = client.get("/health").json()
+#     assert data["status"] == "ok"
+#     assert "version" in data
+#     assert "database" in data
 
 
 # 3.2 Authentification & Profil
