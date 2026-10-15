@@ -156,9 +156,7 @@ class Ingestor:
                     },
                 )
 
-        logger.info(
-            "Ingestion terminée : document_id=%s, %d chunks", doc_id, len(chunks)
-        )
+        logger.info("Ingestion terminée : document_id=%s, %d chunks", doc_id, len(chunks))
         return {
             "status": "indexed",
             "document_id": doc_id,
@@ -172,4 +170,5 @@ class Ingestor:
 
 def _json(data: dict) -> str:
     import json
+
     return json.dumps(data, ensure_ascii=False)

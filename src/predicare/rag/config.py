@@ -32,7 +32,7 @@ class RagConfig:
     corpus_dir: Path
 
     @classmethod
-    def from_env(cls) -> "RagConfig":
+    def from_env(cls) -> RagConfig:
         return cls(
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://ollama:11434"),
             embedding_model=os.getenv("EMBEDDING_MODEL", "bge-m3"),

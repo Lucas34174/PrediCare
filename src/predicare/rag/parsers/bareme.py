@@ -78,13 +78,9 @@ class BaremeParser(BaseParser):
                     if self._is_tableau_actes(header):
                         blocks.extend(self._parse_tableau_actes(table, page_num))
                     elif self._is_tableau_medicaments(header):
-                        blocks.extend(
-                            self._parse_tableau_medicaments(table, page_num)
-                        )
+                        blocks.extend(self._parse_tableau_medicaments(table, page_num))
                     else:
-                        logger.debug(
-                            "Tableau non reconnu page %d : %s", page_num, header
-                        )
+                        logger.debug("Tableau non reconnu page %d : %s", page_num, header)
 
         return ParsedDocument(
             source_path=path,
@@ -102,9 +98,7 @@ class BaremeParser(BaseParser):
     def _is_tableau_medicaments(header: list[str]) -> bool:
         return "Code" in header and "Classe" in header and "Remboursable" in header
 
-    def _parse_tableau_actes(
-        self, table: list[list[str]], page_num: int
-    ) -> list[dict[str, Any]]:
+    def _parse_tableau_actes(self, table: list[list[str]], page_num: int) -> list[dict[str, Any]]:
         header = [_normalize_header(c) for c in table[0]]
         blocks: list[dict[str, Any]] = []
 
