@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
@@ -45,9 +45,9 @@ class Role(StrEnum):
 
 
 class HealthResponse(BaseModel):
-    status: str
+    status: Literal["ok", "unhealthy"]
     version: str
-    database: str
+    database: Literal["connected", "disconnected"]
     detail: str | None = None
 
 
