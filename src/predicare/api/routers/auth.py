@@ -1,6 +1,8 @@
 """Router d'authentification – /auth/login et /auth/me."""
 
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Header, HTTPException, status
 
 from ..schemas import LoginRequest, LoginResponse, Role, UserInfo
 
@@ -34,18 +36,51 @@ _MOCK_USERS: dict[str, UserInfo] = {
 }
 
 
-@router.post("/login", response_model=LoginResponse)
+_TOKEN_PREFIX = "mock-token-"
+
+
+def _user_from_authorization(authorization: str | None) -> UserInfo:
+    """Retrouve l'utilisateur mock depuis l'en-tête Authorization"""
+    scheme, _, token = (authorization or "").partition(" ")
+    identifier = token.removeprefix(_TOKEN_PREFIX)
+    if (
+        scheme.lower() != "bearer"
+        or not token.startswith(_TOKEN_PREFIX)
+        or identifier not in _MOCK_USERS
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token manquant ou invalide.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return _MOCK_USERS[identifier]
+
+
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    responses={401: {"description": "Identifiants erronés."}},
+)
 def login(body: LoginRequest) -> LoginResponse:
     """Authentification et émission du JWT (mock – PB-20 implémentera la vraie auth)."""
-    user = _MOCK_USERS.get(body.identifier, _MOCK_USERS["gestionnaire1"])
+    user = _MOCK_USERS.get(body.identifier)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Identifiant ou mot de passe incorrect.",
+        )
     return LoginResponse(
-        access_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock",
+        access_token=f"{_TOKEN_PREFIX}{user.identifier}",
         expires_in=3600,
         user=user,
     )
 
 
-@router.get("/me", response_model=UserInfo)
-def me() -> UserInfo:
-    """Profil de l'utilisateur connecté (mock – retourne gestionnaire1)."""
-    return _MOCK_USERS["gestionnaire1"]
+@router.get(
+    "/me",
+    response_model=UserInfo,
+    responses={401: {"description": "Token manquant, invalide ou expiré."}},
+)
+def me(authorization: Annotated[str | None, Header()] = None) -> UserInfo:
+    """Profil de l'utilisateur connecté (mock – PB-20 implémentera la vraie auth)."""
+    return _user_from_authorization(authorization)

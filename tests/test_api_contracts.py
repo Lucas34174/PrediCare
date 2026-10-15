@@ -29,17 +29,36 @@ def test_login_returns_token():
     assert data["user"]["role"] == "gestionnaire"
 
 
-def test_login_unknown_user_falls_back():
+def test_login_unknown_user_rejected():
     resp = client.post("/auth/login", json={"identifier": "inconnu", "password": "x"})
+    assert resp.status_code == 401
+
+
+def test_login_token_identifie_le_role():
+    resp = client.post("/auth/login", json={"identifier": "assure1", "password": "x"})
     assert resp.status_code == 200
-    assert "access_token" in resp.json()
+    assert resp.json()["user"]["role"] == "assure"
 
 
 def test_me_returns_user_info():
-    data = client.get("/auth/me").json()
+    token = client.post("/auth/login", json={"identifier": "assure1", "password": "x"}).json()[
+        "access_token"
+    ]
+    resp = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["role"] == "assure"
     assert "id" in data
-    assert "role" in data
     assert "nom_complet" in data
+
+
+def test_me_sans_token_rejete():
+    assert client.get("/auth/me").status_code == 401
+
+
+def test_me_token_invalide_rejete():
+    resp = client.get("/auth/me", headers={"Authorization": "Bearer n-importe-quoi"})
+    assert resp.status_code == 401
 
 
 # 3.3 Gestion des Factures & Télétransmissions
