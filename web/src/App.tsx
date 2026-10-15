@@ -8,6 +8,7 @@ import { rolePaths } from '@/components/navigation'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { ForbiddenPage, NotFoundPage } from '@/pages/StatusPages'
+import { ClaimReceiptPage, NewClaimPage } from '@/pages/NewClaimPage'
 import type { Role } from '@/api/types'
 import './App.css'
 
@@ -25,6 +26,8 @@ function AppRoutes() {
         <Route path="/403" element={<ForbiddenPage />} />
         <Route element={<ProtectedRoute><AppLayout dark={dark} onToggleTheme={() => setDark((value) => !value)} /></ProtectedRoute>}>
           <Route path="/app" element={<DashboardPage />} />
+          <Route path="/gestionnaire/factures/nouvelle" element={<ProtectedRoute allowedRoles={['gestionnaire']}><NewClaimPage /></ProtectedRoute>} />
+          <Route path="/gestionnaire/factures/:claimId" element={<ProtectedRoute allowedRoles={['gestionnaire']}><ClaimReceiptPage /></ProtectedRoute>} />
           {roles.map((role) => <Route key={role} path={rolePaths[role].slice(1)} element={<ProtectedRoute allowedRoles={[role]}><DashboardPage /></ProtectedRoute>} />)}
         </Route>
         <Route path="/" element={<Navigate to="/app" replace />} />
