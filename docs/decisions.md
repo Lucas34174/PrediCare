@@ -46,3 +46,7 @@ Choix en suspens :
 - `vector(1024)` (e5-large / bge-m3) : dimension à confirmer avec le choix du modèle d'embedding ; la changer impose de recréer les colonnes.
 
 Tests : `tests/test_migrations.py` rejoue `upgrade` / `downgrade` / `upgrade` sur une base temporaire (jamais la base de développement) ; la CI fournit une base PostgreSQL pgvector, et `PREDICARE_REQUIRE_DB=1` fait échouer le test si la base est absente.
+
+### API FastAPI – Squelette et mocks (PB-18) :
+
+Les 16 endpoints définis dans `contrats_interface.md` sont implémentés avec des réponses mock dans `src/predicare/api/routers/` (auth, claims, dashboard, assistant, admin). Les schémas Pydantic v2 (`schemas.py`) valident les requêtes et les réponses à la frontière HTTP. Le validator `montant_coherent` sur `LigneFacture` rejette dès maintenant les factures incohérentes (422). Les mocks seront remplacés par la vraie logique dans les tâches chargement données, auth JWT et modèle XGBoost.
