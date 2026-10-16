@@ -118,16 +118,21 @@ export interface ClaimListItem {
   statut: ClaimStatus
 }
 
+/**
+ * Vue gestionnaire d'une ligne de facture.
+ * Le contrat type `score_fraude` et `est_anomalie` comme nullables : le front
+ * distingue « aucun signal » de « signal non calculé » et n'invente jamais la valeur.
+ */
 export interface ManagerClaimListItem extends ClaimListItem {
-  score_fraude: number
-  est_anomalie: boolean
+  score_fraude: number | null
+  est_anomalie: boolean | null
 }
 
-export interface ClaimsPage {
+export interface ClaimsPage<T extends ClaimListItem = ClaimListItem> {
   total: number
   page: number
   page_size: number
-  items: ClaimListItem[]
+  items: T[]
 }
 
 export interface ClaimsQuery {
@@ -137,6 +142,11 @@ export interface ClaimsQuery {
   date_debut?: string
   date_fin?: string
   fraud_alert_only?: boolean
+  // À brancher: paramètres absents du contrat M2 (docs/contrats_interface.md §3.3).
+  // Tant qu'ils ne sont pas exposés, ils ne sont interprétés que par le mode simulé.
+  sort?: string
+  q?: string
+  decision_enregistree?: boolean
 }
 
 export interface ClaimLine {
