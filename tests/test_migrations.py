@@ -35,6 +35,7 @@ TABLES_ATTENDUES = {
     "semantic_cache",
     "journal_audit",
     "documents",
+    "utilisateurs",
 }
 
 
