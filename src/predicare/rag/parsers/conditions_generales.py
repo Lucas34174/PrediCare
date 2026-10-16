@@ -10,7 +10,6 @@ Stratégie : 1 article = 1 bloc parsé, avec son titre et son contenu complet.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 from pathlib import Path
@@ -58,12 +57,12 @@ def _detecter_formule(path: Path) -> str | None:
 
 
 # def calculer_checksum(path: Path, version_parser: str = "v1") -> str:
-    # h = hashlib.sha256()
-    # h.update(version_parser.encode())
-    # with path.open("rb") as f:
-        # for chunk in iter(lambda: f.read(8192), b""):
-            # h.update(chunk)
-    # return h.hexdigest()
+# h = hashlib.sha256()
+# h.update(version_parser.encode())
+# with path.open("rb") as f:
+# for chunk in iter(lambda: f.read(8192), b""):
+# h.update(chunk)
+# return h.hexdigest()
 
 
 class ConditionsGeneralesParser(BaseParser):

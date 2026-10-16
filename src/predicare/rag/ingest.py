@@ -13,25 +13,23 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from pathlib import Path
-
 import re
+from pathlib import Path
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from predicare.rag.chunkers.article_chunker import ArticleChunker
 from predicare.rag.chunkers.bareme_chunker import BaremeChunker
+from predicare.rag.chunkers.beneficiaire_chunker import BeneficiaireChunker
+from predicare.rag.chunkers.prestataire_chunker import PrestataireChunker
 from predicare.rag.config import RagConfig
 from predicare.rag.embedder import Embedder
 from predicare.rag.parsers.bareme import BaremeParser
 from predicare.rag.parsers.base import ParsedDocument
 from predicare.rag.parsers.conditions_generales import ConditionsGeneralesParser
-from predicare.rag.chunkers.beneficiaire_chunker import BeneficiaireChunker
 from predicare.rag.parsers.conditions_particulieres import ConditionsParticulieresParser
-from predicare.rag.parsers.guide_reseau import GuideReseauParser 
-from predicare.rag.chunkers.prestataire_chunker import PrestataireChunker
-
+from predicare.rag.parsers.guide_reseau import GuideReseauParser
 
 logger = logging.getLogger(__name__)
 

@@ -46,7 +46,7 @@ class PrestataireChunker(BaseChunker):
         # Fallback : si trop d'infos manquantes, on garde la ligne brute
         if not (block.get("contact") and block.get("horaires")):
             lignes.append(f"Détails : {block['ligne_brute']}")
-    
+
         contenu = "\n".join(lignes)
         return Chunk(
             chunk_index=idx,

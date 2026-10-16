@@ -29,22 +29,26 @@ def main() -> None:
 
     # Vérification par catégorie
     with engine.connect() as conn:
-        rows = conn.execute(text("""
+        rows = conn.execute(
+            text("""
             SELECT metadonnees->>'categorie' AS categorie, count(*)
             FROM documents_vectorises
             WHERE chunk_type = 'prestataire' AND actif = true
             GROUP BY 1 ORDER BY 2 DESC
-        """)).fetchall()
+        """)
+        ).fetchall()
         print("\nPrestataires par catégorie :")
         for r in rows:
             print(f"  {r.categorie}: {r.count}")
 
-        rows = conn.execute(text("""
+        rows = conn.execute(
+            text("""
             SELECT metadonnees->>'ville' AS ville, count(*)
             FROM documents_vectorises
             WHERE chunk_type = 'prestataire' AND actif = true
             GROUP BY 1 ORDER BY 2 DESC
-        """)).fetchall()
+        """)
+        ).fetchall()
         print("\nPrestataires par ville :")
         for r in rows:
             print(f"  {r.ville or 'non précisée'}: {r.count}")

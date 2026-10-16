@@ -33,32 +33,24 @@ RE_SOUSCRIPTEUR = re.compile(
     r"Souscripteur\s*:\s*(.+?)\s*\((.+?)\)",
     re.IGNORECASE,
 )
-RE_DATE_POLICE = re.compile(
-    r"Date d'effet de la police\s*:\s*(\d{4}-\d{2}-\d{2})"
-)
-RE_DATE_CONTRAT = re.compile(
-    r"Date d'effet du contrat\s*:\s*(\d{4}-\d{2}-\d{2})"
-)
+RE_DATE_POLICE = re.compile(r"Date d'effet de la police\s*:\s*(\d{4}-\d{2}-\d{2})")
+RE_DATE_CONTRAT = re.compile(r"Date d'effet du contrat\s*:\s*(\d{4}-\d{2}-\d{2})")
 RE_STATUT = re.compile(r"Statut\s*:\s*(\w+)", re.IGNORECASE)
 RE_PRIME_TOTALE = re.compile(
-    r"Prime annuelle\s*:\s*([\d\s]+)\s*Ar par bénéficiaire,\s*soit\s*([\d\s]+)\s*Ar pour\s*(\d+)\s*bénéficiaire"
+    r"Prime annuelle\s*:\s*([\d\s]+)\s*Ar par bénéficiaire,"
+    r"\s*soit\s*([\d\s]+)\s*Ar pour\s*(\d+)\s*bénéficiaire"
 )
-RE_PLAFOND = re.compile(
-    r"Plafond annuel global par bénéficiaire\s*:\s*([\d\s]+)\s*Ar"
-)
+RE_PLAFOND = re.compile(r"Plafond annuel global par bénéficiaire\s*:\s*([\d\s]+)\s*Ar")
 RE_SECTION_BENEF = re.compile(r"Bénéficiaires\s*\(identifiants pseudonymisés\)", re.IGNORECASE)
 RE_SECTION_GARANTIES = re.compile(r"Garanties applicables", re.IGNORECASE)
 
 
 # ─── Normalisation ─────────────────────────────────────────────────────────────
 
+
 def _normalize(text: str) -> str:
     """Normalise les espaces spéciaux."""
-    return (
-        text.replace("\u00a0", " ")
-            .replace("\u202f", " ")
-            .replace("\u2009", " ")
-    )
+    return text.replace("\u00a0", " ").replace("\u202f", " ").replace("\u2009", " ")
 
 
 def _parse_montant(s: str) -> int | None:
@@ -68,6 +60,7 @@ def _parse_montant(s: str) -> int | None:
 
 
 # ─── Parser ────────────────────────────────────────────────────────────────────
+
 
 class ConditionsParticulieresParser(BaseParser):
     """Parser des Conditions Particulières."""
@@ -130,9 +123,8 @@ class ConditionsParticulieresParser(BaseParser):
         # 3. Section garanties applicables
         match_gar = RE_SECTION_GARANTIES.search(texte)
         if match_gar:
-            fin_section = texte.find("\n", match_gar.start())
             # Prendre 500 chars après
-            contenu_gar = texte[match_gar.start():match_gar.start() + 500].strip()
+            contenu_gar = texte[match_gar.start() : match_gar.start() + 500].strip()
             blocs.append(
                 {
                     "block_type": "section_garanties",
@@ -202,9 +194,7 @@ class ConditionsParticulieresParser(BaseParser):
         return metadata
 
     @staticmethod
-    def _extraire_beneficiaires(
-        path: Path, metadata: dict[str, Any]
-    ) -> list[dict[str, Any]]:
+    def _extraire_beneficiaires(path: Path, metadata: dict[str, Any]) -> list[dict[str, Any]]:
         """Extrait les bénéficiaires depuis les tableaux du PDF."""
         beneficiaires: list[dict[str, Any]] = []
 
@@ -214,7 +204,8 @@ class ConditionsParticulieresParser(BaseParser):
                     if not table or len(table) < 2:
                         continue
                     header = [_normalize(str(c or "")).strip().lower() for c in table[0]]
-                    # Le tableau bénéficiaires contient : Identifiant, Rang, Sexe, Année naiss., Adhésion, Radiation
+                    # Le tableau bénéficiaires contient : Identifiant, Rang, Sexe,
+                    # Année naiss., Adhésion, Radiation
                     if "identifiant" in header and "rang" in header:
                         beneficiaires.extend(
                             ConditionsParticulieresParser._parse_tableau_beneficiaires(

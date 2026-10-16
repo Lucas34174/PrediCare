@@ -57,7 +57,7 @@ class BeneficiaireChunker(BaseChunker):
             f"Date d'effet du contrat : {block.get('date_effet_contrat')}\n"
             f"Statut : {block.get('statut')}\n"
             f"Nombre de bénéficiaires : {block.get('nb_beneficiaires')}\n"
-            f"Prime annuelle par bénéficiaire : {_fmt_montant(block.get('prime_par_beneficiaire'))}\n"
+            f"Prime annuelle par bénéficiaire : {_fmt_montant(block.get('prime_par_beneficiaire'))}"
             f"Prime annuelle totale : {_fmt_montant(block.get('prime_totale'))}\n"
             f"Plafond annuel global par bénéficiaire : {_fmt_montant(block.get('plafond_global'))}"
         )

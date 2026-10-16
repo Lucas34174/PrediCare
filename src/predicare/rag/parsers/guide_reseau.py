@@ -45,11 +45,7 @@ CATEGORIES_CONNUES = [
 
 
 def _normalize(text: str) -> str:
-    return (
-        text.replace("\u00a0", " ")
-            .replace("\u202f", " ")
-            .replace("\u2009", " ")
-    )
+    return text.replace("\u00a0", " ").replace("\u202f", " ").replace("\u2009", " ")
 
 
 class GuideReseauParser(BaseParser):
@@ -227,7 +223,8 @@ class GuideReseauParser(BaseParser):
         # ─── 4. Tarifs ──────────────────────────────────────────────────────────
         tarifs = None
         tarifs_match = re.search(
-            r"(TARIF\s+[A-ZÉÈ]+|CONSULTATION\s+[\d\s]+AR(?:\s*[–\-]\s*HOSPITALISATION[^–\-]*?(?:\s*[–\-]\s*TARIF\s+[A-ZÉÈ]+)?)?|VERRE À PARTIR DE[\d\s]+AR[^A-Z]*?MONTURE À PARTIR DE[\d\s]+AR)",
+            r"...(?:\s*[–\-]\s*TARIF\s+[A-ZÉÈ]+)?)?"
+            r"|VERRE À PARTIR DE[\d\s]+AR[^A-Z]*?MONTURE À PARTIR DE[\d\s]+AR)",
             reste,
         )
         if tarifs_match:
@@ -271,9 +268,9 @@ class GuideReseauParser(BaseParser):
                     break
 
         # Nettoyer parenthèses orphelines, doubles espaces, ponctuation
-        nom = re.sub(r"\([^)]*$", "", nom)         # "(top 1" orphelin
+        nom = re.sub(r"\([^)]*$", "", nom)  # "(top 1" orphelin
         nom = re.sub(r"\(top\s*\d*\s*$", "", nom)
-        nom = re.sub(r"\s*\($", "", nom)           # "(" orphelin
+        nom = re.sub(r"\s*\($", "", nom)  # "(" orphelin
         nom = re.sub(r"\s+", " ", nom).strip(" -–—,()")
 
         # Sécurité : si le nom contient encore du bruit, on garde au moins 2 mots
@@ -282,8 +279,15 @@ class GuideReseauParser(BaseParser):
 
         # Ville
         ville = ville_defaut
-        for v in ["Antananarivo", "Toamasina", "Antsirabe", "Mahajanga",
-                  "Fianarantsoa", "Toliara", "Antsiranana"]:
+        for v in [
+            "Antananarivo",
+            "Toamasina",
+            "Antsirabe",
+            "Mahajanga",
+            "Fianarantsoa",
+            "Toliara",
+            "Antsiranana",
+        ]:
             if v in reste:
                 ville = v
                 break
