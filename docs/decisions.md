@@ -65,3 +65,11 @@ Limites connues, volontairement reportées :
 - Le validator `montant_coherent` ne contrôle que `quantite × prix_unitaire` par ligne. Les contrôles de la facture entière (somme des lignes, part assuré, dates) relèvent de .
 
 Incohérences à traiter dans des PR `docs/` séparées : `distribution_fraudes` du contrat cite des types (`TARIF_ABUSIF`, `PRESCRIPTION_NON_CONFORME`) absents des 14 types de fraude du dictionnaire de données, et le document « Choix technologiques » mentionne Streamlit alors que le front est en React.
+
+### Authentification, rôles et isolation des assurés (PB-20) :
+
+L'authentification de l'API repose sur des tokens JWT signés avec l'algorithme HS256 (`PyJWT`), dont la clé secrète provient de la variable d'environnement `JWT_SECRET`. Les mots de passe sont hachés avec `bcrypt`.
+
+La table `utilisateurs` versionnée par la migration Alembic `b20_utilisateurs` stocke les comptes avec contrainte de rôle fermée (`assure`, `professionnel_sante`, `gestionnaire`, `administrateur`), reliés optionnellement à `assures(assure_id)` ou `prestataires(prestataire_id)`.
+
+Le contrôle d'accès (RBAC) s'opère via les dépendances FastAPI `get_current_user` et `require_roles`. Conformément au CDC et aux contrats d'interface, un assuré (`Role.ASSURE`) ne peut consulter et lister que les factures correspondant strictement à son `assure_id` ; toute tentative d'accès à un dossier tiers renvoie une erreur 403 Forbidden.
