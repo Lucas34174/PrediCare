@@ -64,6 +64,8 @@ class UserInfo(BaseModel):
     identifier: str
     role: Role
     nom_complet: str
+    assure_id: str | None = None
+    prestataire_id: str | None = None
 
 
 class LoginResponse(BaseModel):
