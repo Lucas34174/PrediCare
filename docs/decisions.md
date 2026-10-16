@@ -83,3 +83,13 @@ L'endpoint `POST /claims` applique une validation Pydantic v2 stricte (`ClaimCre
 - Toute anomalie de structure ou de calcul déclenche un rejet propre HTTP 422 (Unprocessable Entity) avec message d'erreur explicite.
 
 Les factures soumises sont persistées pour permettre leur relecture fidèle avec leurs lignes d'actes et de médicaments via `GET /claims/{id}`.
+
+## Stratégie de sauvegarde et restauration scriptées
+
+- **Contexte** : Le CDC (§2 et §5) exige des sauvegardes scriptées et régulières avec capacité de restauration testée sur environnement propre.
+- **Décision** :
+  - Sauvegardes automatisées via `pg_dump -Fc` dans `scripts/backup.sh` (format Custom PostgreSQL compressé).
+  - Restauration automatisée via `pg_restore --clean` dans `scripts/restore.sh`.
+  - Intégration dans le flux d'exploitation via cibles `make backup` et `make restore`.
+  - Politique de rétention locale glissante fixée à 7 jours.
+  - Planification documentée pour déclenchement cron quotidien à 02h00.
