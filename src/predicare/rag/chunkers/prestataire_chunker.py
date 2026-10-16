@@ -27,14 +27,27 @@ class PrestataireChunker(BaseChunker):
             f"[Guide Réseau | Catégorie: {block['categorie']} "
             f"| Ville: {block['ville'] or 'non précisée'}]"
         )
-        # Contenu enrichi : on privilégie la ligne brute si le parsing est incomplet
-        contenu = (
-            f"{prefix}\n"
-            f"Prestataire : {block['nom']}\n"
-            f"Horaires : {block['horaires'] or 'non renseignés'}\n"
-            f"Contact : {block['contact'] or 'non renseigné'}\n"
-            f"Détails : {block['ligne_brute']}"
-        )
+        # Construire un contenu propre, colonne par colonne
+        lignes = [prefix, f"Prestataire : {block['nom']}"]
+        if block.get("categorie"):
+            lignes.append(f"Catégorie : {block['categorie']}")
+        if block.get("ville"):
+            lignes.append(f"Ville : {block['ville']}")
+        if block.get("horaires"):
+            lignes.append(f"Horaires : {block['horaires']}")
+        if block.get("contact"):
+            lignes.append(f"Contact : {block['contact']}")
+        if block.get("adresse"):
+            lignes.append(f"Adresse : {block['adresse']}")
+        if block.get("tarifs"):
+            lignes.append(f"Tarifs : {block['tarifs']}")
+        if block.get("qualite"):
+            lignes.append(f"Évaluation : {block['qualite']}")
+        # Fallback : si trop d'infos manquantes, on garde la ligne brute
+        if not (block.get("contact") and block.get("horaires")):
+            lignes.append(f"Détails : {block['ligne_brute']}")
+    
+        contenu = "\n".join(lignes)
         return Chunk(
             chunk_index=idx,
             chunk_type=self.chunk_type,
@@ -44,9 +57,11 @@ class PrestataireChunker(BaseChunker):
                 "categorie": block["categorie"],
                 "ville": block["ville"],
                 "prestataire_nom": block["nom"],
-                "horaires": block["horaires"],
-                "contact": block["contact"],
-                "qualite": block["qualite"],
+                "horaires": block.get("horaires"),
+                "contact": block.get("contact"),
+                "adresse": block.get("adresse"),
+                "tarifs": block.get("tarifs"),
+                "qualite": block.get("qualite"),
                 "source_guide": block["source_guide"],
                 "block_type": "prestataire",
                 "doc_type": "guide_reseau",

@@ -29,6 +29,8 @@ from predicare.rag.parsers.base import ParsedDocument
 from predicare.rag.parsers.conditions_generales import ConditionsGeneralesParser
 from predicare.rag.chunkers.beneficiaire_chunker import BeneficiaireChunker
 from predicare.rag.parsers.conditions_particulieres import ConditionsParticulieresParser
+from predicare.rag.parsers.guide_reseau import GuideReseauParser 
+from predicare.rag.chunkers.prestataire_chunker import PrestataireChunker
 
 
 logger = logging.getLogger(__name__)

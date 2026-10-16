@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ─── Regex de détection ────────────────────────────────────────────────────────
 
 RE_CONTRAT = re.compile(
-    r"Contrat\s+(CTR-\d+)\s*[–\-—]\s*Police\s+(POL-[\d-]+)\s*[–\-—]\s*Formule\s+(PREMIUM|CONFORT|ESSENTIEL)",
+    r"Contrat\s+(CTR-\d+)\s*[–\-—]\s*Police\s+([A-Z]{2,4}-[\d-]+)\s*[–\-—]\s*Formule\s+(PREMIUM|CONFORT|ESSENTIEL)",
     re.IGNORECASE,
 )
 RE_SOUSCRIPTEUR = re.compile(

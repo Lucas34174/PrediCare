@@ -198,30 +198,89 @@ class GuideReseauParser(BaseParser):
         source_nom: str,
         index: int,
     ) -> dict[str, Any] | None:
-        """Parse une ligne prestataire.
-
-        Format attendu :
-        N Nom [top X qualité/service] Horaires Contact Adresse Tarifs
-
-        On ne peut pas garantir une extraction parfaite, donc on garde la
-        ligne brute dans le bloc + on tente d'extraire les champs clés.
-        """
-        # Retirer le numéro en tête
+        """Parse une ligne prestataire (version robuste)."""
         m = re.match(r"^(\d+)\s+(.+)$", ligne)
         if not m:
             return None
         numero = int(m.group(1))
         reste = m.group(2).strip()
 
-        # Extraire le contact (téléphone malgache : 0XX XX XXX XX ou 0XXXXXXXXX)
+        # ─── 1. Contact (téléphone) ─────────────────────────────────────────────
         contact_match = re.search(r"0\d{2}\s?\d{2}\s?\d{3}\s?\d{2}", reste)
         contact = contact_match.group(0) if contact_match else None
 
-        # Extraire "top X qualité/service"
-        top_match = re.search(r"\(top\s+\d+\s+qualité/service\)", reste, re.IGNORECASE)
-        qualite = top_match.group(0) if top_match else None
+        # ─── 2. Qualité "top N" ─────────────────────────────────────────────────
+        qualite = None
+        qualite_match = re.search(r"\(?top\s+(\d+)(?:\s+qualité/service)?\)?", reste, re.IGNORECASE)
+        if qualite_match:
+            qualite = f"top {qualite_match.group(1)}"
 
-        # Détecter la ville dans la ligne (si guide national)
+        # ─── 3. Adresse ─────────────────────────────────────────────────────────
+        adresse = None
+        adresse_match = re.search(
+            r"(Lot\s+[IVX]+\s+[A-Z]\s+\d+\s*(?:Bis|Ter)?\s*,?\s*[A-ZÉÈ][a-zéèêàô]+)",
+            reste,
+        )
+        if adresse_match:
+            adresse = adresse_match.group(1).strip()
+
+        # ─── 4. Tarifs ──────────────────────────────────────────────────────────
+        tarifs = None
+        tarifs_match = re.search(
+            r"(TARIF\s+[A-ZÉÈ]+|CONSULTATION\s+[\d\s]+AR(?:\s*[–\-]\s*HOSPITALISATION[^–\-]*?(?:\s*[–\-]\s*TARIF\s+[A-ZÉÈ]+)?)?|VERRE À PARTIR DE[\d\s]+AR[^A-Z]*?MONTURE À PARTIR DE[\d\s]+AR)",
+            reste,
+        )
+        if tarifs_match:
+            tarifs = re.sub(r"\s+", " ", tarifs_match.group(1)).strip()
+
+        # ─── 5. Horaires (amélioré) ─────────────────────────────────────────────
+        # Capture tout ce qui ressemble à un bloc horaires
+        horaires_parts = []
+        # Cherche "HEURE DE BUREAU (...)"
+        hdb = re.search(r"HEURE DE BUREAU\s*\([^)]*\)", reste, re.IGNORECASE)
+        if hdb:
+            horaires_parts.append(hdb.group(0))
+        # Cherche "24H/24 ET 7J/7"
+        if re.search(r"24H/24\s+ET\s+7J/7", reste):
+            horaires_parts.append("24H/24 ET 7J/7")
+        # Cherche "LUNDI AU VENDREDI ...", "LUNDI AU SAMEDI ..."
+        jours = re.search(
+            r"(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\s+AU\s+(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)[^A-Z]*(?:ET\s+(LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)[^A-Z]*)?",
+            reste,
+        )
+        if jours:
+            horaires_parts.append(jours.group(0).strip())
+        if re.search(r"SUR RENDEZ-VOUS", reste, re.IGNORECASE):
+            horaires_parts.append("SUR RENDEZ-VOUS")
+
+        horaires = " ".join(horaires_parts) if horaires_parts else None
+
+        # ─── 6. Nom (extraction stricte) ────────────────────────────────────────
+        # On coupe TOUT ce qui vient après le nom :
+        # - le premier "(" de qualité
+        # - le premier contact
+        # - le premier "Lot"
+        # - le premier "TARIF"
+        # - le premier "HEURE DE BUREAU" / "24H/24" / "LUNDI" / "SUR RENDEZ-VOUS"
+        nom = reste
+        for marker in [contact, adresse, tarifs, horaires]:
+            if marker:
+                idx = nom.find(marker)
+                if idx > 0:
+                    nom = nom[:idx]
+                    break
+
+        # Nettoyer parenthèses orphelines, doubles espaces, ponctuation
+        nom = re.sub(r"\([^)]*$", "", nom)         # "(top 1" orphelin
+        nom = re.sub(r"\(top\s*\d*\s*$", "", nom)
+        nom = re.sub(r"\s*\($", "", nom)           # "(" orphelin
+        nom = re.sub(r"\s+", " ", nom).strip(" -–—,()")
+
+        # Sécurité : si le nom contient encore du bruit, on garde au moins 2 mots
+        if len(nom.split()) > 10:
+            nom = " ".join(nom.split()[:6])
+
+        # Ville
         ville = ville_defaut
         for v in ["Antananarivo", "Toamasina", "Antsirabe", "Mahajanga",
                   "Fianarantsoa", "Toliara", "Antsiranana"]:
@@ -229,32 +288,17 @@ class GuideReseauParser(BaseParser):
                 ville = v
                 break
 
-        # Nom : on prend tout ce qui précède les horaires
-        # Les horaires commencent souvent par "HEURE DE BUREAU", "LUNDI", "24H", "SUR RENDEZ-VOUS"
-        horaires_match = re.search(
-            r"(HEURE DE BUREAU|LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE|24H/24|SUR RENDEZ-VOUS)",
-            reste,
-        )
-        if horaires_match:
-            nom = reste[:horaires_match.start()].strip()
-            horaires = reste[horaires_match.start():].strip()
-        else:
-            nom = reste
-            horaires = None
-
-        # Nettoyer le nom (retirer le "(top X ...)")
-        if qualite:
-            nom = nom.replace(qualite, "").strip()
-
         return {
             "block_type": "prestataire",
             "numero": numero,
             "categorie": categorie or "INCONNUE",
             "ville": ville,
-            "nom": nom,
+            "nom": nom or "Inconnu",
             "horaires": horaires,
             "contact": contact,
-            "ligne_brute": ligne,
+            "adresse": adresse,
+            "tarifs": tarifs,
             "qualite": qualite,
+            "ligne_brute": ligne,
             "source_guide": source_nom,
         }
