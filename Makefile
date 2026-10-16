@@ -9,5 +9,11 @@ test:
 	pytest --cov=predicare
 run:
 	uvicorn predicare.api.main:app --reload
-migrate:
+migrate: ## migration de base de donnée
 	docker compose run --rm --build api alembic upgrade head
+backup: ## Exécute la sauvegarde PostgreSQL
+	@bash scripts/backup.sh
+
+restore: ## Restaure la dernière sauvegarde ou un fichier spécifié
+	@bash scripts/restore.sh $(FILE)
+	

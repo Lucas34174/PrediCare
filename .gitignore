@@ -71,3 +71,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Backups PostgreSQL
+backups/
+*.dump
+
