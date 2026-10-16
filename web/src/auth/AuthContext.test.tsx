@@ -9,7 +9,7 @@ function AuthProbe() {
   return (
     <section>
       <output>{isAuthenticated ? `${user?.display_name}:${role}` : 'Déconnecté'}</output>
-      <button onClick={() => void login({ email: 'assure@predicare.mg', password: 'Demo2026!' })}>Connexion</button>
+      <button onClick={() => void login({ identifier: 'ASS-C60624BAFB', password: 'Demo2026!' })}>Connexion</button>
       <button onClick={logout}>Déconnexion</button>
     </section>
   )
@@ -33,8 +33,7 @@ describe('AuthContext', () => {
 
     expect(await screen.findByText('Tahina Andriam:assure')).toBeInTheDocument()
     expect(JSON.parse(sessionStorage.getItem('predicare.session') ?? '{}')).toMatchObject({
-      role: 'assure',
-      display_name: 'Tahina Andriam',
+      user: { role: 'assure', nom_complet: 'Tahina Andriam' },
     })
   })
 
@@ -55,7 +54,7 @@ describe('AuthContext', () => {
       const [message, setMessage] = useState('')
       return (
         <>
-          <button onClick={() => void login({ email: 'invalide@example.mg', password: 'incorrect' }).catch((error: Error) => setMessage(error.message))}>Essayer</button>
+          <button onClick={() => void login({ identifier: 'identifiant-invalide', password: 'incorrect' }).catch((error: Error) => setMessage(error.message))}>Essayer</button>
           <output>{message}</output>
         </>
       )
@@ -64,7 +63,7 @@ describe('AuthContext', () => {
     render(<AuthProvider><InvalidCredentials /></AuthProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Essayer' }))
 
-    expect(await screen.findByText('Identifiants invalides. Vérifiez votre adresse et votre mot de passe.')).toBeInTheDocument()
+    expect(await screen.findByText('Identifiant ou mot de passe invalide. Vérifiez vos informations puis réessayez.')).toBeInTheDocument()
     expect(sessionStorage.getItem('predicare.session')).toBeNull()
   })
 })

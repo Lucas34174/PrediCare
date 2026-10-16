@@ -9,7 +9,7 @@ function readSession(): LoginResponse | null {
     const serialized = sessionStorage.getItem(SESSION_KEY)
     if (!serialized) return null
     const session = JSON.parse(serialized) as LoginResponse
-    if (!session.access_token || !session.display_name || !session.role) return null
+    if (!session.access_token || !session.user?.nom_complet || !session.user?.role) return null
     return session
   } catch {
     return null

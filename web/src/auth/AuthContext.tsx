@@ -13,11 +13,11 @@ import {
   setStoredSession,
   subscribeToSession,
 } from '@/api/session'
-import type { AuthUser, LoginRequest, LoginResponse, Role } from '@/api/types'
+import { toUiRole, type AuthUser, type LoginRequest, type LoginResponse, type UiRole } from '@/api/types'
 
 interface AuthContextValue {
   user: AuthUser | null
-  role: Role | null
+  role: UiRole | null
   isAuthenticated: boolean
   login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
@@ -40,12 +40,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const logout = useCallback(() => clearStoredSession(), [])
   const user = session
-    ? { display_name: session.display_name, role: session.role }
+    ? { display_name: session.user.nom_complet, role: toUiRole(session.user.role) }
     : null
 
   return (
     <AuthContext.Provider
-      value={{ user, role: session?.role ?? null, isAuthenticated: Boolean(session), login, logout }}
+      value={{ user, role: session ? toUiRole(session.user.role) : null, isAuthenticated: Boolean(session), login, logout }}
     >
       {children}
     </AuthContext.Provider>

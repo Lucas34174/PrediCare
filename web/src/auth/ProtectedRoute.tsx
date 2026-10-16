@@ -1,10 +1,10 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from './AuthContext'
-import type { Role } from '@/api/types'
+import type { UiRole } from '@/api/types'
 
 interface ProtectedRouteProps {
-  allowedRoles?: Role[]
+  allowedRoles?: UiRole[]
   children?: ReactNode
 }
 

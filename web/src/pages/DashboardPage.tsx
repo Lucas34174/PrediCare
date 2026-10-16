@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, BadgeCheck, CircleAlert, FileText, WalletCards } from 'lucide-react'
 import { request } from '@/api/request'
-import type { Kpis, Prediction } from '@/api/types'
+import type { DashboardKpis, DashboardPrediction } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { roleTitles } from '@/components/navigation'
 import { normalizeFactors } from '@/lib/normalizeFactors'
@@ -10,10 +10,10 @@ const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const { data: kpis } = useQuery({ queryKey: ['kpis'], queryFn: () => request<Kpis>('/dashboard/kpis') })
+  const { data: kpis } = useQuery({ queryKey: ['kpis'], queryFn: () => request<DashboardKpis>('/dashboard/kpis') })
   const { data: prediction } = useQuery({
     queryKey: ['prediction'],
-    queryFn: () => request<Prediction>('/predictions/latest'),
+    queryFn: () => request<DashboardPrediction>('/predictions/latest'),
   })
   const factors = normalizeFactors(prediction?.explanation.top_factors)
 

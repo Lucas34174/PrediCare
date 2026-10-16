@@ -9,8 +9,8 @@ import { ProtectedRoute } from './ProtectedRoute'
 const assureSession: LoginResponse = {
   access_token: 'test-token',
   token_type: 'bearer',
-  role: 'assure',
-  display_name: 'Tahina Andriam',
+  expires_in: 3600,
+  user: { id: 'ASS-C60624BAFB', identifier: 'ASS-C60624BAFB', role: 'assure', nom_complet: 'Tahina Andriam' },
 }
 
 function renderProtectedRoute(initialEntry = '/admin') {
@@ -52,7 +52,7 @@ describe('ProtectedRoute', () => {
   })
 
   it('affiche la page autorisée pour le rôle correspondant', () => {
-    setStoredSession({ ...assureSession, role: 'admin' })
+    setStoredSession({ ...assureSession, user: { ...assureSession.user, role: 'administrateur' } })
     renderProtectedRoute()
     expect(screen.getByText('Administration')).toBeInTheDocument()
   })
