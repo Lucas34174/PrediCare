@@ -13,29 +13,59 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from pathlib import Path
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from predicare.rag.chunkers.article_chunker import ArticleChunker
 from predicare.rag.chunkers.bareme_chunker import BaremeChunker
+from predicare.rag.chunkers.beneficiaire_chunker import BeneficiaireChunker
+from predicare.rag.chunkers.prestataire_chunker import PrestataireChunker
 from predicare.rag.config import RagConfig
 from predicare.rag.embedder import Embedder
 from predicare.rag.parsers.bareme import BaremeParser
+from predicare.rag.parsers.base import ParsedDocument
+from predicare.rag.parsers.conditions_generales import ConditionsGeneralesParser
+from predicare.rag.parsers.conditions_particulieres import ConditionsParticulieresParser
+from predicare.rag.parsers.guide_reseau import GuideReseauParser
 
 logger = logging.getLogger(__name__)
 
 
 # Table de correspondance nom de fichier → (parser, chunker)
 # Étendue au fur et à mesure des types supportés.
-PARSERS_PAR_TYPE = {
-    "Bareme_Reference_Actes.pdf": (BaremeParser, BaremeChunker),
-}
+MOTIFS_PAR_TYPE: list[tuple[re.Pattern, type, type]] = [
+    (
+        re.compile(r"^Bareme_Reference_Actes\.pdf$"),
+        BaremeParser,
+        BaremeChunker,
+    ),
+    (
+        re.compile(r"^Conditions_Generales_(CONFORT|ESSENTIEL|PREMIUM)\.pdf$"),
+        ConditionsGeneralesParser,
+        ArticleChunker,
+    ),
+    (
+        re.compile(r"^CP_CTR-\d+\.pdf$"),
+        ConditionsParticulieresParser,
+        BeneficiaireChunker,
+    ),
+    (
+        re.compile(r"^Guide_Reseau_Soins_.*\.pdf$"),
+        GuideReseauParser,
+        PrestataireChunker,
+    ),
+]
 
 
 def detecter_type(path: Path) -> tuple[type, type] | None:
-    """Retourne (Parser, Chunker) selon le nom du fichier, ou None."""
-    return PARSERS_PAR_TYPE.get(path.name)
+    """Détecte le parser + chunker selon le nom du fichier (par motif)."""
+    for pattern, parser_cls, chunker_cls in MOTIFS_PAR_TYPE:
+        if pattern.match(path.name):
+            return parser_cls, chunker_cls
+    return None
 
 
 def calculer_checksum(path: Path) -> str:
@@ -44,6 +74,13 @@ def calculer_checksum(path: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def construire_chunker(chunker_cls, parsed: ParsedDocument):
+    """Instancie le chunker avec les paramètres adaptés."""
+    if chunker_cls is ArticleChunker:
+        return chunker_cls(formule=parsed.metadata.get("formule"))
+    return chunker_cls()
 
 
 class Ingestor:
@@ -79,9 +116,9 @@ class Ingestor:
             raise ValueError(f"Aucun parser pour {path.name}")
         parser_cls, chunker_cls = detected
         parser = parser_cls()
-        chunker = chunker_cls()
-
         parsed = parser.parse(path)
+        chunker = construire_chunker(chunker_cls, parsed)
+
         chunks = chunker.chunk(parsed.raw_blocks)
         logger.info("Parsing : %d blocs → %d chunks", len(parsed.raw_blocks), len(chunks))
 
