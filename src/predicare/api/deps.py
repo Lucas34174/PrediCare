@@ -161,3 +161,17 @@ def require_roles(allowed_roles: Sequence[Role]):
         return current_user
 
     return _role_checker
+
+
+def get_optional_user(
+    authorization: Annotated[str | None, Header()] = None,
+) -> UserInfo:
+    """Retourne l'utilisateur connecté s'il y a un token, ou un profil par défaut"""
+    if not authorization:
+        return UserInfo(
+            id="USR-0012",
+            identifier="gestionnaire1",
+            role=Role.GESTIONNAIRE,
+            nom_complet="Aina Razafy",
+        )
+    return get_current_user(authorization)

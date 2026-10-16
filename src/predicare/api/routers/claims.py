@@ -3,7 +3,10 @@
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from predicare.api.deps import get_optional_user
+from predicare.api.schemas import Role, UserInfo
 
 from ..schemas import (
     ClaimCreateRequest,
@@ -72,6 +75,7 @@ def _get_or_404(facture_id: str) -> ClaimDetail:
 
 @router.get("", response_model=ClaimsListResponse)
 def list_claims(
+    current_user: Annotated[UserInfo, Depends(get_optional_user)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     statut: StatutFacture | None = None,
@@ -79,7 +83,11 @@ def list_claims(
     date_fin: date | None = None,
     fraud_alert_only: bool = False,
 ) -> ClaimsListResponse:
-    """Liste paginée des factures (mock)."""
+    """Liste paginée des factures. Un assuré ne voit que ses propres dossiers."""
+    # Si c'est un assuré et que la facture mock ne lui appartient pas : liste vide
+    if current_user.role == Role.ASSURE and current_user.assure_id != _MOCK_CLAIM.assure_id:
+        return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+
     item = ClaimSummary(
         facture_id=_MOCK_CLAIM.facture_id,
         numero_facture=_MOCK_CLAIM.numero_facture,
@@ -100,11 +108,23 @@ def list_claims(
 @router.get(
     "/{facture_id}",
     response_model=ClaimDetail,
-    responses={404: {"description": "Facture inexistante."}},
+    responses={
+        403: {"description": "Accès refusé pour ce dossier."},
+        404: {"description": "Facture inexistante."},
+    },
 )
-def get_claim(facture_id: str) -> ClaimDetail:
-    """Détail d'une facture (mock)."""
-    return _get_or_404(facture_id)
+def get_claim(
+    facture_id: str,
+    current_user: Annotated[UserInfo, Depends(get_optional_user)],
+) -> ClaimDetail:
+    """Détail d'une facture. Un assuré ne peut voir que ses propres factures."""
+    claim = _get_or_404(facture_id)
+    if current_user.role == Role.ASSURE and current_user.assure_id != claim.assure_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès refusé : vous n'êtes pas le titulaire de cette facture.",
+        )
+    return claim
 
 
 @router.post("", response_model=ClaimCreateResponse, status_code=201)
