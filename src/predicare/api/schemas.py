@@ -10,7 +10,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 # Énumérations partagées
 
@@ -139,15 +139,34 @@ class ClaimDetail(BaseModel):
 
 
 class ClaimCreateRequest(BaseModel):
-    numero_facture: str
-    assure_id: str
-    prestataire_id: str
+    numero_facture: str = Field(..., min_length=1)
+    assure_id: str = Field(..., min_length=1)
+    prestataire_id: str = Field(..., min_length=1)
     ordonnance_id: str | None = None
     date_soin: date
     date_emission: date
     montant_total: int = Field(..., ge=0)
     part_assure: int = Field(..., ge=0)
     lignes: list[LigneFacture] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def valider_coherence_facture(self) -> ClaimCreateRequest:
+        if self.date_emission < self.date_soin:
+            raise ValueError(
+                f"date_emission ({self.date_emission}) ne peut pas\
+                 être antérieure à date_soin ({self.date_soin})"
+            )
+        if self.part_assure > self.montant_total:
+            raise ValueError(
+                f"part_assure ({self.part_assure}) ne peut pas \
+                dépasser montant_total ({self.montant_total})"
+            )
+        somme_lignes = sum(ligne.montant_total for ligne in self.lignes)
+        if self.montant_total != somme_lignes:
+            raise ValueError(
+                f"montant_total ({self.montant_total}) ≠ somme des lignes ({somme_lignes})"
+            )
+        return self
 
 
 class ClaimCreateResponse(BaseModel):
