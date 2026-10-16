@@ -93,3 +93,12 @@ Les factures soumises sont persistées pour permettre leur relecture fidèle ave
   - Intégration dans le flux d'exploitation via cibles `make backup` et `make restore`.
   - Politique de rétention locale glissante fixée à 7 jours.
   - Planification documentée pour déclenchement cron quotidien à 02h00.
+
+## Stratégie de tests pytest et CI renforcée
+
+- **Contexte** : Le CDC (§6 pytest) exige une suite de tests automatisés protégeant contre les régressions API (auth, 4 rôles RBAC, factures/claims, moteur de prédiction/SHAP, erreurs HTTP) et une CI verte sur chaque PR.
+- **Décision** :
+  - Tests approfondis des cas limites d'authentification (`tests/test_auth_rbac_edge_cases.py`) : validation des rejets 401 sur tokens expirés, malformés ou payloads incomplets, rejets 403 sur rôles insuffisants via `require_roles`.
+  - Tests d'intégration des prédictions, arbitrages et erreurs HTTP (`tests/test_api_predictions_and_errors.py`) : contrôle du score, explicabilité SHAP, cycle d'arbitrage (VALIDE, REJETE, INVESTIGATION), et validation des codes d'erreur (404, 405, 422).
+  - Ajout de la cible `make test-cov` pour l'exécution locale avec rapport de couverture.
+  - Renforcement du workflow GitHub Actions (`.github/workflows/ci.yml`) avec validation des scripts shell et couverture de code systématique.

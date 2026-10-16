@@ -16,4 +16,7 @@ backup: ## Exécute la sauvegarde PostgreSQL
 
 restore: ## Restaure la dernière sauvegarde ou un fichier spécifié
 	@bash scripts/restore.sh $(FILE)
+test-cov: ## Exécute les tests avec rapport de couverture de code
+	pytest --cov=predicare --cov-report=term-missing
+
 	
