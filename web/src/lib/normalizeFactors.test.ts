@@ -21,6 +21,14 @@ describe('normalizeFactors', () => {
     ])
   })
 
+  it('normalise la forme top_facteurs documentée avec impact_shap', () => {
+    expect(normalizeFactors([
+      { feature: 'ecart_tarif_conventionne', valeur: 15_000, impact_shap: 0.38 },
+    ])).toEqual([
+      { feature: 'ecart_tarif_conventionne', label: 'Écart au tarif conventionné', shap_value: 0.38, direction: 'increases' },
+    ])
+  })
+
   it('retourne une liste vide si aucune explication n’est fournie', () => {
     expect(normalizeFactors(undefined)).toEqual([])
   })

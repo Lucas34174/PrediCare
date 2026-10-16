@@ -9,13 +9,13 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { ForbiddenPage, NotFoundPage } from '@/pages/StatusPages'
 import { ClaimReceiptPage, NewClaimPage } from '@/pages/NewClaimPage'
-import type { Role } from '@/api/types'
+import type { UiRole } from '@/api/types'
 import './App.css'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
 })
-const roles = Object.keys(rolePaths) as Role[]
+const roles = Object.keys(rolePaths) as UiRole[]
 
 function AppRoutes() {
   const [dark, setDark] = useState(false)

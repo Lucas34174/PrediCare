@@ -7,7 +7,7 @@ import {
   FilePlus2,
   type LucideIcon,
 } from 'lucide-react'
-import type { Role } from '@/api/types'
+import type { UiRole } from '@/api/types'
 
 export interface MenuEntry {
   label: string
@@ -15,21 +15,21 @@ export interface MenuEntry {
   icon: LucideIcon
 }
 
-export const roleLabels: Record<Role, string> = {
+export const roleLabels: Record<UiRole, string> = {
   gestionnaire: 'Gestionnaire',
   professionnel_sante: 'Professionnel de santé',
   assure: 'Assuré',
   admin: 'Administrateur',
 }
 
-export const roleTitles: Record<Role, string> = {
+export const roleTitles: Record<UiRole, string> = {
   gestionnaire: 'Vue des remboursements',
   professionnel_sante: 'Activité de votre établissement',
   assure: 'Suivi de votre couverture',
   admin: 'Supervision de la plateforme',
 }
 
-export const roleMenus: Record<Role, MenuEntry[]> = {
+export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
     { label: 'Factures', path: '/gestionnaire/factures/nouvelle', icon: FilePlus2 },
@@ -49,7 +49,7 @@ export const roleMenus: Record<Role, MenuEntry[]> = {
   ],
 }
 
-export const rolePaths: Record<Role, string> = {
+export const rolePaths: Record<UiRole, string> = {
   gestionnaire: '/gestionnaire',
   professionnel_sante: '/professionnel-sante',
   assure: '/assure',

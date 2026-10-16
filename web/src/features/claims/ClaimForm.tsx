@@ -1,0 +1,145 @@
+import { useMemo, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, Plus, ReceiptText, ShieldCheck, Trash2 } from 'lucide-react'
+import { createClaim } from '@/api/claims'
+import type { ClaimCreateRequest, ClaimDraft, ClaimLineType, DraftLine, ManagerClaimIntake } from '@/api/types'
+import { claimChannels, claimChannelLabels, claimLineTypes, claimLineTypeLabels, demoMemberId, settlementMethods, settlementMethodLabels, tariffReferences } from '@/lib/config'
+import { makeClaimPayload, mapValidationIssues, validateClaimDraft, type ClaimFieldErrors } from '@/lib/claimValidation'
+
+export type ClaimFormProfile = 'gestionnaire' | 'professionnel_sante'
+interface ClaimFormProps { profile: ClaimFormProfile; providerId?: string }
+
+const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
+const blankLine = (): DraftLine => ({ type_ligne: 'ACTE', code: '', quantite: '1', prix_unitaire: '' })
+
+function initialDraft(profile: ClaimFormProfile, providerId?: string): ClaimDraft {
+  return {
+    numero_facture: '', prestataire_id: profile === 'professionnel_sante' ? providerId ?? '' : '',
+    assure_id: demoMemberId, ordonnance_id: '', date_soin: '', date_emission: '', date_reception: '',
+    canal_reception: profile === 'professionnel_sante' ? 'PORTAIL_PRESTATAIRE' : 'EMAIL',
+    mode_reglement: 'TIERS_PAYANT', part_assure: '', lines: [blankLine()],
+  }
+}
+
+function tariffNote(code: string): string | undefined {
+  const tariff = tariffReferences.find((item) => item.code === code.trim().toUpperCase())
+  if (!tariff) return undefined
+  return [tariff.description, tariff.requiresPriorApproval ? 'Entente préalable requise' : '', tariff.reimbursable === false ? 'Non remboursable dans le barème simulé' : ''].filter(Boolean).join(' · ')
+}
+
+export function ClaimForm({ profile, providerId }: ClaimFormProps) {
+  const [draft, setDraft] = useState(() => initialDraft(profile, providerId))
+  const [errors, setErrors] = useState<ClaimFieldErrors>({})
+  const [summary, setSummary] = useState('')
+  const [failed, setFailed] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const navigate = useNavigate()
+  const isManager = profile === 'gestionnaire'
+  const total = useMemo(() => draft.lines.reduce((sum, line) => sum + Number(line.quantite || 0) * Number(line.prix_unitaire || 0), 0), [draft.lines])
+
+  function setField<K extends keyof Omit<ClaimDraft, 'lines'>>(field: K, value: ClaimDraft[K]) {
+    setDraft((current) => ({ ...current, [field]: value }))
+    setErrors((current) => ({ ...current, [field]: [] }))
+    setSummary('')
+  }
+
+  function setLine(index: number, field: keyof DraftLine, value: string) {
+    setDraft((current) => ({ ...current, lines: current.lines.map((line, lineIndex) => {
+      if (lineIndex !== index) return line
+      if (field === 'code') {
+        const tariff = tariffReferences.find((item) => item.code === value.trim().toUpperCase())
+        return { ...line, code: value, prix_unitaire: tariff?.unitPriceMGA === undefined ? line.prix_unitaire : String(tariff.unitPriceMGA) }
+      }
+      return { ...line, [field]: value }
+    }) }))
+    setErrors((current) => ({ ...current, [`lines.${index}.${field}`]: [] }))
+    setSummary('')
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSummary('')
+    setFailed(false)
+    const nextErrors = validateClaimDraft(draft, profile)
+    setErrors(nextErrors)
+    if (Object.values(nextErrors).some((messages) => messages.length)) {
+      setSummary('La facture contient des erreurs. Corrigez les champs signalés puis réessayez.')
+      document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+      return
+    }
+
+    setSubmitting(true)
+    const body = makeClaimPayload(draft)
+    const payload: ClaimCreateRequest | ManagerClaimIntake = isManager
+        ? { ...body, date_reception: draft.date_reception, canal_reception: (draft.canal_reception || 'EMAIL') as Exclude<ClaimDraft['canal_reception'], 'PORTAIL_PRESTATAIRE' | ''>, mode_reglement: draft.mode_reglement }
+      : body
+    // À brancher: endpoint de réception gestionnaire à confirmer avec M2.
+    void createClaim(payload, { forceMock: isManager })
+      .then((created) => navigate(`/gestionnaire/factures/${encodeURIComponent(created.facture_id)}`))
+      .catch((error: unknown) => {
+      const apiError = error instanceof Error ? error : new Error('Une erreur inattendue est survenue.')
+      const issues = 'validationIssues' in apiError && Array.isArray(apiError.validationIssues) ? apiError.validationIssues : []
+      setFailed(true)
+      if (issues.length) setErrors(mapValidationIssues(issues))
+      setSummary(issues.length ? apiError.message : apiError.message || 'La facture n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.')
+      })
+      .finally(() => setSubmitting(false))
+  }
+
+  function input(field: keyof Omit<ClaimDraft, 'lines' | 'canal_reception' | 'mode_reglement'>, label: string, hint?: string, locked = false) {
+    const fieldErrors = errors[field] ?? []
+    const dateField = field === 'date_soin' || field === 'date_emission' || field === 'date_reception'
+    return <div className="claim-field" key={field}>
+      <label htmlFor={field}>{label}{field !== 'ordonnance_id' && <span aria-hidden="true"> *</span>}</label>
+      <input id={field} value={field === 'part_assure' && draft[field] ? formatMGA.format(Number(draft[field])) : draft[field]} onChange={(event) => setField(field, field === 'part_assure' ? event.target.value.replace(/\D/g, '') : event.target.value)} disabled={locked} required={field !== 'ordonnance_id'} inputMode={field === 'part_assure' ? 'numeric' : undefined} placeholder={dateField ? 'AAAA-MM-JJ' : undefined} pattern={dateField ? '\\d{4}-\\d{2}-\\d{2}' : undefined} aria-invalid={fieldErrors.length > 0} aria-describedby={fieldErrors.length ? `${field}-error` : hint ? `${field}-hint` : undefined} />
+      {hint && <small id={`${field}-hint`} className="claim-hint">{hint}</small>}
+      {fieldErrors.length > 0 && <span id={`${field}-error`} className="claim-field-error">{fieldErrors.join(' ')}</span>}
+    </div>
+  }
+
+  return <div className="claim-page">
+    <header className="claim-page-heading">
+      <div><span className="claim-heading-icon"><ReceiptText aria-hidden="true" size={20} /></span><div><p className="claim-kicker">GESTION DES REMBOURSEMENTS</p><h1>{isManager ? 'Enregistrer une facture reçue' : 'Nouvelle facture'}</h1><p>Complétez le bordereau ; les montants sont affichés en ariary.</p></div></div>
+      <span className="synthetic-note"><ShieldCheck aria-hidden="true" size={15} /> Identifiants pseudonymisés</span>
+    </header>
+    {summary && <div className={`claim-summary ${failed ? 'claim-summary-error' : ''}`} role="alert" aria-live="assertive"><strong>{failed ? 'Envoi impossible' : 'À corriger'}</strong><span>{summary}</span></div>}
+    <form className="claim-form" onSubmit={submit} noValidate>
+      <section className="claim-section" aria-labelledby="claim-header-title">
+        <div className="claim-section-heading"><span className="claim-section-index">01</span><div><h2 id="claim-header-title">Informations de la facture</h2><p>Références pseudonymisées et dates indiquées dans le bordereau.</p></div></div>
+        <div className="claim-fields-grid">
+          {input('numero_facture', 'Numéro de facture', 'Ex. F-2026-09871')}
+          {input('prestataire_id', 'Identifiant du prestataire', 'Identifiant pseudonyme uniquement.', profile === 'professionnel_sante')}
+          {input('assure_id', 'Identifiant de l’assuré', 'Aucune donnée nominative.', false)}
+          {input('ordonnance_id', 'Identifiant de l’ordonnance')}
+          {input('date_soin', 'Date de soin')}
+          {input('date_emission', 'Date d’émission')}
+          {input('part_assure', 'Part de l’assuré (MGA)')}
+          {isManager && input('date_reception', 'Date de réception')}
+          {isManager && <div className="claim-field"><label htmlFor="canal_reception">Canal de réception <span aria-hidden="true">*</span></label><select id="canal_reception" value={draft.canal_reception} onChange={(event) => setField('canal_reception', event.target.value as ClaimDraft['canal_reception'])} aria-invalid={(errors.canal_reception ?? []).length > 0} aria-describedby={(errors.canal_reception ?? []).length ? 'canal_reception-error' : undefined}>{claimChannels.filter((channel) => channel !== 'PORTAIL_PRESTATAIRE').map((channel) => <option value={channel} key={channel}>{claimChannelLabels[channel]}</option>)}</select>{(errors.canal_reception ?? []).length > 0 && <span id="canal_reception-error" className="claim-field-error">{errors.canal_reception.join(' ')}</span>}</div>}
+          {!isManager && <div className="claim-field"><label htmlFor="canal_reception">Canal de réception</label><input id="canal_reception" value={claimChannelLabels.PORTAIL_PRESTATAIRE} readOnly disabled /></div>}
+          <div className="claim-field"><label htmlFor="mode_reglement">Mode de règlement <span aria-hidden="true">*</span></label><select id="mode_reglement" value={draft.mode_reglement} onChange={(event) => setField('mode_reglement', event.target.value as ClaimDraft['mode_reglement'])} aria-invalid={(errors.mode_reglement ?? []).length > 0} aria-describedby={(errors.mode_reglement ?? []).length ? 'mode_reglement-error' : undefined}>{settlementMethods.map((mode) => <option value={mode} key={mode}>{settlementMethodLabels[mode]}</option>)}</select>{(errors.mode_reglement ?? []).length > 0 && <span id="mode_reglement-error" className="claim-field-error">{errors.mode_reglement.join(' ')}</span>}</div>
+        </div>
+      </section>
+      <section className="claim-section" aria-labelledby="claim-lines-title">
+        <div className="claim-section-heading claim-lines-heading"><span className="claim-section-index">02</span><div><h2 id="claim-lines-title">Lignes de la facture</h2><p>Le montant de chaque ligne et le total sont calculés à partir de la quantité et du prix unitaire.</p></div><button type="button" className="add-claim-line" onClick={() => setDraft((current) => ({ ...current, lines: [...current.lines, blankLine()] }))}><Plus aria-hidden="true" size={16} /><span>Ajouter une ligne</span></button></div>
+        {(errors.lines ?? []).map((message) => <p className="claim-field-error" role="alert" key={message}>{message}</p>)}
+        {/* TODO: emplacement futur du téléversement de justificatifs PDF ; téléversement hors périmètre. */}
+        <datalist id="tariff-codes">{tariffReferences.map((item) => <option key={item.code} value={item.code}>{item.description}</option>)}</datalist>
+        <div className="claim-line-list">{draft.lines.map((line, index) => {
+          const lineError = (field: keyof DraftLine) => errors[`lines.${index}.${field}`] ?? []
+          const field = (key: keyof DraftLine, label: string, value: string, update: (value: string) => void, type = 'text') => <div className="claim-field"><label htmlFor={`line-${index}-${key}`}>{label} <span aria-hidden="true">*</span></label><input id={`line-${index}-${key}`} type={type} min={key === 'quantite' ? 1 : undefined} step={key === 'quantite' ? 1 : undefined} inputMode={key === 'quantite' || key === 'prix_unitaire' ? 'numeric' : undefined} value={value} onChange={(event) => update(event.target.value)} aria-invalid={lineError(key).length > 0} aria-describedby={lineError(key).length ? `line-${index}-${key}-error` : undefined} />{lineError(key).length > 0 && <span id={`line-${index}-${key}-error`} className="claim-field-error">{lineError(key).join(' ')}</span>}</div>
+          return <fieldset className="claim-line" key={index}><legend>Ligne {index + 1}</legend><div className="claim-line-fields">
+            <div className="claim-field"><label htmlFor={`line-${index}-type_ligne`}>Type <span aria-hidden="true">*</span></label><select id={`line-${index}-type_ligne`} value={line.type_ligne} onChange={(event) => setLine(index, 'type_ligne', event.target.value as ClaimLineType)} aria-invalid={(errors[`lines.${index}.type_ligne`] ?? []).length > 0} aria-describedby={(errors[`lines.${index}.type_ligne`] ?? []).length ? `line-${index}-type_ligne-error` : undefined}>{claimLineTypes.map((type) => <option value={type} key={type}>{claimLineTypeLabels[type]}</option>)}</select>{(errors[`lines.${index}.type_ligne`] ?? []).length > 0 && <span id={`line-${index}-type_ligne-error`} className="claim-field-error">{errors[`lines.${index}.type_ligne`].join(' ')}</span>}</div>
+            {field('code', 'Code', line.code, (value) => setLine(index, 'code', value))}
+            {field('quantite', 'Quantité', line.quantite, (value) => setLine(index, 'quantite', value), 'number')}
+            {field('prix_unitaire', 'Prix unitaire (MGA)', line.prix_unitaire ? formatMGA.format(Number(line.prix_unitaire)) : '', (value) => setLine(index, 'prix_unitaire', value.replace(/\D/g, '')))}
+            <div className="claim-line-amount"><span>Montant ligne</span><strong>{formatMGA.format(Number(line.quantite || 0) * Number(line.prix_unitaire || 0))} MGA</strong></div>
+            <button type="button" className="remove-claim-line" aria-label={`Supprimer la ligne ${index + 1}`} disabled={draft.lines.length === 1} onClick={() => { setDraft((current) => ({ ...current, lines: current.lines.filter((_, itemIndex) => itemIndex !== index) })); setSummary('') }}><Trash2 aria-hidden="true" size={17} /></button>
+          </div>{line.code && tariffNote(line.code) && <p className="claim-hint">{tariffNote(line.code)}</p>}</fieldset>
+        })}</div>
+        <div className="claim-total"><span>Total de la facture</span><strong>{formatMGA.format(total)} <small>MGA</small></strong></div>
+      </section>
+      <footer className="claim-form-footer"><p>{isManager ? 'Saisie de réception en mode simulé : le contrat live ne permet actuellement la création que par le prestataire ou l’administrateur.' : 'La facture sera validée par l’API ; ses règles métier restent la source d’autorité.'}</p><button className="claim-submit" type="submit" disabled={submitting}>{submitting ? 'Envoi en cours…' : 'Soumettre la facture'}<ArrowRight aria-hidden="true" size={17} /></button></footer>
+    </form>
+  </div>
+}

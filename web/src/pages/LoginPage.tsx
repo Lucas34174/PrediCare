@@ -5,13 +5,13 @@ import { ApiError } from '@/api/errors'
 import { mockAccounts } from '@/api/mock'
 import { useAuth } from '@/auth/AuthContext'
 import { roleLabels } from '@/components/navigation'
-import type { Role } from '@/api/types'
+import type { UiRole } from '@/api/types'
 
 interface LocationState {
   from?: { pathname?: string }
 }
 
-const roleDescriptions: Record<Role, string> = {
+const roleDescriptions: Record<UiRole, string> = {
   gestionnaire: 'Gestion des dossiers',
   professionnel_sante: 'Espace établissement',
   assure: 'Espace assuré',
@@ -22,7 +22,7 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
   const { isAuthenticated, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -35,7 +35,7 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
     setError('')
     setSubmitting(true)
     try {
-      await login({ email: email.trim(), password })
+      await login({ identifier: identifier.trim(), password })
       const destination = (location.state as LocationState | null)?.from?.pathname ?? '/app'
       navigate(destination, { replace: true })
     } catch (caught) {
@@ -45,8 +45,8 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
     }
   }
 
-  function selectAccount(accountEmail: string) {
-    setEmail(accountEmail)
+  function selectAccount(accountIdentifier: string) {
+    setIdentifier(accountIdentifier)
     setPassword('Demo2026!')
     setError('')
   }
@@ -69,14 +69,14 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
         <div className="login-form-wrap">
           <div className="form-intro"><span className="form-icon"><LockKeyhole aria-hidden="true" size={19} /></span><p className="eyebrow">VOTRE ESPACE, EN UN INSTANT</p><h2>Content de vous revoir.</h2><p>Connectez-vous pour accéder à votre espace PrediCare.</p></div>
           <form className="login-form" onSubmit={handleSubmit}>
-            <label htmlFor="email">Adresse e-mail</label>
-            <div className="input-wrap"><input id="email" name="email" type="email" autoComplete="username" placeholder="nom@exemple.mg" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
+            <label htmlFor="identifier">Identifiant</label>
+            <div className="input-wrap"><input id="identifier" name="identifier" type="text" autoComplete="username" placeholder="Votre identifiant" value={identifier} onChange={(event) => setIdentifier(event.target.value)} required /></div>
             <div className="password-label-row"><label htmlFor="password">Mot de passe</label><button type="button" className="forgot-link" onClick={() => setError('Pour cette démonstration, utilisez un compte de test ci-dessous.')}>Mot de passe oublié ?</button></div>
             <div className="input-wrap password-wrap"><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Votre mot de passe" value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} onClick={() => setShowPassword((visible) => !visible)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
             {error && <div className="form-error" role="alert"><span>!</span><p>{error}</p></div>}
             <button className="submit-button" type="submit" disabled={submitting}>{submitting ? 'Connexion en cours…' : 'Accéder à mon espace'}<ArrowRight aria-hidden="true" size={18} /></button>
           </form>
-          {import.meta.env.VITE_USE_MOCK !== 'false' && <div className="demo-access"><div className="demo-heading"><span><Sparkles aria-hidden="true" size={15} /> Démonstration</span><small>Choisissez un profil de test</small></div><div className="demo-grid">{mockAccounts.map((account) => <button type="button" key={account.role} className="demo-account" onClick={() => selectAccount(account.email)}><span className="demo-avatar">{account.display_name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span><strong>{roleLabels[account.role]}</strong><small>{roleDescriptions[account.role]}</small></span><ArrowRight aria-hidden="true" size={15} /></button>)}</div><p>Mot de passe de démonstration : <strong>Demo2026!</strong></p></div>}
+          {import.meta.env.VITE_USE_MOCK !== 'false' && <div className="demo-access"><div className="demo-heading"><span><Sparkles aria-hidden="true" size={15} /> Démonstration</span><small>Choisissez un profil de test</small></div><div className="demo-grid">{mockAccounts.map((account) => <button type="button" key={account.role} className="demo-account" onClick={() => selectAccount(account.identifier)}><span className="demo-avatar">{account.display_name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span><strong>{roleLabels[account.role]}</strong><small>{roleDescriptions[account.role]}</small></span><ArrowRight aria-hidden="true" size={15} /></button>)}</div><p>Mot de passe de démonstration : <strong>Demo2026!</strong></p></div>}
           <p className="login-legal">En continuant, vous accédez à un environnement de démonstration utilisant uniquement des données synthétiques.</p>
         </div>
         <div className="login-panel-footer"><span><ShieldCheck aria-hidden="true" size={15} /> Vos données restent protégées</span><Link to="/">PrediCare · Madagascar</Link></div>
