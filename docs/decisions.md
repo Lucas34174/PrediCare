@@ -102,3 +102,16 @@ Les factures soumises sont persistées pour permettre leur relecture fidèle ave
   - Tests d'intégration des prédictions, arbitrages et erreurs HTTP (`tests/test_api_predictions_and_errors.py`) : contrôle du score, explicabilité SHAP, cycle d'arbitrage (VALIDE, REJETE, INVESTIGATION), et validation des codes d'erreur (404, 405, 422).
   - Ajout de la cible `make test-cov` pour l'exécution locale avec rapport de couverture.
   - Renforcement du workflow GitHub Actions (`.github/workflows/ci.yml`) avec validation des scripts shell et couverture de code systématique.
+
+### Pipeline RAG
+
+**Modèle d'embedding** : BGE-M3 (BAAI), 1024 dim, local via Ollama.
+**Justification** : cf. docs/rag_architecture.md §3.
+
+**Chunking** : spécialisé par type de document.
+**Justification** : cf. docs/chunking_strategy.md.
+
+**Recherche** : hybride (vectoriel + full-text + RRF).
+**Justification** : cf. docs/rag_architecture.md §6.
+
+**Conformité** : cf. docs/eu_ai_act_classification.md et docs/rgpd_aipd.md.

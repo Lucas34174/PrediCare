@@ -57,6 +57,7 @@ services:
     volumes:
       - ./data/raw:/data/raw:ro
       - ./migrations:/app/migrations
+      - ./tests:/app/tests 
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
