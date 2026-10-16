@@ -23,6 +23,7 @@ _MOCK_USERS: dict[str, UserInfo] = {
         identifier="assure1",
         role=Role.ASSURE,
         nom_complet="Rabe Rakoto",
+        assure_id="ASS-00421",
     ),
     "admin1": UserInfo(
         id="USR-0001",
@@ -35,6 +36,7 @@ _MOCK_USERS: dict[str, UserInfo] = {
         identifier="pro1",
         role=Role.PROFESSIONNEL_SANTE,
         nom_complet="Dr. Solo Rakotondrabe",
+        prestataire_id="PR-0015",
     ),
 }
 
@@ -45,21 +47,30 @@ _MOCK_USERS: dict[str, UserInfo] = {
     responses={401: {"description": "Identifiants erronés."}},
 )
 def login(body: LoginRequest) -> LoginResponse:
-    """Authentification et émission du JWT"""
+    """Authentification et émission du JWT."""
     user = _MOCK_USERS.get(body.identifier)
-    if user is None or not body.password:
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Identifiant ou mot de passe incorrect.",
+        )
+
+    # Mots de passe valides pour les comptes démo (notamment "x" des tests de contrats)
+    passwords_valides = {"x", "demo", f"{user.identifier}123", "password123"}
+    if body.password not in passwords_valides:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiant ou mot de passe incorrect.",
         )
 
     # Création du vrai token JWT signé
+    assure_id = user.assure_id or (user.id if user.role == Role.ASSURE else None)
     token_payload = {
         "sub": user.identifier,
         "id": user.id,
         "role": str(user.role),
         "nom_complet": user.nom_complet,
-        "assure_id": user.assure_id,
+        "assure_id": assure_id,
         "prestataire_id": user.prestataire_id,
     }
     access_token = create_access_token(token_payload)
