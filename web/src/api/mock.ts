@@ -51,12 +51,6 @@ const demoMemberId = 'ASS-C60624BAFB'
 const demoProviderId = 'PR-0015'
 type MockClaim = ClaimDetail & Partial<Pick<ManagerClaimListItem, 'score_fraude' | 'est_anomalie'>>
 
-const etablissements: Record<string, string> = {
-  'PR-0015': 'Clinique Analamanga',
-  'PR-00021': 'Cabinet Sainte-Marie',
-  'PR-00034': 'Laboratoire Ivato',
-}
-
 function makeClaim(
   facture_id: string,
   statut: ClaimDetail['statut'],
@@ -65,15 +59,13 @@ function makeClaim(
   score_fraude: number,
   est_anomalie: boolean,
   lignes: ClaimLine[],
-  assure_id: string = demoMemberId,
-  prestataire_id: string = demoProviderId,
 ): MockClaim {
   const montant_total = lignes.reduce((sum, line) => sum + line.montant_total, 0)
   return {
     facture_id,
     numero_facture: `F-${facture_id.slice(-5)}`,
-    assure_id,
-    prestataire_id,
+    assure_id: demoMemberId,
+    prestataire_id: demoProviderId,
     date_soin,
     date_emission: '2026-10-15',
     montant_total,
@@ -82,7 +74,7 @@ function makeClaim(
     statut,
     score_fraude,
     est_anomalie,
-    nom_etablissement: etablissements[prestataire_id] ?? 'Établissement non renseigné',
+    nom_etablissement: 'Clinique Analamanga',
     ordonnance_id: 'ORD-0003289',
     motif_rejet,
     montant_pris_en_charge: statut === 'PAYEE' ? montant_total - 9_000 : null,
@@ -103,52 +95,6 @@ const mockClaims = new Map<string, MockClaim>([
     { num_ligne: 1, code: 'IMG-SCANNER', type_ligne: 'ACTE', quantite: 1, prix_unitaire: 60_000, montant_total: 60_000 },
   ])],
 ])
-
-function line(
-  num_ligne: number,
-  code: string,
-  type_ligne: ClaimLine['type_ligne'],
-  quantite: number,
-  prix_unitaire: number,
-): ClaimLine {
-  return { num_ligne, code, type_ligne, quantite, prix_unitaire, montant_total: quantite * prix_unitaire }
-}
-
-// Compléments de démonstration : les trois factures ci-dessus sont écrites à la main,
-// ces lignes donnent assez de volume pour éprouver filtres, tri et pagination serveur.
-interface ClaimSeed {
-  facture_id: string
-  statut: ClaimDetail['statut']
-  date_soin: string
-  motif_rejet: ClaimDetail['motif_rejet']
-  score_fraude: number
-  est_anomalie: boolean
-  assure_id: string
-  prestataire_id: string
-  lignes: ClaimLine[]
-}
-
-const extraClaims: ClaimSeed[] = [
-  { facture_id: 'FAC-00005640', statut: 'EN_COURS', date_soin: '2026-10-11', motif_rejet: null, score_fraude: 0.83, est_anomalie: true, assure_id: 'ASS-7B21C4D908', prestataire_id: 'PR-00021', lignes: [line(1, 'IMG-SCANNER', 'ACTE', 1, 60_000)] },
-  { facture_id: 'FAC-00005641', statut: 'EN_COURS', date_soin: '2026-10-09', motif_rejet: null, score_fraude: 0.91, est_anomalie: true, assure_id: 'ASS-3F9E12A744', prestataire_id: 'PR-00034', lignes: [line(1, 'MED-FORTIF', 'MEDICAMENT', 2, 25_000)] },
-  { facture_id: 'FAC-00005642', statut: 'EN_COURS', date_soin: '2026-10-07', motif_rejet: null, score_fraude: 0.77, est_anomalie: true, assure_id: 'ASS-C60624BAFB', prestataire_id: 'PR-0015', lignes: [line(1, 'CONS-GEN', 'ACTE', 1, 20_000), line(2, 'IMG-SCANNER', 'ACTE', 1, 60_000)] },
-  { facture_id: 'FAC-00005643', statut: 'PAYEE', date_soin: '2026-10-06', motif_rejet: null, score_fraude: 0.22, est_anomalie: false, assure_id: 'ASS-7B21C4D908', prestataire_id: 'PR-00021', lignes: [line(1, 'CONS-GEN', 'ACTE', 1, 20_000)] },
-  { facture_id: 'FAC-00005644', statut: 'REJETEE', date_soin: '2026-10-05', motif_rejet: 'PRODUIT_NON_REMBOURSABLE', score_fraude: 0.64, est_anomalie: true, assure_id: 'ASS-3F9E12A744', prestataire_id: 'PR-00034', lignes: [line(1, 'MED-FORTIF', 'MEDICAMENT', 1, 25_000)] },
-  { facture_id: 'FAC-00005645', statut: 'PAYEE', date_soin: '2026-10-04', motif_rejet: null, score_fraude: 0.35, est_anomalie: false, assure_id: 'ASS-C60624BAFB', prestataire_id: 'PR-00021', lignes: [line(1, 'MED-PARA500', 'MEDICAMENT', 3, 2_000)] },
-  { facture_id: 'FAC-00005646', statut: 'EN_COURS', date_soin: '2026-10-03', motif_rejet: null, score_fraude: 0.52, est_anomalie: false, assure_id: 'ASS-7B21C4D908', prestataire_id: 'PR-0015', lignes: [line(1, 'CONS-GEN', 'ACTE', 2, 20_000)] },
-  { facture_id: 'FAC-00005647', statut: 'REJETEE', date_soin: '2026-10-02', motif_rejet: 'ORDONNANCE_PERIMEE', score_fraude: 0.79, est_anomalie: true, assure_id: 'ASS-3F9E12A744', prestataire_id: 'PR-00021', lignes: [line(1, 'MED-PARA500', 'MEDICAMENT', 1, 2_000)] },
-  { facture_id: 'FAC-00005648', statut: 'EN_COURS', date_soin: '2026-10-01', motif_rejet: null, score_fraude: 0.44, est_anomalie: false, assure_id: 'ASS-C60624BAFB', prestataire_id: 'PR-0015', lignes: [line(1, 'IMG-SCANNER', 'ACTE', 1, 60_000), line(2, 'MED-PARA500', 'MEDICAMENT', 1, 2_000)] },
-  { facture_id: 'FAC-00005649', statut: 'EN_COURS', date_soin: '2026-09-30', motif_rejet: null, score_fraude: 0.86, est_anomalie: true, assure_id: 'ASS-7B21C4D908', prestataire_id: 'PR-00034', lignes: [line(1, 'IMG-SCANNER', 'ACTE', 1, 60_000)] },
-  { facture_id: 'FAC-00005650', statut: 'EN_COURS', date_soin: '2026-09-29', motif_rejet: null, score_fraude: 0.81, est_anomalie: true, assure_id: 'ASS-C60624BAFB', prestataire_id: 'PR-0015', lignes: [line(1, 'MED-FORTIF', 'MEDICAMENT', 1, 25_000), line(2, 'CONS-GEN', 'ACTE', 1, 20_000)] },
-  { facture_id: 'FAC-00005651', statut: 'REJETEE', date_soin: '2026-09-28', motif_rejet: 'FACTURE_INVALIDE', score_fraude: 0.75, est_anomalie: true, assure_id: 'ASS-3F9E12A744', prestataire_id: 'PR-00034', lignes: [line(1, 'MED-PARA500', 'MEDICAMENT', 1, 2_000)] },
-  { facture_id: 'FAC-00005652', statut: 'EN_COURS', date_soin: '2026-09-27', motif_rejet: null, score_fraude: 0.88, est_anomalie: true, assure_id: 'ASS-C60624BAFB', prestataire_id: 'PR-00021', lignes: [line(1, 'IMG-SCANNER', 'ACTE', 1, 60_000), line(2, 'MED-FORTIF', 'MEDICAMENT', 1, 25_000)] },
-]
-extraClaims.forEach((seed) => {
-  mockClaims.set(seed.facture_id, makeClaim(
-    seed.facture_id, seed.statut, seed.date_soin, seed.motif_rejet,
-    seed.score_fraude, seed.est_anomalie, seed.lignes, seed.assure_id, seed.prestataire_id,
-  ))
-})
 
 const mockPredictions: Record<string, PredictionResponse> = {
   'FAC-00005637': {
@@ -207,7 +153,10 @@ function requireScoringRole(account: MockAccount | undefined): asserts account i
 }
 
 function visibleClaim(claim: MockClaim, role: UiRole): ClaimListItem | ManagerClaimListItem {
-  const base: ClaimListItem = {
+  if (canSeeAllClaims(role) && claim.score_fraude !== undefined && claim.est_anomalie !== undefined) {
+    return { ...claim, score_fraude: claim.score_fraude, est_anomalie: claim.est_anomalie }
+  }
+  return {
     facture_id: claim.facture_id,
     numero_facture: claim.numero_facture,
     assure_id: claim.assure_id,
@@ -219,8 +168,6 @@ function visibleClaim(claim: MockClaim, role: UiRole): ClaimListItem | ManagerCl
     montant_demande: claim.montant_demande,
     statut: claim.statut,
   }
-  if (!canSeeAllClaims(role)) return base
-  return { ...base, score_fraude: claim.score_fraude ?? null, est_anomalie: claim.est_anomalie ?? null }
 }
 
 function visibleClaimDetail(claim: MockClaim): ClaimDetail {
@@ -267,19 +214,7 @@ function listClaims(url: URL, account: MockAccount | undefined): ClaimsPage {
   if (start) items = items.filter((claim) => claim.date_soin >= start)
   if (end) items = items.filter((claim) => claim.date_soin <= end)
   if (params.get('fraud_alert_only') === 'true' && canSeeAllClaims(role)) {
-    items = items.filter((claim) => claim.est_anomalie === true)
-  }
-  // À brancher: `q`, `decision_enregistree` et `sort` n'existent pas encore dans le
-  // contrat M2 (docs/contrats_interface.md §3.3) ; ils ne sont interprétés qu'ici.
-  const query = params.get('q')?.trim().toLowerCase()
-  if (query) items = items.filter((claim) => claim.facture_id.toLowerCase().includes(query))
-  const decisionEnregistree = params.get('decision_enregistree')
-  if (decisionEnregistree !== null) {
-    const decided = decisionEnregistree === 'true'
-    items = items.filter((claim) => mockDecisions.has(claim.facture_id) === decided)
-  }
-  if (params.get('sort') === 'score_fraude:desc') {
-    items = [...items].sort((left, right) => (right.score_fraude ?? 0) - (left.score_fraude ?? 0))
+    items = items.filter((claim) => claim.est_anomalie)
   }
   const total = items.length
   const page = Math.max(1, Number(params.get('page') ?? 1))
@@ -290,30 +225,6 @@ function listClaims(url: URL, account: MockAccount | undefined): ClaimsPage {
     page_size: pageSize,
     items: items.slice((page - 1) * pageSize, page * pageSize)
       .map((claim) => visibleClaim(claim, role)),
-  }
-}
-
-/** Analyse de repli pour les factures de démonstration sans prédiction écrite à la main. */
-function predictionFor(claim: MockClaim): PredictionResponse {
-  const est_anomalie = claim.est_anomalie ?? false
-  return {
-    facture_id: claim.facture_id,
-    prediction: {
-      score_fraude: claim.score_fraude ?? 0,
-      seuil_applique: 0.8,
-      est_anomalie,
-      version_modele: 'v1.0.0-xgb',
-      date_prediction: '2026-10-15T08:41:00Z',
-    },
-    explicabilite: {
-      top_facteurs: est_anomalie
-        ? [
-            { feature: 'ecart_tarif_conventionne', valeur: 15_000, impact_shap: 0.38, description: 'Écart au tarif de référence.' },
-            { feature: 'absence_entente_prealable', valeur: 1, impact_shap: 0.22 },
-          ]
-        : [{ feature: 'montant_atypique', valeur: 0, impact_shap: -0.24 }],
-      recommandation: est_anomalie ? 'Revue gestionnaire recommandée.' : 'Aucun signal prioritaire relevé.',
-    },
   }
 }
 
@@ -400,8 +311,7 @@ export function resolveMock<T>(path: string, init: RequestInit): T {
   if (predictionMatch) {
     if (!account || !canSeeAllClaims(account.role)) throw new ApiError('Cette analyse est réservée au gestionnaire.', 403)
     const factureId = decodeURIComponent(predictionMatch[1])
-    const source = mockClaims.get(factureId)
-    const prediction = mockPredictions[factureId] ?? (source ? predictionFor(source) : undefined)
+    const prediction = mockPredictions[factureId]
     if (prediction) return prediction as T
     throw new ApiError(`Aucune analyse simulée pour la facture ${factureId}.`, 404)
   }
