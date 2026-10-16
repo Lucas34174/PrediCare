@@ -63,11 +63,14 @@ _MOCK_CLAIM = ClaimDetail(
     ],
 )
 
-_KNOWN_CLAIM_IDS = {"FAC-00005637", "FAC-00084700"}  # 00084700 : id renvoyé par POST /claims
+_KNOWN_CLAIM_IDS = {"FAC-00005637", "FAC-00084700"}
+_SUBMITTED_CLAIMS: dict[str, ClaimDetail] = {}
 
 
 def _get_or_404(facture_id: str) -> ClaimDetail:
-    """Retourne la facture mock, ou lève un 404 si l'id est inconnu (mock)."""
+    """Retourne la facture soumise ou mock, ou lève un 404 si l'id est inconnu."""
+    if facture_id in _SUBMITTED_CLAIMS:
+        return _SUBMITTED_CLAIMS[facture_id]
     if facture_id not in _KNOWN_CLAIM_IDS:
         raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
     return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
@@ -129,9 +132,25 @@ def get_claim(
 
 @router.post("", response_model=ClaimCreateResponse, status_code=201)
 def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
-    """Télétransmission d'une nouvelle facture (mock)."""
+    """Télétransmission d'une nouvelle facture et persistance pour relecture."""
+    facture_id = "FAC-00084700"
+    _SUBMITTED_CLAIMS[facture_id] = ClaimDetail(
+        facture_id=facture_id,
+        numero_facture=body.numero_facture,
+        assure_id=body.assure_id,
+        prestataire_id=body.prestataire_id,
+        nom_etablissement="Établissement de soins",
+        ordonnance_id=body.ordonnance_id,
+        date_soin=body.date_soin,
+        date_emission=body.date_emission,
+        montant_total=body.montant_total,
+        part_assure=body.part_assure,
+        montant_demande=body.montant_total - body.part_assure,
+        statut=StatutFacture.EN_COURS,
+        lignes=body.lignes,
+    )
     return ClaimCreateResponse(
-        facture_id="FAC-00084700",
+        facture_id=facture_id,
         statut=StatutFacture.EN_COURS,
         score_fraude=0.88,
         est_anomalie=True,

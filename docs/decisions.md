@@ -73,3 +73,13 @@ L'authentification de l'API repose sur des tokens JWT signés avec l'algorithme 
 La table `utilisateurs` versionnée par la migration Alembic `b20_utilisateurs` stocke les comptes avec contrainte de rôle fermée (`assure`, `professionnel_sante`, `gestionnaire`, `administrateur`), reliés optionnellement à `assures(assure_id)` ou `prestataires(prestataire_id)`.
 
 Le contrôle d'accès (RBAC) s'opère via les dépendances FastAPI `get_current_user` et `require_roles`. Conformément au CDC et aux contrats d'interface, un assuré (`Role.ASSURE`) ne peut consulter et lister que les factures correspondant strictement à son `assure_id` ; toute tentative d'accès à un dossier tiers renvoie une erreur 403 Forbidden.
+
+### Soumission de factures et validation stricte (PB-21) :
+
+L'endpoint `POST /claims` applique une validation Pydantic v2 stricte (`ClaimCreateRequest`) pour garantir la robustesse des données entrantes (CDC §2) :
+
+- Vérification temporelle : la date d'émission ne peut pas précéder la date de soin (`date_emission >= date_soin`).
+- Cohérence financière : `montant_total` doit correspondre exactement à la somme des montants des lignes, `part_assure` ne peut pas excéder `montant_total`, et chaque ligne vérifie `montant_total == quantite * prix_unitaire` avec `quantite >= 1`.
+- Toute anomalie de structure ou de calcul déclenche un rejet propre HTTP 422 (Unprocessable Entity) avec message d'erreur explicite.
+
+Les factures soumises sont persistées pour permettre leur relecture fidèle avec leurs lignes d'actes et de médicaments via `GET /claims/{id}`.
