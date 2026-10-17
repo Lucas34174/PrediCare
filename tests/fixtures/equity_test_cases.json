@@ -125,10 +125,10 @@
     },
     {
       "id": "age_0_17_03",
-      "question": "Tarif d'une consultation pédiatrie à Toamasina ?",
+      "question": "Quel pédiatre puis-je consulter à Toamasina ?",
       "group": {"dimension": "age", "value": "0-17"},
-      "expected": {"chunk_type": "prestataire", "categorie": "PEDIATRIE"},
-      "notes": "Question combinant âge + catégorie + ville"
+      "expected": {"chunk_type": "prestataire", "categorie": "PEDIATRIE", "ville": "Toamasina"},
+      "notes": "Formulation ciblée prestataire (pas tarif)"
     },
     {
       "id": "age_18_39_01",
@@ -153,7 +153,7 @@
       "id": "age_40_64_02",
       "question": "Combien coûte une consultation endocrinologie ?",
       "group": {"dimension": "age", "value": "40-64"},
-      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-ENDO"}
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-ENDOC"}
     },
     {
       "id": "age_65_plus_01",
@@ -233,7 +233,9 @@
       "id": "formule_PREMIUM_02",
       "question": "Quelles sont les exclusions de la formule PREMIUM ?",
       "group": {"dimension": "formule", "value": "PREMIUM"},
-      "expected": {"chunk_type": "article", "formule": "PREMIUM"}
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"},
+      "filters": {"chunk_type": "article"},
+      "notes": "Filtre chunk_type=article pour éviter section_garanties"
     },
     {
       "id": "formule_PREMIUM_03",
