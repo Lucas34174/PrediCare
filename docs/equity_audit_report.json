@@ -1,0 +1,1518 @@
+{
+  "metadata": {
+    "top_k": 5,
+    "ecart_cible": 0.1,
+    "total_cas": 67,
+    "total_reussis": 65
+  },
+  "par_groupe": [
+    {
+      "dimension": "age",
+      "groupe": "0-17",
+      "total": 3,
+      "reussis": 2,
+      "recall": 0.6667
+    },
+    {
+      "dimension": "age",
+      "groupe": "18-39",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "age",
+      "groupe": "40-64",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "age",
+      "groupe": "65+",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "age",
+      "groupe": "neutre",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "CONSULTATION",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "DENTAIRE",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "HOSPITALISATION",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "IMAGERIE",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "KINESITHERAPIE",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "LABORATOIRE",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "MATERNITE",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "OPTIQUE",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "categorie",
+      "groupe": "PHARMACIE",
+      "total": 3,
+      "reussis": 3,
+      "recall": 1.0
+    },
+    {
+      "dimension": "controle",
+      "groupe": "tous",
+      "total": 5,
+      "reussis": 5,
+      "recall": 1.0
+    },
+    {
+      "dimension": "formule",
+      "groupe": "CONFORT",
+      "total": 4,
+      "reussis": 4,
+      "recall": 1.0
+    },
+    {
+      "dimension": "formule",
+      "groupe": "ESSENTIEL",
+      "total": 4,
+      "reussis": 4,
+      "recall": 1.0
+    },
+    {
+      "dimension": "formule",
+      "groupe": "PREMIUM",
+      "total": 4,
+      "reussis": 4,
+      "recall": 1.0
+    },
+    {
+      "dimension": "sexe",
+      "groupe": "F",
+      "total": 5,
+      "reussis": 5,
+      "recall": 1.0
+    },
+    {
+      "dimension": "sexe",
+      "groupe": "M",
+      "total": 3,
+      "reussis": 3,
+      "recall": 1.0
+    },
+    {
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "total": 7,
+      "reussis": 7,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Antananarivo",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Antsirabe",
+      "total": 1,
+      "reussis": 0,
+      "recall": 0.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Antsiranana",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Fianarantsoa",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Mahajanga",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Toamasina",
+      "total": 2,
+      "reussis": 2,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "Toliara",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    },
+    {
+      "dimension": "ville",
+      "groupe": "national",
+      "total": 1,
+      "reussis": 1,
+      "recall": 1.0
+    }
+  ],
+  "ecarts_par_dimension": {
+    "age": {
+      "min": 0.6666666666666666,
+      "max": 1.0,
+      "ecart": 0.33333333333333337,
+      "ok": false
+    },
+    "categorie": {
+      "min": 1.0,
+      "max": 1.0,
+      "ecart": 0.0,
+      "ok": true
+    },
+    "controle": {
+      "min": 1.0,
+      "max": 1.0,
+      "ecart": 0.0,
+      "ok": true
+    },
+    "formule": {
+      "min": 1.0,
+      "max": 1.0,
+      "ecart": 0.0,
+      "ok": true
+    },
+    "sexe": {
+      "min": 1.0,
+      "max": 1.0,
+      "ecart": 0.0,
+      "ok": true
+    },
+    "ville": {
+      "min": 0.0,
+      "max": 1.0,
+      "ecart": 1.0,
+      "ok": false
+    }
+  },
+  "details": [
+    {
+      "id": "sexe_F_01",
+      "question": "Quel est le tarif du dosage bêta-HCG ?",
+      "dimension": "sexe",
+      "groupe": "F",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-BHCG"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-BHCG"
+      },
+      "top_similarity": 0.7810318528131681,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_F_02",
+      "question": "Combien coûte une consultation prénatale ?",
+      "dimension": "sexe",
+      "groupe": "F",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-PRENAT"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "MATERNITE",
+        "code_acte": "CONS-PRENAT"
+      },
+      "top_similarity": 0.7543821572730278,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_F_03",
+      "question": "Quel est le tarif d'une échographie obstétricale ?",
+      "dimension": "sexe",
+      "groupe": "F",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "IMG-ECHO-OBS"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "MATERNITE",
+        "code_acte": "IMG-ECHO-OBS"
+      },
+      "top_similarity": 0.7908974083721508,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_F_04",
+      "question": "Forfait accouchement par voie basse ?",
+      "dimension": "sexe",
+      "groupe": "F",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "ACC-NORMAL"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "MATERNITE",
+        "code_acte": "ACC-NORMAL"
+      },
+      "top_similarity": 0.6776727590088928,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_F_05",
+      "question": "Tarif de la césarienne ?",
+      "dimension": "sexe",
+      "groupe": "F",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "ACC-CESAR"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "MATERNITE",
+        "code_acte": "ACC-CESAR"
+      },
+      "top_similarity": 0.7164507591928286,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_M_01",
+      "question": "Quel est le tarif du dosage PSA ?",
+      "dimension": "sexe",
+      "groupe": "M",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-PSA"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-PSA"
+      },
+      "top_similarity": 0.7412547907786514,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_M_02",
+      "question": "Tarif d'une consultation urologie ?",
+      "dimension": "sexe",
+      "groupe": "M",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-URO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-URO"
+      },
+      "top_similarity": 0.7920651294866616,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_M_03",
+      "question": "Combien coûte une consultation de cardiologie ?",
+      "dimension": "sexe",
+      "groupe": "M",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-CARDIO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-CARDIO"
+      },
+      "top_similarity": 0.7772667972538418,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_01",
+      "question": "Quel est le tarif d'une consultation de médecine générale ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-GEN"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-GEN"
+      },
+      "top_similarity": 0.7625055926121632,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_02",
+      "question": "Combien coûte une radiographie standard ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "IMG-RADIO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "IMAGERIE",
+        "code_acte": "IMG-RADIO"
+      },
+      "top_similarity": 0.7410887154919407,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_03",
+      "question": "Tarif de la numération formule sanguine ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-NFS"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-NFS"
+      },
+      "top_similarity": 0.795059455586448,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_04",
+      "question": "Quel est le tarif d'une glycémie à jeun ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-GLY"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-GLY"
+      },
+      "top_similarity": 0.7452377678768767,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_05",
+      "question": "Combien coûte une séance de kinésithérapie ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "KINE-SEANCE"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "KINESITHERAPIE",
+        "code_acte": "KINE-SEANCE"
+      },
+      "top_similarity": 0.7619349247454545,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_06",
+      "question": "Tarif d'une consultation ophtalmologie ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-OPHTA"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-OPHTA"
+      },
+      "top_similarity": 0.788003190204266,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "sexe_neutre_07",
+      "question": "Combien coûte une consultation dermatologie ?",
+      "dimension": "sexe",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-DERMATO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-DERMATO"
+      },
+      "top_similarity": 0.7689535134975198,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_0_17_01",
+      "question": "Quel est le tarif d'une consultation pédiatrie ?",
+      "dimension": "age",
+      "groupe": "0-17",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-PEDIA"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-PEDIA"
+      },
+      "top_similarity": 0.7680058475892854,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_0_17_02",
+      "question": "Combien coûte un traitement orthodontique ?",
+      "dimension": "age",
+      "groupe": "0-17",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "DENT-ORTHO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "DENTAIRE",
+        "code_acte": "DENT-ORTHO"
+      },
+      "top_similarity": 0.7072790329064943,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_0_17_03",
+      "question": "Quel pédiatre puis-je consulter à Toamasina ?",
+      "dimension": "age",
+      "groupe": "0-17",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "PEDIATRIE",
+        "ville": "Toamasina"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Toamasina",
+        "categorie": "SPÉCIALISTES"
+      },
+      "top_similarity": 0.6591647270433075,
+      "rang": null,
+      "reussi": false,
+      "raison_echec": "top1: chunk_type=prestataire metadata={'ville': 'Toamasina', 'categorie': 'SPÉCIALISTES'}"
+    },
+    {
+      "id": "age_18_39_01",
+      "question": "Quel est le tarif d'une consultation gynécologie ?",
+      "dimension": "age",
+      "groupe": "18-39",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-GYNECO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-GYNECO"
+      },
+      "top_similarity": 0.7602290426059999,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_18_39_02",
+      "question": "Combien coûte un dosage bêta-HCG ?",
+      "dimension": "age",
+      "groupe": "18-39",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-BHCG"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-BHCG"
+      },
+      "top_similarity": 0.7494252057645073,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_40_64_01",
+      "question": "Quel est le tarif du dosage PSA ?",
+      "dimension": "age",
+      "groupe": "40-64",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-PSA"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-PSA"
+      },
+      "top_similarity": 0.7412547907786514,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_40_64_02",
+      "question": "Combien coûte une consultation endocrinologie ?",
+      "dimension": "age",
+      "groupe": "40-64",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-ENDOC"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-ENDOC"
+      },
+      "top_similarity": 0.7628239525494213,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_65_plus_01",
+      "question": "Quel est le tarif d'une séance d'hémodialyse ?",
+      "dimension": "age",
+      "groupe": "65+",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "DIALYSE"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "HOSPITALISATION",
+        "code_acte": "DIALYSE"
+      },
+      "top_similarity": 0.7625795063940004,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_65_plus_02",
+      "question": "Combien coûte un scanner tomodensitométrie ?",
+      "dimension": "age",
+      "groupe": "65+",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "IMG-SCANNER"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "IMAGERIE",
+        "code_acte": "IMG-SCANNER"
+      },
+      "top_similarity": 0.7337166518667275,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "age_neutre_01",
+      "question": "Quel est le plafond annuel global pour la formule PREMIUM ?",
+      "dimension": "age",
+      "groupe": "neutre",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "PREMIUM"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.581442040362333,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_CONFORT_01",
+      "question": "Quel est le plafond annuel global de la formule CONFORT ?",
+      "dimension": "formule",
+      "groupe": "CONFORT",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "CONFORT"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "CONFORT"
+      },
+      "top_similarity": 0.6304093919275101,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_CONFORT_02",
+      "question": "Quelles sont les exclusions de la formule CONFORT ?",
+      "dimension": "formule",
+      "groupe": "CONFORT",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "CONFORT"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "CONFORT"
+      },
+      "top_similarity": 0.7212515349929943,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_CONFORT_03",
+      "question": "Quel est le délai de carence maternité en CONFORT ?",
+      "dimension": "formule",
+      "groupe": "CONFORT",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "CONFORT"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "CONFORT"
+      },
+      "top_similarity": 0.6369575279077597,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_CONFORT_04",
+      "question": "Quel est le taux de remboursement dentaire en CONFORT ?",
+      "dimension": "formule",
+      "groupe": "CONFORT",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "CONFORT"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "CONFORT"
+      },
+      "top_similarity": 0.6429489606503345,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_ESSENTIEL_01",
+      "question": "Quel est le plafond annuel global de la formule ESSENTIEL ?",
+      "dimension": "formule",
+      "groupe": "ESSENTIEL",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "ESSENTIEL"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "ESSENTIEL"
+      },
+      "top_similarity": 0.5486758420416855,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_ESSENTIEL_02",
+      "question": "Quelles sont les exclusions de la formule ESSENTIEL ?",
+      "dimension": "formule",
+      "groupe": "ESSENTIEL",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "ESSENTIEL"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "ESSENTIEL"
+      },
+      "top_similarity": 0.7025873417523849,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_ESSENTIEL_03",
+      "question": "Quel est le délai de carence optique en ESSENTIEL ?",
+      "dimension": "formule",
+      "groupe": "ESSENTIEL",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "ESSENTIEL"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "ESSENTIEL"
+      },
+      "top_similarity": 0.5805163137808562,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_ESSENTIEL_04",
+      "question": "Le forfait chirurgie est-il couvert en ESSENTIEL ?",
+      "dimension": "formule",
+      "groupe": "ESSENTIEL",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "ESSENTIEL"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "HOSPITALISATION",
+        "code_acte": "HOSP-CHIR"
+      },
+      "top_similarity": 0.6227762675084805,
+      "rang": 2,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_PREMIUM_01",
+      "question": "Quel est le plafond annuel global de la formule PREMIUM ?",
+      "dimension": "formule",
+      "groupe": "PREMIUM",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "PREMIUM"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.5631926187361699,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_PREMIUM_02",
+      "question": "Quelles sont les exclusions de la formule PREMIUM ?",
+      "dimension": "formule",
+      "groupe": "PREMIUM",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "PREMIUM"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.631647292000719,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_PREMIUM_03",
+      "question": "Quel est le taux de remboursement pharmacie en PREMIUM ?",
+      "dimension": "formule",
+      "groupe": "PREMIUM",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "PREMIUM"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.619236796608937,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "formule_PREMIUM_04",
+      "question": "Y a-t-il une franchise hospitalisation en PREMIUM ?",
+      "dimension": "formule",
+      "groupe": "PREMIUM",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "PREMIUM"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.5240943592788118,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_consultation_01",
+      "question": "Combien coûte une consultation chez un neurologue ?",
+      "dimension": "categorie",
+      "groupe": "CONSULTATION",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-NEURO"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-NEURO"
+      },
+      "top_similarity": 0.7290293636977732,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_consultation_02",
+      "question": "Tarif d'une consultation ORL ?",
+      "dimension": "categorie",
+      "groupe": "CONSULTATION",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "CONS-ORL"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "CONSULTATION",
+        "code_acte": "CONS-ORL"
+      },
+      "top_similarity": 0.7638390069934725,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_imagerie_01",
+      "question": "Combien coûte un scanner ?",
+      "dimension": "categorie",
+      "groupe": "IMAGERIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "IMG-SCANNER"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": null,
+        "categorie": "IMAGERIE MÉDICALE"
+      },
+      "top_similarity": 0.6815635173375423,
+      "rang": 5,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_imagerie_02",
+      "question": "Quel est le tarif d'une IRM ?",
+      "dimension": "categorie",
+      "groupe": "IMAGERIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "IMG-IRM"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "IMAGERIE",
+        "code_acte": "IMG-IRM"
+      },
+      "top_similarity": 0.6859655033893138,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_laboratoire_01",
+      "question": "Combien coûte un bilan lipidique ?",
+      "dimension": "categorie",
+      "groupe": "LABORATOIRE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-LIPIDE"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-LIPIDE"
+      },
+      "top_similarity": 0.714763476054191,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_laboratoire_02",
+      "question": "Quel est le tarif de la CRP ?",
+      "dimension": "categorie",
+      "groupe": "LABORATOIRE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "LAB-CRP"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "LABORATOIRE",
+        "code_acte": "LAB-CRP"
+      },
+      "top_similarity": 0.6726801828954656,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_pharmacie_01",
+      "question": "Quel est le prix du paracétamol 500 mg ?",
+      "dimension": "categorie",
+      "groupe": "PHARMACIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_medicament": "MED-PARA500"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "code_medicament": "MED-PARA500"
+      },
+      "top_similarity": 0.7307150342459633,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_pharmacie_02",
+      "question": "Combien coûte l'amoxicilline 500 mg ?",
+      "dimension": "categorie",
+      "groupe": "PHARMACIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_medicament": "MED-AMOX500"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "code_medicament": "MED-AMOX500"
+      },
+      "top_similarity": 0.7240183030146365,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_pharmacie_03",
+      "question": "Quel est le prix de l'insuline humaine ?",
+      "dimension": "categorie",
+      "groupe": "PHARMACIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_medicament": "MED-INSUL"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "code_medicament": "MED-INSUL"
+      },
+      "top_similarity": 0.6925808441664976,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_dentaire_01",
+      "question": "Quel est le tarif d'un détartrage ?",
+      "dimension": "categorie",
+      "groupe": "DENTAIRE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "DENT-DETART"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "DENTAIRE",
+        "code_acte": "DENT-DETART"
+      },
+      "top_similarity": 0.6949029340019424,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_dentaire_02",
+      "question": "Combien coûte une prothèse dentaire ?",
+      "dimension": "categorie",
+      "groupe": "DENTAIRE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "DENT-PROTH"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "DENTAIRE",
+        "code_acte": "DENT-PROTH"
+      },
+      "top_similarity": 0.7421388198429205,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_optique_01",
+      "question": "Quel est le tarif d'un verre correcteur ?",
+      "dimension": "categorie",
+      "groupe": "OPTIQUE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "OPT-VERRE"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "OPTIQUE",
+        "code_acte": "OPT-VERRE"
+      },
+      "top_similarity": 0.7158251806490943,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_kinesitherapie_01",
+      "question": "Combien coûte une séance de kinésithérapie respiratoire ?",
+      "dimension": "categorie",
+      "groupe": "KINESITHERAPIE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "KINE-RESP"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "KINESITHERAPIE",
+        "code_acte": "KINE-RESP"
+      },
+      "top_similarity": 0.7769775037795857,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_hospitalisation_01",
+      "question": "Quel est le tarif d'une journée d'hospitalisation ?",
+      "dimension": "categorie",
+      "groupe": "HOSPITALISATION",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "HOSP-JOUR"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "HOSPITALISATION",
+        "code_acte": "HOSP-JOUR"
+      },
+      "top_similarity": 0.7493237847926925,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "categorie_maternite_01",
+      "question": "Combien coûte un accouchement normal ?",
+      "dimension": "categorie",
+      "groupe": "MATERNITE",
+      "attendu": {
+        "chunk_type": "ligne_bareme",
+        "code_acte": "ACC-NORMAL"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "MATERNITE",
+        "code_acte": "ACC-NORMAL"
+      },
+      "top_similarity": 0.6588988464807042,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Antananarivo_01",
+      "question": "Quelle pharmacie est ouverte 24h/24 à Antananarivo ?",
+      "dimension": "ville",
+      "groupe": "Antananarivo",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "PHARMACIES",
+        "ville": "Antananarivo"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Antananarivo",
+        "categorie": "PHARMACIES"
+      },
+      "top_similarity": 0.7526593772851529,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Antananarivo_02",
+      "question": "Où trouver un dentiste à Antananarivo ?",
+      "dimension": "ville",
+      "groupe": "Antananarivo",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "DENTISTES",
+        "ville": "Antananarivo"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Antananarivo",
+        "categorie": "DENTISTES"
+      },
+      "top_similarity": 0.7352452390950808,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Toamasina_01",
+      "question": "Quel généraliste consulter à Toamasina ?",
+      "dimension": "ville",
+      "groupe": "Toamasina",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "GÉNÉRALISTES",
+        "ville": "Toamasina"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Toamasina",
+        "categorie": "GÉNÉRALISTES"
+      },
+      "top_similarity": 0.7193228912119493,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Toamasina_02",
+      "question": "Y a-t-il un laboratoire à Toamasina ?",
+      "dimension": "ville",
+      "groupe": "Toamasina",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "LABORATOIRES",
+        "ville": "Toamasina"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Toamasina",
+        "categorie": "LABORATOIRES"
+      },
+      "top_similarity": 0.6530455765602017,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Antsirabe_01",
+      "question": "Quel est le tarif d'une consultation pédiatrie à Antsirabe ?",
+      "dimension": "ville",
+      "groupe": "Antsirabe",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "PEDIATRIE",
+        "ville": "Antsirabe"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Antsirabe",
+        "categorie": "CLINIQUES ET CENTRES MÉDICAUX"
+      },
+      "top_similarity": 0.6320843510478782,
+      "rang": null,
+      "reussi": false,
+      "raison_echec": "top1: chunk_type=prestataire metadata={'ville': 'Antsirabe', 'categorie': 'CLINIQUES ET CENTRES MÉDICAUX'}"
+    },
+    {
+      "id": "ville_Fianarantsoa_01",
+      "question": "Y a-t-il un opticien à Fianarantsoa ?",
+      "dimension": "ville",
+      "groupe": "Fianarantsoa",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "OPTICIENS",
+        "ville": "Fianarantsoa"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Fianarantsoa",
+        "categorie": "OPTICIENS"
+      },
+      "top_similarity": 0.5948198254949347,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Mahajanga_01",
+      "question": "Quel généraliste à Mahajanga ?",
+      "dimension": "ville",
+      "groupe": "Mahajanga",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "GÉNÉRALISTES",
+        "ville": "Mahajanga"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Mahajanga",
+        "categorie": "GÉNÉRALISTES"
+      },
+      "top_similarity": 0.6386557838012259,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Toliara_01",
+      "question": "Y a-t-il une pharmacie à Toliara ?",
+      "dimension": "ville",
+      "groupe": "Toliara",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "PHARMACIES",
+        "ville": "Toliara"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Toliara",
+        "categorie": "PHARMACIES"
+      },
+      "top_similarity": 0.6204326276073315,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_Antsiranana_01",
+      "question": "Où trouver un dentiste à Antsiranana ?",
+      "dimension": "ville",
+      "groupe": "Antsiranana",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "DENTISTES",
+        "ville": "Antsiranana"
+      },
+      "top_chunk_type": "prestataire",
+      "top_metadata": {
+        "ville": "Antsiranana",
+        "categorie": "DENTISTES"
+      },
+      "top_similarity": 0.7221094931013614,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "ville_national_01",
+      "question": "Quels sont les hôpitaux conventionnés au niveau national ?",
+      "dimension": "ville",
+      "groupe": "national",
+      "attendu": {
+        "chunk_type": "prestataire",
+        "categorie": "CLINIQUES ET CENTRES MÉDICAUX"
+      },
+      "top_chunk_type": "ligne_bareme",
+      "top_metadata": {
+        "categorie": "HOSPITALISATION",
+        "code_acte": "HOSP-PHARMA"
+      },
+      "top_similarity": 0.44714240137035266,
+      "rang": 4,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "controle_01",
+      "question": "Qui est le souscripteur du contrat CTR-000048 ?",
+      "dimension": "controle",
+      "groupe": "tous",
+      "attendu": {
+        "chunk_type": "contrat_metadata",
+        "contract_id": "CTR-000048"
+      },
+      "top_chunk_type": "contrat_metadata",
+      "top_metadata": {
+        "formule": "PREMIUM",
+        "contract_id": "CTR-000048"
+      },
+      "top_similarity": 0.5806120840656162,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "controle_02",
+      "question": "Quelle est la prime annuelle totale du contrat de Ravinala BTP ?",
+      "dimension": "controle",
+      "groupe": "tous",
+      "attendu": {
+        "chunk_type": "contrat_metadata",
+        "souscripteur": "Ravinala BTP SA"
+      },
+      "top_chunk_type": "contrat_metadata",
+      "top_metadata": {
+        "formule": "CONFORT",
+        "contract_id": "CTR-000794"
+      },
+      "top_similarity": 0.6822790013662704,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "controle_03",
+      "question": "Quel est le montant de la franchise hospitalisation en CONFORT ?",
+      "dimension": "controle",
+      "groupe": "tous",
+      "attendu": {
+        "chunk_type": "article",
+        "formule": "CONFORT"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "CONFORT"
+      },
+      "top_similarity": 0.5964455588985644,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "controle_04",
+      "question": "Combien de bénéficiaires dans le contrat CTR-000175 ?",
+      "dimension": "controle",
+      "groupe": "tous",
+      "attendu": {
+        "chunk_type": "contrat_metadata",
+        "contract_id": "CTR-000175"
+      },
+      "top_chunk_type": "contrat_metadata",
+      "top_metadata": {
+        "formule": "ESSENTIEL",
+        "contract_id": "CTR-000175"
+      },
+      "top_similarity": 0.6430839364935771,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    },
+    {
+      "id": "controle_05",
+      "question": "Quelle est la validité d'une ordonnance pour les médicaments ?",
+      "dimension": "controle",
+      "groupe": "tous",
+      "attendu": {
+        "chunk_type": "article"
+      },
+      "top_chunk_type": "article",
+      "top_metadata": {
+        "formule": "PREMIUM"
+      },
+      "top_similarity": 0.6377548454177949,
+      "rang": 1,
+      "reussi": true,
+      "raison_echec": null
+    }
+  ]
+}

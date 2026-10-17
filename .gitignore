@@ -58,7 +58,8 @@ models/*
 *.pt
 *.pth
 *.safetensors
-
+web/.agents
+web/@
 # Interface Web / Node (si applicable dans /web)
 node_modules/
 .streamlit/secrets.toml

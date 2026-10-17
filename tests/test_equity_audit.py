@@ -133,8 +133,9 @@ def executer_audit(
         attendu = case["expected"]
         dim = case["group"]["dimension"]
         grp = case["group"]["value"]
+        filters = case.get("filters") 
 
-        results = retriever.search(q, top_k=top_k)
+        results = retriever.search(q, top_k=top_k, filters=filters)
         rang = _trouver_rang(results, attendu)
 
         top = results[0] if results else None
@@ -327,8 +328,8 @@ def ecrire_rapport_markdown(
             if not e["ok"]:
                 lignes.append(f"- Dimension **{dim}** : écart {e['ecart']:.1%}")
 
-    RAPPORT_MD.parent.mkdir(parents=True, exist_ok=True)
-    RAPPORT_MD.write_text("\n".join(lignes), encoding="utf-8")
+    # RAPPORT_MD.parent.mkdir(parents=True, exist_ok=True)
+    # RAPPORT_MD.write_text("\n".join(lignes), encoding="utf-8")
     print(f"📄 Rapport Markdown : {RAPPORT_MD}")
 
 
