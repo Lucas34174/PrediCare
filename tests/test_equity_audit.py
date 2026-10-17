@@ -18,10 +18,12 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from predicare.rag.retriever import Retriever, SearchResult
+
+if TYPE_CHECKING:
+    from predicare.rag.retriever import Retriever, SearchResult
 from sqlalchemy import create_engine
 
 from predicare.core.config import database_url
