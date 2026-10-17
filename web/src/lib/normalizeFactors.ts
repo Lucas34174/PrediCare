@@ -22,7 +22,6 @@ export function normalizeFactors(factors: readonly TopFactor[] | null | undefine
       label: factorLabel(factor.feature),
       shap_value: shapValue,
       direction: shapValue === undefined ? undefined : shapValue > 0 ? 'increases' : shapValue < 0 ? 'decreases' : 'neutral',
-      description: factor.description,
     }
   }).sort((left, right) => Math.abs(right.shap_value ?? 0) - Math.abs(left.shap_value ?? 0))
 }

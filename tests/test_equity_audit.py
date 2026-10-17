@@ -18,17 +18,14 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import pytest
-
-if TYPE_CHECKING:
-    from predicare.rag.retriever import Retriever, SearchResult
 from sqlalchemy import create_engine
 
 from predicare.core.config import database_url
 from predicare.rag.config import RagConfig
 from predicare.rag.embedder import Embedder
+from predicare.rag.retriever import Retriever, SearchResult
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -338,7 +335,6 @@ def ecrire_rapport_markdown(
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.skip(reason="Le module RAG n'est pas encore mergé dans cette branche")
 def main() -> None:
     # 1. Charger le jeu de test
     if not FIXTURES.exists():

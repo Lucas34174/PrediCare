@@ -2,11 +2,9 @@ import type {
   ClaimCreateRequest,
   ClaimCreateResponse,
   ClaimDetail,
-  ClaimListItem,
   ClaimsPage,
   ClaimsQuery,
   ManagerClaimIntake,
-  ManagerClaimListItem,
   DecisionRequest,
   DecisionResponse,
   LoginUser,
@@ -17,27 +15,14 @@ import { request } from './request'
 const claimsApiIsEnabled = import.meta.env.VITE_CLAIMS_API_ENABLED === 'true'
 const claimsUseMock = import.meta.env.VITE_USE_MOCK !== 'false' || !claimsApiIsEnabled
 
-export function listClaims<T extends ClaimListItem = ClaimListItem>(
-  query: ClaimsQuery = {},
-): Promise<ClaimsPage<T>> {
+export function listClaims(query: ClaimsQuery = {}): Promise<ClaimsPage> {
   // À brancher: endpoint à confirmer avec M2
   const params = new URLSearchParams()
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined) params.set(key, String(value))
   })
   const suffix = params.size ? `?${params.toString()}` : ''
-  return request<ClaimsPage<T>>(`/claims${suffix}`, {}, { forceMock: claimsUseMock })
-}
-
-/**
- * File d'examen du gestionnaire. Même endpoint que `listClaims` : le contrat
- * `GET /claims` expose déjà `score_fraude` et `est_anomalie` aux rôles habilités.
- * À brancher: filtres et tri de la file à confirmer avec M2 (voir étape 0).
- */
-export function listManagerClaims(
-  query: ClaimsQuery = {},
-): Promise<ClaimsPage<ManagerClaimListItem>> {
-  return listClaims<ManagerClaimListItem>(query)
+  return request<ClaimsPage>(`/claims${suffix}`, {}, { forceMock: claimsUseMock })
 }
 
 export function getCurrentUser(): Promise<LoginUser> {

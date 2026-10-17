@@ -24,17 +24,6 @@ const queryClient = new QueryClient({
 })
 const roles = Object.keys(rolePaths) as UiRole[]
 
-function PageFallback() {
-  return (
-    <div className="claim-page">
-      <div className="queue-state" aria-live="polite">
-        <strong>Chargement de la fiche…</strong>
-        <span>Le module d’analyse est en cours de chargement.</span>
-      </div>
-    </div>
-  )
-}
-
 function AppRoutes() {
   const [dark, setDark] = useState(false)
   return (
