@@ -376,7 +376,10 @@ def main() -> None:
     print("Écarts par dimension :")
     for dim, e in sorted(ecarts.items()):
         status = "✅" if e["ok"] else "❌"
-        print(f"  {status} {dim:10s} → min={e['min']:.1%} max={e['max']:.1%} écart={e['ecart']:.1%}")
+        print(
+            f"  {status} {dim:10s} → min={e['min']:.1%} "
+            f"max={e['max']:.1%} écart={e['ecart']:.1%}"
+        )
 
     # 6. Écrire les rapports
     print()
