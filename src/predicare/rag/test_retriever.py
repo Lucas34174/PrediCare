@@ -64,13 +64,15 @@ FILTERED_CASES = [
     {
         "query": "Tarif consultation",
         "filters": {"chunk_type": "ligne_bareme", "categorie": "CONSULTATION"},
-        "check": lambda r: r.chunk_type == "ligne_bareme"
-        and r.metadata.get("categorie") == "CONSULTATION",
+        "check": lambda r: (
+            r.chunk_type == "ligne_bareme" and r.metadata.get("categorie") == "CONSULTATION"
+        ),
     },
 ]
 
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _check_expected(result, expected_chunk_type: str, expected_metadata: dict) -> bool:
     if result.chunk_type != expected_chunk_type:
@@ -82,6 +84,7 @@ def _check_expected(result, expected_chunk_type: str, expected_metadata: dict) -
 
 
 # ─── Test principal ────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     config = RagConfig.from_env()
@@ -118,9 +121,11 @@ def main() -> None:
         results = retriever.search(query, top_k=1, mode=mode)
         if results:
             r = results[0]
-            print(f"  mode={mode:9s} → chunk_type={r.chunk_type:20s} "
-                  f"code_acte={r.metadata.get('code_acte')} "
-                  f"sim={r.score_vector} rrf={r.score_rrf:.4f}")
+            print(
+                f"  mode={mode:9s} → chunk_type={r.chunk_type:20s} "
+                f"code_acte={r.metadata.get('code_acte')} "
+                f"sim={r.score_vector} rrf={r.score_rrf:.4f}"
+            )
         else:
             print(f"  mode={mode:9s} → aucun résultat")
     print()
@@ -132,9 +137,11 @@ def main() -> None:
         results = retriever.search(query, top_k=1, mode="fulltext")
         if results:
             r = results[0]
-            print(f"  '{query}' → type={r.chunk_type} | "
-                  f"code={r.metadata.get('code_acte')} | "
-                  f"contract={r.metadata.get('contract_id')}")
+            print(
+                f"  '{query}' → type={r.chunk_type} | "
+                f"code={r.metadata.get('code_acte')} | "
+                f"contract={r.metadata.get('contract_id')}"
+            )
         else:
             print(f"  '{query}' → aucun résultat")
     print()
@@ -146,14 +153,15 @@ def main() -> None:
         results = retriever.search(case["query"], top_k=3, filters=case["filters"])
         if results and case["check"](results[0]):
             print(f"✅ '{case['query']}' avec {case['filters']}")
-            print(f"    → type={results[0].chunk_type} | "
-                  f"formule={results[0].metadata.get('formule')} | "
-                  f"cat={results[0].metadata.get('categorie')}")
+            print(
+                f"    → type={results[0].chunk_type} | "
+                f"formule={results[0].metadata.get('formule')} | "
+                f"cat={results[0].metadata.get('categorie')}"
+            )
         else:
             print(f"❌ '{case['query']}' avec {case['filters']}")
             if results:
-                print(f"    → obtenu type={results[0].chunk_type} | "
-                      f"metadata={results[0].metadata}")
+                print(f"    → obtenu type={results[0].chunk_type} | metadata={results[0].metadata}")
         print()
 
     embedder.close()

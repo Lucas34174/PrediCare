@@ -38,6 +38,7 @@ DEFAULT_CANDIDATES_MULTIPLIER = 4  # on récupère top_k * 4 par méthode avant 
 
 # ─── Structures ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class SearchResult:
     """Un résultat de recherche unifié."""
@@ -46,12 +47,13 @@ class SearchResult:
     chunk_type: str
     contenu: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    score_vector: float | None = None      # similarité cosinus (0-1)
-    score_fulltext: float | None = None    # ts_rank (généralement 0-1)
-    score_rrf: float = 0.0                 # score de fusion final
+    score_vector: float | None = None  # similarité cosinus (0-1)
+    score_fulltext: float | None = None  # ts_rank (généralement 0-1)
+    score_rrf: float = 0.0  # score de fusion final
 
 
 # ─── Retriever ─────────────────────────────────────────────────────────────────
+
 
 class Retriever:
     """Retriever hybride pour le corpus RAG PrediCare."""
