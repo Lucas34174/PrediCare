@@ -32,8 +32,8 @@ export const roleTitles: Record<UiRole, string> = {
 export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
+    { label: 'Dossiers à examiner', path: '/gestionnaire/dossiers', icon: ClipboardCheck },
     { label: 'Factures', path: '/gestionnaire/factures/nouvelle', icon: FilePlus2 },
-    { label: 'À examiner', path: '/gestionnaire', icon: ClipboardCheck },
   ],
   professionnel_sante: [
     { label: 'Mon activité', path: '/app', icon: Activity },

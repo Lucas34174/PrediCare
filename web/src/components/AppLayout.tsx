@@ -27,8 +27,10 @@ export function AppLayout({ dark, onToggleTheme }: AppLayoutProps) {
         <nav className="primary-nav">
           {roleMenus[user.role].map(({ label, path, icon: Icon }) => (
             <NavLink key={path} to={path} aria-label={label} title={label} end onClick={() => setMobileOpen(false)} className={({ isActive }) => {
-              const isClaimRoute = path === '/gestionnaire/factures/nouvelle' && pathname.startsWith('/gestionnaire/factures/')
-              return `nav-item ${isActive || isClaimRoute ? 'nav-item-active' : ''}`
+              const isSectionRoute =
+                (path === '/gestionnaire/factures/nouvelle' && pathname.startsWith('/gestionnaire/factures/')) ||
+                (path === '/gestionnaire/dossiers' && pathname.startsWith('/gestionnaire/dossiers/'))
+              return `nav-item ${isActive || isSectionRoute ? 'nav-item-active' : ''}`
             }}>
               <Icon aria-hidden="true" size={18} /><span>{label}</span>{path !== '/app' && <span className="nav-arrow">↗</span>}
             </NavLink>
