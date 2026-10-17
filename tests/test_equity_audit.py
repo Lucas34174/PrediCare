@@ -41,9 +41,11 @@ RAPPORT_MD = Path("/app/docs/equity_audit.md")
 
 # ─── Structures ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class CasResultat:
     """Résultat d'un cas de test."""
+
     id: str
     question: str
     dimension: str
@@ -61,6 +63,7 @@ class CasResultat:
 @dataclass
 class GroupeStats:
     """Stats agrégées par groupe."""
+
     dimension: str
     groupe: str
     total: int = 0
@@ -70,6 +73,7 @@ class GroupeStats:
 
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _match_chunk(result: SearchResult, attendu: dict[str, Any]) -> bool:
     """Vérifie si un SearchResult correspond au critère attendu.
@@ -94,9 +98,7 @@ def _match_chunk(result: SearchResult, attendu: dict[str, Any]) -> bool:
     return True
 
 
-def _trouver_rang(
-    results: list[SearchResult], attendu: dict[str, Any]
-) -> int | None:
+def _trouver_rang(results: list[SearchResult], attendu: dict[str, Any]) -> int | None:
     """Retourne le rang (1-indexé) du premier chunk qui matche, ou None."""
     for i, r in enumerate(results, start=1):
         if _match_chunk(r, attendu):
@@ -116,6 +118,7 @@ def _raison_echec(results: list[SearchResult], attendu: dict[str, Any]) -> str:
 
 
 # ─── Exécution ─────────────────────────────────────────────────────────────────
+
 
 def executer_audit(
     retriever: Retriever,
@@ -198,6 +201,7 @@ def calculer_ecarts(groupes: list[GroupeStats]) -> dict[str, dict[str, float]]:
 
 # ─── Rapports ──────────────────────────────────────────────────────────────────
 
+
 def ecrire_rapport_json(
     resultats: list[CasResultat],
     groupes: list[GroupeStats],
@@ -231,9 +235,17 @@ def ecrire_rapport_json(
                 "attendu": r.attendu,
                 "top_chunk_type": r.top_chunk_type,
                 "top_metadata": {
-                    k: v for k, v in r.top_metadata.items()
-                    if k in ("code_acte", "code_medicament", "formule",
-                             "contract_id", "categorie", "ville")
+                    k: v
+                    for k, v in r.top_metadata.items()
+                    if k
+                    in (
+                        "code_acte",
+                        "code_medicament",
+                        "formule",
+                        "contract_id",
+                        "categorie",
+                        "ville",
+                    )
                 },
                 "top_similarity": r.top_similarity,
                 "rang": r.rang,
@@ -267,10 +279,7 @@ def ecrire_rapport_markdown(
     lignes.append(f"**Top-k** : {TOP_K}")
     lignes.append(f"**Écart cible** : ≤ {ECART_CIBLE:.0%}")
     lignes.append(f"**Total** : {total} cas de test")
-    lignes.append(
-        f"**Résultat global** : {reussis}/{total} "
-        f"({recall_global:.1%})\n"
-    )
+    lignes.append(f"**Résultat global** : {reussis}/{total} ({recall_global:.1%})\n")
 
     # ── Écarts par dimension ──────────────────────────────────────
     lignes.append("## 1. Écarts par dimension\n")
@@ -278,10 +287,7 @@ def ecrire_rapport_markdown(
     lignes.append("|---|---|---|---|---|")
     for dim, e in sorted(ecarts.items()):
         statut = "✅ OK" if e["ok"] else "❌ DÉPASSEMENT"
-        lignes.append(
-            f"| {dim} | {e['min']:.1%} | {e['max']:.1%} | "
-            f"{e['ecart']:.1%} | {statut} |"
-        )
+        lignes.append(f"| {dim} | {e['min']:.1%} | {e['max']:.1%} | {e['ecart']:.1%} | {statut} |")
     lignes.append("")
 
     # ── Détail par groupe ─────────────────────────────────────────
@@ -289,10 +295,7 @@ def ecrire_rapport_markdown(
     lignes.append("| Dimension | Groupe | Recall@k | Réussis/Total |")
     lignes.append("|---|---|---|---|")
     for g in groupes:
-        lignes.append(
-            f"| {g.dimension} | {g.groupe} | {g.recall:.1%} | "
-            f"{g.reussis}/{g.total} |"
-        )
+        lignes.append(f"| {g.dimension} | {g.groupe} | {g.recall:.1%} | {g.reussis}/{g.total} |")
     lignes.append("")
 
     # ── Cas en échec ──────────────────────────────────────────────
@@ -302,10 +305,7 @@ def ecrire_rapport_markdown(
         lignes.append("| ID | Question | Groupe | Raison |")
         lignes.append("|---|---|---|---|")
         for r in echecs:
-            lignes.append(
-                f"| {r.id} | {r.question[:60]}... | {r.groupe} | "
-                f"{r.raison_echec} |"
-            )
+            lignes.append(f"| {r.id} | {r.question[:60]}... | {r.groupe} | {r.raison_echec} |")
     else:
         lignes.append("## 3. Cas en échec\n")
         lignes.append("**Aucun cas en échec** ✅\n")
@@ -333,6 +333,7 @@ def ecrire_rapport_markdown(
 
 
 # ─── Main ──────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     # 1. Charger le jeu de test
@@ -363,7 +364,7 @@ def main() -> None:
     print("=" * 70)
     total = len(resultats)
     reussis = sum(1 for r in resultats if r.reussi)
-    print(f"Résultat global : {reussis}/{total} ({reussis/total:.1%})\n")
+    print(f"Résultat global : {reussis}/{total} ({reussis / total:.1%})\n")
 
     print("Recall par groupe :")
     for g in groupes:
@@ -377,8 +378,7 @@ def main() -> None:
     for dim, e in sorted(ecarts.items()):
         status = "✅" if e["ok"] else "❌"
         print(
-            f"  {status} {dim:10s} → min={e['min']:.1%} "
-            f"max={e['max']:.1%} écart={e['ecart']:.1%}"
+            f"  {status} {dim:10s} → min={e['min']:.1%} max={e['max']:.1%} écart={e['ecart']:.1%}"
         )
 
     # 6. Écrire les rapports
@@ -397,4 +397,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
