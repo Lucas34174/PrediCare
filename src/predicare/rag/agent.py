@@ -99,9 +99,15 @@ class ReactAgent:
         sources: list[dict[str, str]] = []
 
         question_lower = question.lower()
-        mots_factures = ["facture", "remboursement", "dossier",
-                         "dossier de soin", "attente", "payé", "rejeté"
-                        ]
+        mots_factures = [
+            "facture",
+            "remboursement",
+            "dossier",
+            "dossier de soin",
+            "attente",
+            "payé",
+            "rejeté",
+        ]
 
         if any(mot in question_lower for mot in mots_factures) and contract_id:
             logger.info("Routage forcé vers search_my_claims")
@@ -117,10 +123,11 @@ class ReactAgent:
             # On note que l'outil a été appelé pour le test
             steps.append(
                 {
-                 "iteration": 1, "thought": "Routage forcé (factures)",
-                 "action": "search_my_claims"
-                 }
-                )
+                    "iteration": 1,
+                    "thought": "Routage forcé (factures)",
+                    "action": "search_my_claims",
+                }
+            )
 
         for iteration in range(MAX_ITERATIONS):
             # 1. Demander au LLM quoi faire
