@@ -53,33 +53,37 @@ class ReactAgent:
 
         if not question.strip():
             return AgentResult(
-                answer="Je ne peux pas répondre à une question vide.",
-                abstention=True,
-                steps=[]
+                answer="Je ne peux pas répondre à une question vide.", abstention=True, steps=[]
             )
 
         q_lower = question.lower()
-        
+
         # 1. ROUTAGE SQL (Factures)
-        if any(k in q_lower for k in ["facture", "remboursement", "dossier", "attente", "rejet", "payé", "paye"]):
+        if any(
+            k in q_lower
+            for k in ["facture", "remboursement", "dossier", "attente", "rejet", "payé", "paye"]
+        ):
             claims = self._tools.search_my_claims(contract_id)
             if claims:
                 steps.append({"action": "search_my_claims", "status": "success"})
                 context_parts.append(
-                    "Voici vos factures :\n" + 
-                    "\n".join(f"- {c['numero_facture']} : {c['montant_total']} Ar ({c['statut']})" for c in claims)
+                    "Voici vos factures :\n"
+                    + "\n".join(
+                        f"- {c['numero_facture']} : {c['montant_total']} Ar ({c['statut']})"
+                        for c in claims
+                    )
                 )
                 sources.append({"document": "Votre dossier", "section": "Factures"})
             else:
                 steps.append({"action": "search_my_claims", "status": "empty"})
                 context_parts.append("Aucune facture trouvée pour votre contrat.")
-        
+
         # 2. ROUTAGE RAG (Documents) - Toujours exécuté si pas de contexte SQL
         if not context_parts:
             # On utilise la question originale !
             results = self._retriever.search(question, top_k=3)
             bons = [r for r in results if (r.score_vector or 0) >= SEUIL_ABSTENTION]
-            
+
             if bons:
                 steps.append({"action": "search_documents", "status": "success"})
                 for r in bons:
@@ -90,32 +94,27 @@ class ReactAgent:
                 return AgentResult(
                     answer="Je ne peux pas répondre : aucune source fiable trouvée.",
                     abstention=True,
-                    steps=[{"action": "search_documents", "status": "failed"}]
+                    steps=[{"action": "search_documents", "status": "failed"}],
                 )
 
         # 3. GÉNÉRATION
         contexte = "\n\n".join(context_parts)
-        
+
         # Si l'abstention est demandée par le test (hors corpus), on s'abstient
         if "président de Madagascar" in q_lower:
             return AgentResult(
                 answer="Je ne peux pas répondre : je n'ai pas de source documentaire.",
                 abstention=True,
-                steps=steps
+                steps=steps,
             )
 
         answer = self._generate_answer(question, contexte)
-        return AgentResult(
-            answer=answer,
-            abstention=False,
-            sources=sources,
-            steps=steps
-        )
+        return AgentResult(answer=answer, abstention=False, sources=sources, steps=steps)
 
     def _generate_answer(self, question: str, contexte: str) -> str:
         """Tente d'utiliser le LLM, sinon bascule sur un template local."""
         prompt = f"Contexte:\n{contexte[:800]}\n\nQuestion: {question}\nRéponse courte:"
-        
+
         try:
             response = self._client.post(
                 "/api/generate",
@@ -139,4 +138,3 @@ class ReactAgent:
 
     def close(self) -> None:
         self._client.close()
-        
