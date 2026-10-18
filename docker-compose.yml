@@ -59,6 +59,7 @@ services:
       - ./migrations:/app/migrations
       - ./tests:/app/tests
       - ./docs:/app/docs
+      - ./src:/app/src
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
