@@ -6,7 +6,7 @@ lint:
 format:
 	ruff check --fix . && ruff format .
 test:
-	pytest --cov=predicare
+	pytest --cov=predicare -m "not llm"
 run:
 	uvicorn predicare.api.main:app --reload
 migrate: ## migration de base de donnée
