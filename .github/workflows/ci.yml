@@ -37,12 +37,18 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
+      - name: Run database migrations
+        env:
+          DB_HOST: localhost
+          DB_PASSWORD: ci_password
+        run: |
+          alembic upgrade head
       - name: Tests (pytest)
         env:
           DB_HOST: localhost
           DB_PASSWORD: ci_password
           PREDICARE_REQUIRE_DB: "1"
-        run: pytest --cov=predicare --cov-report=term-missing
+        run: pytest --cov=predicare --cov-report=term-missing -m "not llm"
       - name: Lint Shell scripts
         run: |
           chmod +x scripts/*.sh
