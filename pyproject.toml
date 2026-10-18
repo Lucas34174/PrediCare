@@ -12,6 +12,9 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 # E/W = pycodestyle (PEP8), F = pyflakes, I = isort, N = pep8-naming
 select = ["E", "W", "F", "I", "N", "B", "UP"]
+ignore = [
+    "B008",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

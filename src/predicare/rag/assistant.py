@@ -24,6 +24,7 @@ router = APIRouter(prefix="/assistant", tags=["assistant"])
 
 # ─── Schémas ───────────────────────────────────────────────────────────────────
 
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     conversation_id: str | None = None
@@ -42,6 +43,7 @@ class ChatResponse(BaseModel):
 
 
 # ─── Endpoint ──────────────────────────────────────────────────────────────────
+
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(

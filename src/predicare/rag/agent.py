@@ -33,22 +33,23 @@ MAX_ITERATIONS = 3  # garde-fou contre les boucles
 
 # Dans agent.py, avant la boucle for (ou en haut du fichier)
 
+
 def _normaliser_action(action: str) -> str:
     """Rend l'agent tolérant aux hallucinations de nom d'outil du LLM."""
     a = action.lower().strip()
-    
+
     # Recherche documentaire (RAG)
     if any(k in a for k in ["search_doc", "document", "bareme", "rag", "search"]):
         return "search_documents"
-    
+
     # Recherche de factures (SQL)
     if any(k in a for k in ["claim", "facture", "financial", "mes_factures", "dossier"]):
         return "search_my_claims"
-    
+
     # Réponse finale
     if any(k in a for k in ["final", "answer", "reponse", "respond"]):
         return "final_answer"
-    
+
     return a
 
 
@@ -116,14 +117,16 @@ class ReactAgent:
             action = _normaliser_action(action_brute)
             if action != action_brute:
                 logger.info("Action normalisée : '%s' → '%s'", action_brute, action)
-            
+
             action_input = llm_output.get("action_input", {})
 
-            steps.append({
-                "iteration": iteration + 1,
-                "thought": thought,
-                "action": action,
-            })
+            steps.append(
+                {
+                    "iteration": iteration + 1,
+                    "thought": thought,
+                    "action": action,
+                }
+            )
 
             # 2. Si réponse finale → on sort
             if action == "final_answer":

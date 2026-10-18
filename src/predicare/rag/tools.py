@@ -36,13 +36,15 @@ class Tools:
 
         out: list[dict[str, Any]] = []
         for r in results:
-            out.append({
-                "contenu": r.contenu,
-                "chunk_type": r.chunk_type,
-                "metadata": r.metadata,
-                "similarity": r.score_vector,
-                "source": self._extraire_source(r),
-            })
+            out.append(
+                {
+                    "contenu": r.contenu,
+                    "chunk_type": r.chunk_type,
+                    "metadata": r.metadata,
+                    "similarity": r.score_vector,
+                    "source": self._extraire_source(r),
+                }
+            )
         return out
 
     def search_my_claims(
@@ -73,9 +75,7 @@ class Tools:
         """)
 
         with self._engine.connect() as conn:
-            rows = conn.execute(
-                sql, {"cid": contract_id, "limit": limit}
-            ).fetchall()
+            rows = conn.execute(sql, {"cid": contract_id, "limit": limit}).fetchall()
 
         return [
             {
@@ -98,7 +98,10 @@ class Tools:
         if result.chunk_type == "ligne_bareme":
             return {
                 "document": "Barème de référence",
-                "section": f"{md.get('categorie', '?')} — {md.get('code_acte') or md.get('code_medicament', '?')}",
+                "section": (
+                    f"{md.get('categorie', '?')} — "
+                    f"{md.get('code_acte') or md.get('code_medicament', '?')}"
+                ),
             }
         if result.chunk_type in ("article", "article_partie"):
             return {

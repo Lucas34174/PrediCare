@@ -56,9 +56,9 @@ def test_question_sur_mes_factures(agent):
         contract_id="CTR-000048",
     )
     # On ne peut pas prédire la réponse exacte, mais l'agent doit avoir utilisé l'outil SQL
-    assert any(
-        step["action"] == "search_my_claims" for step in result.steps
-    ), f"L'outil search_my_claims n'a pas été appelé. Steps : {result.steps}"
+    assert any(step["action"] == "search_my_claims" for step in result.steps), (
+        f"L'outil search_my_claims n'a pas été appelé. Steps : {result.steps}"
+    )
 
 
 def test_isolation_contract(agent):
