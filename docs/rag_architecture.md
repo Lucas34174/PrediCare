@@ -143,4 +143,28 @@ Cela permet :
 - docs/rgpd_aipd.md
 - docs/decisions.md
 
+## 7. Agent ReAct sourcé (PB-36)
 
+### Décision : routage déterministe + LLM en fallback
+
+**Contexte** : POC tournant sur CPU, sans GPU. Un modèle 8B met > 3 minutes 
+pour générer une réponse avec un prompt ReAct complet. Inacceptable.
+
+**Solution** :
+1. **Routage déterministe** : si la question contient des mots-clés métier
+   (facture, remboursement…), on appelle directement `search_my_claims`.
+2. **RAG direct** : sinon, on cherche dans le corpus avec le Retriever.
+3. **LLM en fallback** : le LLM local (`phi3:mini`) n'est utilisé que pour
+   formuler la réponse à partir des sources trouvées.
+4. **Timeout court (10s)** : si le LLM ne répond pas, on retourne le 
+   contexte brut (fallback local, 0 latence).
+
+### Conformité EU AI Act
+- **Citations obligatoires** : la réponse contient toujours un champ `sources`.
+- **Refus de spéculer** : si `similarity < 0.6`, abstention immédiate.
+- **Supervision** : le LLM ne décide pas de l'action ; il formule uniquement.
+
+### Limites assumées (POC)
+- Le LLM n'est pas autonome (pas de vraie boucle ReAct).
+- La qualité rédactionnelle est limitée par `phi3:mini`.
+- En production : GPU + `llama3.1:8b` permettrait une vraie boucle ReAct.

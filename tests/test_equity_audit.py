@@ -133,7 +133,7 @@ def executer_audit(
         attendu = case["expected"]
         dim = case["group"]["dimension"]
         grp = case["group"]["value"]
-        filters = case.get("filters") 
+        filters = case.get("filters")
 
         results = retriever.search(q, top_k=top_k, filters=filters)
         rang = _trouver_rang(results, attendu)
