@@ -14,6 +14,8 @@ from predicare.rag.config import RagConfig
 from predicare.rag.embedder import Embedder
 from predicare.rag.retriever import Retriever
 
+# IS_CI = os.getenv("CI") == "true"
+
 logging.basicConfig(level=logging.WARNING)
 
 
@@ -29,6 +31,7 @@ def agent():
     embedder.close()
 
 
+@pytest.mark.llm
 def test_question_simple_sur_bareme(agent):
     """Question simple sur le barème → réponse sourcée."""
     result = agent.run(
@@ -40,6 +43,7 @@ def test_question_simple_sur_bareme(agent):
     assert any("Barème" in s["document"] for s in result.sources)
 
 
+@pytest.mark.llm
 def test_question_hors_corpus_abstention(agent):
     """Question sans réponse dans le corpus → abstention obligatoire."""
     result = agent.run(
@@ -49,6 +53,7 @@ def test_question_hors_corpus_abstention(agent):
     assert result.abstention, f"Aurait dû s'abstenir, réponse : {result.answer}"
 
 
+@pytest.mark.llm
 def test_question_sur_mes_factures(agent):
     """Question sur les factures de l'assuré → utilise search_my_claims."""
     result = agent.run(
@@ -61,6 +66,7 @@ def test_question_sur_mes_factures(agent):
     )
 
 
+@pytest.mark.llm
 def test_isolation_contract(agent):
     """Un assuré ne peut PAS voir les factures d'un autre (test de sécurité)."""
     result_ctr048 = agent.run("Combien j'ai de factures ?", contract_id="CTR-000048")

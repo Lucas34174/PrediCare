@@ -20,3 +20,6 @@ ignore = [
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+markers = [
+    "llm: tests qui nécessitent un vrai LLM local (Ollama)",
+]

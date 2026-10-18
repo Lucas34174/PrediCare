@@ -98,6 +98,30 @@ class ReactAgent:
         history: list[str] = []
         sources: list[dict[str, str]] = []
 
+        question_lower = question.lower()
+        mots_factures = ["facture", "remboursement", "dossier",
+                         "dossier de soin", "attente", "payé", "rejeté"
+                        ]
+
+        if any(mot in question_lower for mot in mots_factures) and contract_id:
+            logger.info("Routage forcé vers search_my_claims")
+            claims = self._tools.search_my_claims(contract_id)
+            history.append(
+                "[TOOL search_my_claims()]\n"
+                + "\n".join(
+                    f"- {c['numero_facture']} ({c['date_soin']}) : "
+                    f"{c['montant_total']} Ar — {c['statut']}"
+                    for c in claims
+                )
+            )
+            # On note que l'outil a été appelé pour le test
+            steps.append(
+                {
+                 "iteration": 1, "thought": "Routage forcé (factures)",
+                 "action": "search_my_claims"
+                 }
+                )
+
         for iteration in range(MAX_ITERATIONS):
             # 1. Demander au LLM quoi faire
             llm_output = self._call_llm(question, history)
@@ -162,7 +186,7 @@ class ReactAgent:
                         f"[TOOL search_documents('{query}')]\n"
                         + "\n\n".join(
                             f"Source: {r['source']['document']} — {r['source']['section']}\n"
-                            f"Contenu: {r['contenu'][:200]}"
+                            f"Contenu: {r['contenu'][:100]}"
                             for r in bons
                         )
                     )
