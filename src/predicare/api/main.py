@@ -3,7 +3,7 @@
 from functools import cache
 
 from fastapi import FastAPI, Response, status
-from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
