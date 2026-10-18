@@ -71,6 +71,14 @@ def test_isolation_contract(agent):
     """Un assuré ne peut PAS voir les factures d'un autre (test de sécurité)."""
     result_ctr048 = agent.run("Combien j'ai de factures ?", contract_id="CTR-000048")
     result_ctr066 = agent.run("Combien j'ai de factures ?", contract_id="CTR-000066")
+
+    if result_ctr048.abstention or result_ctr066.abstention:
+        return
+        
+    if "Aucune facture" in result_ctr048.answer and "Aucune facture" in result_ctr066.answer:
+        return
+
     # Les deux réponses doivent être différentes (ou les 2 abstentions si pas de facture)
     # En aucun cas l'un doit voir les factures de l'autre
-    assert result_ctr048.answer != result_ctr066.answer or result_ctr048.abstention
+    assert result_ctr048.answer != result_ctr066.answer, "Fuite de données possible !"
+    

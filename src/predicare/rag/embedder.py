@@ -53,6 +53,10 @@ class Embedder:
 
     def _embed_single_http(self, text: str) -> list[float]:
         """Appel HTTP à Ollama pour un texte."""
+
+        if not text or not text.strip():  # ← AJOUT
+            raise ValueError("Impossible d'embedder un texte vide")
+
         response = self._client.post(
             "/api/embeddings",
             json={"model": self._config.embedding_model, "prompt": text},
