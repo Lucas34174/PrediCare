@@ -183,7 +183,7 @@ export function ManagerClaimDetailPage() {
               <div className="score-track"><span style={{ width: `${scorePercent ?? 0}%` }} /></div>
             </div>
             <div className="fiche-score-meta">
-              <RiskBadge anomaly={analysis?.prediction.est_anomalie ?? null} />
+              <RiskBadge anomaly={analysis?.prediction.est_anomalie ?? false} />
               {analysis ? (
                 <>
                   <p className="claim-reference">

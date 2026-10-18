@@ -1,5 +1,5 @@
 import { ApiError } from './errors'
-import { resolveMock } from './mock'
+// import { resolveMock } from './mock'
 import { clearStoredSession, getStoredSession } from './session'
 import type { ApiErrorPayload } from './types'
 
@@ -14,7 +14,7 @@ export async function request<T>(
   init: RequestInit = {},
   options: RequestOptions = {},
 ): Promise<T> {
-  if (options.forceMock ?? useMock) return resolveMock<T>(path, init)
+  // if (options.forceMock ?? useMock) return resolveMock<T>(path, init)
 
   const baseUrl = import.meta.env.VITE_API_URL
   if (!baseUrl) {

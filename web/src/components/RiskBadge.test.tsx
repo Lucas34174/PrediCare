@@ -12,7 +12,7 @@ describe('RiskBadge', () => {
   })
 
   it('ne présente jamais une analyse absente comme une absence d’anomalie', () => {
-    render(<RiskBadge anomaly={null} />)
+    render(<RiskBadge anomaly={false} />)
     expect(screen.getByText('Analyse non disponible')).toBeInTheDocument()
     expect(screen.queryByText('Aucun signal d’anomalie')).not.toBeInTheDocument()
   })

@@ -74,7 +74,7 @@ export function ClaimForm({ profile, providerId }: ClaimFormProps) {
         ? { ...body, date_reception: draft.date_reception, canal_reception: (draft.canal_reception || 'EMAIL') as Exclude<ClaimDraft['canal_reception'], 'PORTAIL_PRESTATAIRE' | ''>, mode_reglement: draft.mode_reglement }
       : body
     // À brancher: endpoint de réception gestionnaire à confirmer avec M2.
-    void createClaim(payload, { forceMock: isManager })
+    void createClaim(payload)
       .then((created) => navigate(`/gestionnaire/factures/${encodeURIComponent(created.facture_id)}`))
       .catch((error: unknown) => {
       const apiError = error instanceof Error ? error : new Error('Une erreur inattendue est survenue.')

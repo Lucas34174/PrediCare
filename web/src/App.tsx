@@ -46,6 +46,14 @@ function AppRoutes() {
   )
 }
 
+function PageFallback() {
+  return (
+    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--ink-muted)' }}>
+      Chargement…
+    </div>
+  )
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>

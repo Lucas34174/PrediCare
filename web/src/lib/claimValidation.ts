@@ -94,3 +94,9 @@ export function makeClaimPayload(draft: ClaimDraft) {
     })),
   }
 }
+
+export function rootValidationMessages(issues: readonly ValidationIssue[]): string[] {
+  return issues
+    .filter((issue) => issue.loc.length === 0 || (issue.loc.length === 1 && issue.loc[0] === 'body'))
+    .map((issue) => issue.msg)
+}
