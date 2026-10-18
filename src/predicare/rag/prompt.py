@@ -14,7 +14,7 @@ OUTILS DISPONIBLES (utilise EXACTEMENT ces noms) :
 - "final_answer" : pour donner la réponse finale.
 
 RÈGLES :
-1. Si l'historique contient déjà un document pertinent, 
+1. Si l'historique contient déjà un document pertinent,
 tu DOIS utiliser "final_answer" immédiatement. Ne refais pas de recherche.
 2. Ne réponds que si tu as une source fiable.
 3. Sinon : abstention=true.
