@@ -20,6 +20,8 @@ export interface LoginUser {
   identifier: string
   role: Role
   nom_complet: string
+  assure_id?: string | null
+  prestataire_id?: string | null
 }
 
 export interface LoginResponse {
