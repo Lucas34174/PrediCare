@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
-from sqlalchemy import create_engine
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from sqlalchemy import create_engine
 
 from predicare.core.config import database_url
 from predicare.rag.agent import ReactAgent
@@ -38,10 +39,10 @@ class ChatResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
     """Assistant RAG sourcé (Bypass auth pour test)."""
-    
+
     # Bypass : on force un contrat et un rôle
     contract_id = "CTR-000048"
-    role = "assure"
+    # role = "assure"
 
     # Initialisation à la volée (POC)
     engine = create_engine(database_url())
