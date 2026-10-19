@@ -1,0 +1,23 @@
+{
+  "active_version": "v1.0.0-xgb",
+  "available_models": [
+    {
+      "version_id": "v1.0.0-xgb",
+      "type": "XGBoost",
+      "recall_test": 0.2857,
+      "precision_test": 0.3333,
+      "f1_score": 0.3077,
+      "date_entrainement": "2026-10-19",
+      "statut": "ACTIVE"
+    },
+    {
+      "version_id": "v0.9.0-baseline",
+      "type": "LogisticRegression",
+      "recall_test": 0.4286,
+      "precision_test": 0.6,
+      "f1_score": 0.5,
+      "date_entrainement": "2026-10-19",
+      "statut": "STANDBY"
+    }
+  ]
+}
