@@ -5,11 +5,14 @@ import pandas as pd
 import pytest
 
 from predicare.ml.evaluation import (
+    ALL_FRAUD_TYPES,
     compute_calibration,
     compute_confusion_metrics,
+    compute_metrics_by_fraud_type,
     compute_naive_baseline,
     compute_pr_roc_curves,
     compute_threshold_grid,
+    compute_wilson_ci,
     evaluate_global,
 )
 
@@ -89,3 +92,47 @@ def test_anti_leakage_sur_features_evaluation():
     X_fuite = pd.DataFrame({"f_1": [1, 2], "statut": ["PAYEE", "REJETEE"]})
     with pytest.raises(ValueError, match="Fuite de données détectée"):
         check_no_leakage(X_fuite)
+
+
+def test_compute_wilson_ci_bornes_et_cas_limites():
+    # Cas n = 0
+    assert compute_wilson_ci(0, 0) == (0.0, 0.0)
+    # 1 succès sur 1 essai : la borne sup doit être 1.0 et inf > 0
+    low, high = compute_wilson_ci(1, 1)
+    assert 0.0 < low < 1.0
+    assert high == 1.0
+    # 0 succès sur 4 essais : inf = 0 et sup > 0
+    low4, high4 = compute_wilson_ci(0, 4)
+    assert low4 == 0.0
+    assert 0.0 < high4 < 1.0
+
+
+def test_compute_metrics_by_fraud_type_exhaustif_14_types():
+    """Garantit que les 14 types du CDC sont tous présents sans division par zéro."""
+    y_true = np.array([1, 1, 1, 0, 0])
+    y_prob = np.array([0.9, 0.2, 0.85, 0.1, 0.4])
+    types = np.array(["SURFACTURATION", "DOUBLON", "ACTE_FICTIF", "AUCUNE", "AUCUNE"])
+
+    # Seuil 0.50 : SURFACTURATION (0.9) et ACTE_FICTIF (0.85) détectés. DOUBLON (0.2) raté.
+    res = compute_metrics_by_fraud_type(y_true, y_prob, types, threshold=0.50)
+
+    # 14 types présents
+    assert len(res) == 14
+    for t in ALL_FRAUD_TYPES:
+        assert t in res
+
+    # Types présents
+    assert res["SURFACTURATION"]["effectif_test"] == 1
+    assert res["SURFACTURATION"]["detectes"] == 1
+    assert res["SURFACTURATION"]["recall"] == 1.0
+    assert res["SURFACTURATION"]["statut"] == "DETECTE_100%"
+
+    assert res["DOUBLON"]["effectif_test"] == 1
+    assert res["DOUBLON"]["detectes"] == 0
+    assert res["DOUBLON"]["recall"] == 0.0
+    assert res["DOUBLON"]["statut"] == "NON_DETECTE"
+
+    # Types absents
+    assert res["FRACTIONNEMENT"]["effectif_test"] == 0
+    assert res["FRACTIONNEMENT"]["statut"] == "ABSENT_DU_TEST"
+    assert res["FRACTIONNEMENT"]["recall"] == 0.0

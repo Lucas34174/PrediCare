@@ -29,6 +29,26 @@ from sklearn.metrics import (
     roc_curve,
 )
 
+# ---------------------------------------------------------------------------
+# Référentiel des 14 types de fraude (CDC §6)
+# ---------------------------------------------------------------------------
+ALL_FRAUD_TYPES: tuple[str, ...] = (
+    "SURFACTURATION",
+    "QUANTITE_EXCESSIVE",
+    "UPCODING",
+    "LIGNES_NON_PRESCRITES",
+    "SUBSTITUTION_PRODUIT",
+    "ORDONNANCE_EXPIREE",
+    "SOINS_JOUR_FERME",
+    "DOUBLON",
+    "FRACTIONNEMENT",
+    "SURCONSOMMATION",
+    "ACTE_FICTIF",
+    "INCOHERENCE_PROFIL",
+    "PRESTATAIRE_RADIE",
+    "HORS_COUVERTURE",
+)
+
 
 # ---------------------------------------------------------------------------
 # 1. Matrice de confusion et métriques au seuil
@@ -189,3 +209,78 @@ def evaluate_global(
         "baseline_naive": compute_naive_baseline(y_true),
         "sensibilite_seuils": compute_threshold_grid(y_true, y_prob),
     }
+
+
+# ---------------------------------------------------------------------------
+# Intervalle de confiance de Wilson pour petits effectifs
+# ---------------------------------------------------------------------------
+def compute_wilson_ci(k: int, n: int, confidence: float = 0.95) -> tuple[float, float]:
+    """Calcule l'intervalle de confiance de Wilson pour une proportion binomiale (k sur n)."""
+    if n <= 0:
+        return 0.0, 0.0
+    z = 1.95996  # Pour 95% de confiance
+    p_hat = k / n
+    denominator = 1.0 + (z**2) / n
+    center = (p_hat + (z**2) / (2 * n)) / denominator
+    spread = z * np.sqrt((p_hat * (1.0 - p_hat) + (z**2) / (4 * n)) / n) / denominator
+    low = max(0.0, float(center - spread))
+    high = min(1.0, float(center + spread))
+    return round(low, 4), round(high, 4)
+
+
+# ---------------------------------------------------------------------------
+# Métriques détaillées par type de fraude
+# ---------------------------------------------------------------------------
+def compute_metrics_by_fraud_type(
+    y_true: pd.Series | np.ndarray,
+    y_prob: np.ndarray,
+    types_fraude: pd.Series | np.ndarray,
+    threshold: float,
+) -> dict[str, Any]:
+    """Calcule pour chacun des 14 types de fraude le Recall, Précision et IC Wilson."""
+    y_arr = np.asarray(y_true).astype(int)
+    prob_arr = np.asarray(y_prob, dtype=float)
+    y_pred = (prob_arr >= threshold).astype(int)
+    tf_series = pd.Series(types_fraude).fillna("AUCUNE").astype(str)
+    total_alertes = int(y_pred.sum())
+    results: dict[str, dict[str, Any]] = {}
+    for ftype in ALL_FRAUD_TYPES:
+        mask_type = (tf_series == ftype) & (y_arr == 1)
+        n_cas = int(mask_type.sum())
+        if n_cas == 0:
+            results[ftype] = {
+                "effectif_test": 0,
+                "detectes": 0,
+                "rates": 0,
+                "recall": 0.0,
+                "recall_ic_wilson_95": [0.0, 0.0],
+                "precision_part_alertes": 0.0,
+                "score_moyen": 0.0,
+                "statut": "ABSENT_DU_TEST",
+            }
+            continue
+        preds_subset = y_pred[mask_type]
+        probs_subset = prob_arr[mask_type]
+        detectes = int(preds_subset.sum())
+        rates = n_cas - detectes
+        rec = float(detectes / n_cas)
+        score_moy = float(np.mean(probs_subset))
+        part_alertes = float(detectes / total_alertes) if total_alertes > 0 else 0.0
+        ci_low, ci_high = compute_wilson_ci(detectes, n_cas)
+        if rec == 1.0:
+            statut = "DETECTE_100%"
+        elif rec == 0.0:
+            statut = "NON_DETECTE"
+        else:
+            statut = "PARTIEL"
+        results[ftype] = {
+            "effectif_test": n_cas,
+            "detectes": detectes,
+            "rates": rates,
+            "recall": round(rec, 4),
+            "recall_ic_wilson_95": [ci_low, ci_high],
+            "precision_part_alertes": round(part_alertes, 4),
+            "score_moyen": round(score_moy, 4),
+            "statut": statut,
+        }
+    return results
