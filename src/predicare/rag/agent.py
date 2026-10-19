@@ -57,6 +57,37 @@ class ReactAgent:
             )
 
         q_lower = question.lower()
+        mots_interdits = [
+            "ignore tes instructions", "ignore les instructions", 
+            "tu es maintenant", "sans restriction", "jailbreak",
+            "mot de passe", "password", "system prompt"
+        ]
+        if any(mot in q_lower for mot in mots_interdits):
+            steps.append({"action": "security_block", "reason": "prompt_injection"})
+            return AgentResult(
+                answer="Je ne peux pas répondre à cette question pour des raisons de sécurité.",
+                abstention=True,
+                steps=steps,
+            )
+        import re
+        autres_contrats = re.findall(r"CTR-\d{6}", question, re.IGNORECASE)
+        for c in autres_contrats:
+            if c.upper() != contract_id.upper():
+                steps.append({"action": "security_block", "reason": "cross_tenant_access"})
+                return AgentResult(
+                    answer="Je n'ai pas accès aux informations des autres contrats.",
+                    abstention=True,
+                    steps=steps
+                )
+
+        cached_answer = self._check_cache(question)
+        if cached_answer:
+            return AgentResult(
+                answer=cached_answer,
+                abstention=False,
+                sources=[],  # On pourrait aussi cacher les sources
+                steps=[{"action": "cache_hit", "status": "success"}]
+            )
 
         # 1. ROUTAGE SQL (Factures)
         if any(
@@ -109,6 +140,8 @@ class ReactAgent:
             )
 
         answer = self._generate_answer(question, contexte)
+        if not abstention:
+            self._save_cache(question, answer)
         return AgentResult(answer=answer, abstention=False, sources=sources, steps=steps)
 
     def _generate_answer(self, question: str, contexte: str) -> str:
@@ -138,3 +171,35 @@ class ReactAgent:
 
     def close(self) -> None:
         self._client.close()
+
+    def _check_cache(self, question: str) -> str | None:
+        """Cherche une réponse en cache pour cette question."""
+        from sqlalchemy import text
+        query_norm = question.lower().strip()
+        
+        with self._engine.begin() as conn:  # begin() permet le commit auto
+            row = conn.execute(text("""
+                SELECT response_text FROM semantic_cache 
+                WHERE query_text = :q LIMIT 1
+            """), {"q": query_norm}).fetchone()
+            
+            if row:
+                # Incrémenter le hit_count
+                conn.execute(text("""
+                    UPDATE semantic_cache SET hit_count = hit_count + 1 
+                    WHERE query_text = :q
+                """), {"q": query_norm})
+                return row[0]
+        return None
+
+    def _save_cache(self, question: str, response: str):
+        """Sauvegarde la réponse en cache (ignorer si existe)."""
+        from sqlalchemy import text
+        query_norm = question.lower().strip()
+        
+        with self._engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO semantic_cache (query_text, response_text, hit_count)
+                VALUES (:q, :r, 1)
+                ON CONFLICT DO NOTHING
+            """), {"q": query_norm, "r": response})

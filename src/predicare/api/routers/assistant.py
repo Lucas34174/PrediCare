@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine,Engine,text
+from predicare.api.deps import get_db_engine
 
 from predicare.core.config import database_url
 from predicare.rag.agent import ReactAgent
@@ -63,3 +64,19 @@ def chat(payload: ChatRequest) -> ChatResponse:
         abstention=result.abstention,
         conversation_id=payload.conversation_id,
     )
+
+@router.get("/cache/stats")
+def cache_stats(engine: Engine = Depends(get_db_engine)):
+    """Expose les statistiques du cache sémantique (FinOps)."""
+    with engine.connect() as conn:
+        total_entries = conn.execute(text("SELECT count(*) FROM semantic_cache")).scalar() or 0
+        total_hits = conn.execute(text("SELECT sum(hit_count) FROM semantic_cache")).scalar() or 0
+        
+        saved_tokens = total_hits * 500
+        
+        return {
+            "entries": total_entries,
+            "total_hits": total_hits,
+            "estimated_saved_tokens": saved_tokens,
+            "message": f"Le cache a permis d'économiser environ {saved_tokens} tokens."
+        }
