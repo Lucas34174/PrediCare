@@ -115,3 +115,13 @@ Les factures soumises sont persistées pour permettre leur relecture fidèle ave
 **Justification** : cf. docs/rag_architecture.md §6.
 
 **Conformité** : cf. docs/eu_ai_act_classification.md et docs/rgpd_aipd.md.
+
+### EDA des données et des labels
+
+### EDA des données et des labels :
+
+Le notebook `notebooks/01_eda_exploration_donnees.ipynb` explore les 12 CSV et les 2 fichiers de labels. Il porte sur 84 593 factures étiquetées, dont 7 347 frauduleuses (8,69 %, ratio 10,5 : 1) ; 14 des 14 types de fraude du dictionnaire §6 sont présents. Les clés primaires sont uniques et on compte 0 orphelin de clés étrangères. Les colonnes `statut`, `motif_rejet`, `montant_pris_en_charge` et `date_traitement` sont exclues des features d'entraînement et d'inférence : leur AUC univariée atteint 0,673 (`pris_en_charge / montant_total`), contre 0,726 pour la variable de référence `montant_total`. Le déséquilibre impose PR-AUC, rappel à précision fixée et pondération des classes (`scale_pos_weight` de départ ≈ 10,5) plutôt que l'exactitude, avec un découpage temporel et/ou groupé par assuré ou prestataire. Les problèmes de qualité de gravité Haute sont : aucun (gravité Moyenne : colonnes constantes ou entièrement vides, et valeurs manquantes hors nulls attendus). Les signaux §6 testés ont des heuristiques exploratoires ; UPCODING et la carence ne sont pas évalués, faute d'heure et de spécialité d'acte. `identites_pii.csv` n'a été utilisé que pour compter les lignes (4 459 lignes de données) et aucune donnée personnelle n'apparaît dans le notebook. Les données restent hors Git (`data/`).
+
+### Lint des notebooks :
+
+Les notebooks d'exploration sont exemptés des règles ruff E501, N806, E741 et B905 (`per-file-ignores` sur `notebooks/*.ipynb`), car ils contiennent des lignes d'affichage denses et des noms de variables courts de type exploratoire. Ils restent soumis à `ruff format` et aux autres règles (E, W, F, I, N, UP, B). Le code de production sous `src/` garde la limite de 100 caractères.
