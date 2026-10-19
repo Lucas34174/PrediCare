@@ -1,0 +1,3 @@
+version,selection,strategie_retenue,test_pr_auc,test_recall,test_precision
+v1.0.0,validation,aucun (repli SMOTE silencieux),0.1412,0.8203,0.1343
+v1.1.0,validation croisée (train),aucun,0.15545786584342505,0.7890625,0.13797814207650272

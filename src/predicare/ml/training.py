@@ -90,14 +90,22 @@ def _preprocesseur(numeriques: list[str], categorielles: list[str]):
     )
 
 
-def _smote(X, y, ratio: float = 0.25, seed: int = SEED):  # noqa: N803
-    """Sur-échantillonnage synthétique de la classe positive (CDC Module 2)."""
-    try:
-        from imblearn.over_sampling import SMOTE
+def _imblearn_disponible() -> bool:
+    """Indique si ``imbalanced-learn`` est réellement installé."""
+    import importlib.util
 
-        return SMOTE(random_state=seed, sampling_strategy=ratio).fit_resample(X, y)
-    except Exception:  # pragma: no cover - repli si imblearn absent
-        return X, y
+    return importlib.util.find_spec("imblearn") is not None
+
+
+def _smote(X, y, ratio: float = 0.25, seed: int = SEED):  # noqa: N803
+    """Sur-échantillonnage synthétique de la classe positive (CDC Module 2).
+
+    Lève :class:`ImportError` si ``imbalanced-learn`` est absent : on ne veut
+    surtout pas étiqueter « SMOTE » un entraînement qui n'a pas rééchantillonné.
+    """
+    from imblearn.over_sampling import SMOTE
+
+    return SMOTE(random_state=seed, sampling_strategy=ratio).fit_resample(X, y)
 
 
 def _candidats(numeriques: list[str], categorielles: list[str], scale_pos_weight: float):
@@ -111,7 +119,9 @@ def _candidats(numeriques: list[str], categorielles: list[str], scale_pos_weight
                 LGBMClassifier(**PARAMS_LIGHTGBM, scale_pos_weight=scale_pos_weight),
             )
         )
-        candidats.append(("LightGBM", "smote", LGBMClassifier(**PARAMS_LIGHTGBM)))
+        if _imblearn_disponible():
+            candidats.append(("LightGBM", "smote", LGBMClassifier(**PARAMS_LIGHTGBM)))
+        candidats.append(("LightGBM", "aucun", LGBMClassifier(**PARAMS_LIGHTGBM)))
     if XGBClassifier is not None:
         candidats.append(
             (

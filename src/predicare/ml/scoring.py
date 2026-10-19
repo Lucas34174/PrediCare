@@ -35,6 +35,22 @@ def normaliser_score(probabilite, seuil_calibre: float) -> np.ndarray:
     return 1.0 - np.exp(-p / tau)
 
 
+class CalibrateurPlatt:
+    """Calibration de Platt : régression logistique sur le score brut.
+
+    Contrairement à la calibration isotonique (qui produit des paliers), elle
+    reste **strictement croissante** et permet donc de choisir un seuil pour un
+    budget d'alertes précis.
+    """
+
+    def __init__(self, modele):
+        self.modele = modele
+
+    def predict(self, scores) -> np.ndarray:
+        valeurs = np.asarray(scores, dtype=float).reshape(-1, 1)
+        return np.asarray(self.modele.predict_proba(valeurs)[:, 1], dtype=float)
+
+
 @dataclass
 class ModeleFraude:
     """Modèle B chargé, prêt à scorer et à alerter."""
@@ -47,6 +63,20 @@ class ModeleFraude:
     modele: str = ""
     version: str = ""
     metadonnees: dict = field(default_factory=dict)
+
+    def seuil_pour_budget(self, budget: float) -> float:
+        """Seuil de **score de risque normalisé** pour un budget d'alertes.
+
+        Les seuils de probabilité calibrée sont pré-calculés sur la validation à
+        l'entraînement (``seuils_budget_validation``) ; on retient le budget le
+        plus proche, puis on le projette sur l'échelle normalisée où le seuil
+        produit vaut 0,80.
+        """
+        seuils = (self.metadonnees or {}).get("seuils_budget_validation") or {}
+        if not seuils:
+            raise ValueError("Aucun seuil par budget disponible dans l'artefact.")
+        cle = min(seuils, key=lambda k: abs(float(k) - float(budget)))
+        return float(normaliser_score(float(seuils[cle]), self.seuil_probabilite))
 
     def proba(self, factures: pd.DataFrame) -> np.ndarray:
         """Probabilité calibrée de l'événement « contrôle médical »."""

@@ -164,19 +164,25 @@ def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
     response_model=PredictionResponse,
     responses={404: {"description": "Facture inexistante."}},
 )
-def get_prediction(facture_id: str) -> PredictionResponse:
+def get_prediction(
+    facture_id: str,
+    budget: Annotated[float | None, Query(gt=0, lt=1, description="Part cible de factures contrôlées (ex. 0.03)")] = None,
+) -> PredictionResponse:
     """Score de risque réel et explicabilité SHAP (modèle B en production).
 
     Le score est le **score de risque normalisé** : le seuil produit (0,80 par
     défaut, configurable) correspond au point de fonctionnement métier du
     modèle. La probabilité calibrée reste disponible dans l'artefact du modèle.
 
+    Le paramètre ``budget`` (facultatif) applique un seuil opérationnel :
+    ``?budget=0.03`` alerte sur les 3 % de factures les plus risquées.
+
     Si le modèle ou le magasin de variables n'est pas accessible (environnement
     de test isolé), un repli documenté est renvoyé pour ne pas rompre le contrat.
     """
     _get_or_404(facture_id)
 
-    resultat = _predire(facture_id)
+    resultat = _predire(facture_id, budget=budget)
     if resultat is None:
         return _prediction_repli(facture_id)
 
@@ -198,15 +204,15 @@ def get_prediction(facture_id: str) -> PredictionResponse:
     )
 
 
-def _predire(facture_id: str) -> dict | None:
+def _predire(facture_id: str, budget: float | None = None) -> dict | None:
     """Appelle le service ML ; renvoie ``None`` si l'environnement est incomplet."""
     try:
         from predicare.ml.service import FactureInconnue, ModeleIndisponible, predire_facture
     except Exception:
         return None
     try:
-        return predire_facture(facture_id)
-    except (FactureInconnue, ModeleIndisponible, FileNotFoundError, KeyError):
+        return predire_facture(facture_id, budget=budget)
+    except (FactureInconnue, ModeleIndisponible, FileNotFoundError, KeyError, ValueError):
         return None
 
 

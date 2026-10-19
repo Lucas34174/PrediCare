@@ -57,7 +57,8 @@ def preparer_table(
 
     dataset = dataset if dataset is not None else charger_dataset_cm()
     if scores is None:
-        scores = pd.read_csv(DATA_RAW / "scores_test_cm.csv")
+        v11 = REPORTS_DIR / "v11" / "scores_test.csv"
+        scores = pd.read_csv(v11 if v11.is_file() else DATA_RAW / "scores_test_cm.csv")
 
     test = dataset[dataset["split"] == "test"].copy()
     test = test.merge(scores[["facture_id", "probabilite", "score_risque", "alerte"]], on="facture_id", how="left")
@@ -221,6 +222,9 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
         "1. Recalibrer le seuil par sous-groupe uniquement si un écart TPR persiste sur un jeu plus large.",
         "2. Surveiller mensuellement les taux d'alerte par groupe (voir PB-12, dérive).",
         "3. Documenter tout écart résiduel dans la model card (PB-11).",
+        "",
+        "Analyse de mitigation (seuils par sous-groupe, évaluée sur le test) : "
+        "`docs/equity_mitigation.md`.",
     ]
     return "\n".join(lignes)
 

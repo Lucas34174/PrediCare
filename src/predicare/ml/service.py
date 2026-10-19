@@ -71,8 +71,11 @@ def _nettoyer(valeur: Any) -> Any:
     return valeur
 
 
-def predire_facture(facture_id: str, top_k: int = 5) -> dict:
+def predire_facture(facture_id: str, top_k: int = 5, budget: float | None = None) -> dict:
     """Score de risque + explicabilité SHAP d'une facture.
+
+    ``budget`` (facultatif, 0 < budget < 1) applique le seuil correspondant à
+    une part cible de factures contrôlées, au lieu du seuil produit 0,80.
 
     Lève :class:`FactureInconnue` si la facture n'est pas connue du magasin.
     """
@@ -90,6 +93,10 @@ def predire_facture(facture_id: str, top_k: int = 5) -> dict:
     score = modele.scorer(pd.DataFrame([ligne])).iloc[0]
     facteurs, recommandation = expliquer_facture(modele, ligne, top_k=top_k)
 
+    seuil = modele.seuil_produit
+    if budget is not None:
+        seuil = modele.seuil_pour_budget(budget)
+
     facteurs = [
         {
             "feature": f["feature"],
@@ -105,8 +112,9 @@ def predire_facture(facture_id: str, top_k: int = 5) -> dict:
         "prediction": {
             "score_fraude": round(float(score["score_risque"]), 6),
             "probabilite_calibree": round(float(score["probabilite"]), 6),
-            "seuil_applique": float(modele.seuil_produit),
-            "est_anomalie": bool(score["score_risque"] >= modele.seuil_produit),
+            "seuil_applique": float(seuil),
+            "est_anomalie": bool(score["score_risque"] >= seuil),
+            "budget_applique": budget,
             "version_modele": modele.version or "inconnue",
             "modele": modele.modele,
         },

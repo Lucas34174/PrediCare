@@ -5,7 +5,7 @@
       "cree": "2026-10-19T18:49:13.371679+00:00",
       "artefact": "models/v1.0.0/model.joblib",
       "sha256": "9940b9ff6d1c9b28fe8b71c6e39336f980f8e3bbede46f5e942310d1d2ab7510",
-      "statut": "production",
+      "statut": "archive",
       "metadonnees": {
         "seuil_score_brut": 0.02681491861643353,
         "seuil_probabilite_calibree": 0.13562753036437247,
@@ -217,7 +217,7 @@
           "niveau_tarif"
         ],
         "modele": "LightGBM",
-        "traitement_desequilibre": "smote",
+        "traitement_desequilibre": "aucun (repli SMOTE silencieux, non effectif)",
         "cible": "1 = facture orientée contrôle médical, 0 = facture payée",
         "cible_description": "Proxy de suspicion d'abus : motif de rejet CONTROLE_MEDICAL. Les rejets purement administratifs sont exclus de l'apprentissage.",
         "date_creation": "2026-10-19T18:39:07.570683+00:00",
@@ -247,12 +247,30 @@
           ],
           "ece": 0.0013276309455102745
         },
-        "labellisation": "Proxy : motif de rejet CONTROLE_MEDICAL. Aucun label de fraude confirmée n'est disponible dans le jeu fourni."
+        "labellisation": "Proxy : motif de rejet CONTROLE_MEDICAL. Aucun label de fraude confirmée n'est disponible dans le jeu fourni.",
+        "correctif": "Correction du 2026-10-19 : imbalanced-learn n'était pas installé lors de l'entraînement v1.0.0 ; le repli de _smote renvoyait les données inchangées."
+      }
+    },
+    {
+      "version": "v1.1.0",
+      "cree": "2026-10-19T19:53:58.958295+00:00",
+      "artefact": "models/v1.1.0/model.joblib",
+      "sha256": "47009a4ad399d28c0d845e7c4796369399953aa25eb2c5a4f3d33c7d3f79ed90",
+      "statut": "production",
+      "metadonnees": {
+        "modele": "LightGBM",
+        "strategie": "aucun",
+        "selection": "validation croisée",
+        "test_pr_auc": 0.15545786584342505,
+        "test_recall": 0.7890625,
+        "test_precision": 0.13797814207650272,
+        "cible": "1 = facture orientée contrôle médical, 0 = facture payée"
       }
     }
   ],
-  "production": "v1.0.0",
+  "production": "v1.1.0",
   "historique_production": [
-    "v1.0.0"
+    "v1.0.0",
+    "v1.1.0"
   ]
 }

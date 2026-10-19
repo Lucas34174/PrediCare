@@ -111,11 +111,11 @@ python -m predicare.ml.fairness            # → docs/equity_audit_modele.md
 | Choix | Justification |
 |---|---|
 | **LightGBM** (vs XGBoost) | meilleure PR-AUC de validation (0,156 vs 0,127) ; exigence CDC satisfaite |
-| **SMOTE** (vs poids de classe) | meilleure PR-AUC (0,156 vs 0,138) ; mentionné par le CDC (Module 2) |
+| **Aucun rééchantillonnage** (vs poids, SMOTE) | meilleure PR-AUC (0,156 vs 0,138 / 0,130) ; SMOTE réellement testé en v1.1, non retenu |
 | **Calibration isotonique** | probabilités interprétables ; ECE = 0,0013 |
 | **Score de risque normalisé** | le seuil produit 0,80 du CDC reste exploitable malgré une prévalence de 1,2 % |
-| **Seuil configurable** | `PREDICARE_SEUIL_ALERTE` (défaut 0,80) |
-| **`models/v1.0.0` versionné** | la version candidate est transmise à M2 (artefact + métadonnées + registre) |
+| **Seuil configurable** | `PREDICARE_SEUIL_ALERTE` (défaut 0,80) + seuil par budget (`?budget=0.03`) |
+| **`models/v1.0.0` et `v1.1.0` versionnés** | v1.0.0 archivée (rollback), v1.1.0 en production |
 
 ## 6. Limites (à assumer devant le jury)
 
@@ -133,7 +133,7 @@ Environnement Python 3.12 avec `pandas`, `scikit-learn`, `lightgbm`,
 
 ```bash
 export PYTHONPATH=src
-python -m predicare.ml.training            # dataset_cm + modèle + scores + G1
+python -m predicare.ml.training            # dataset_cm + modèle v1.0.0 + scores + G1
 python -m predicare.ml.prescription
 python -m predicare.ml.false_negatives
 python -m predicare.ml.robustness
@@ -142,4 +142,40 @@ python -m predicare.ml.fairness
 pytest tests/test_ml_pb09.py tests/test_ml_pb10.py tests/test_ml_pb11.py \
        tests/test_ml_pb12.py tests/test_ml_pb13.py tests/test_ml_pb14.py \
        tests/test_ml_targets.py
+```
+
+## 8. Mise à jour v1.1.0 (production)
+
+La v1.0.0 est archivée ; la v1.1.0 est en production (rollback disponible).
+Elle est sélectionnée par **validation croisée sur le train**, puis évaluée une
+fois sur le test.
+
+| Livrable | Fichier |
+|---|---|
+| Model card v1.1 | `docs/model_card_v11.md` |
+| Expériences négatives (PB-09, réseau, SMOTE, tuning) | `docs/experiments_v11.md` |
+| Évaluation métier (budget, coût/TP, règles) | `docs/business_case.md` |
+| Généralisation par prestataire | `docs/evaluation_groupee.md` |
+| Mitigation d'équité | `docs/equity_mitigation.md` |
+| Tableaux et scores | `reports/ml/v11/` |
+
+Points saillants :
+
+- **Gain non prouvé statistiquement** : CV PR-AUC 0,1461 (v1.1.0) vs 0,1446
+  (v1.0.0), écart-type ≈ 0,014. La v1.1.0 est plus régularisée (9 feuilles).
+- **Holdout** : PR-AUC 0,1555 (IC95 0,122–0,207), rappel 0,789, précision 0,138,
+  732 alertes (7,1 %). Calibration de Platt (strictement croissante, donc
+  compatible avec un seuil par budget).
+- **Métier** : à 10 % de budget, 97 % des positifs contre 69 % pour les règles ;
+  gain de 2 à 9 points de rappel à 1–5 %.
+- **Groupes** : CV groupée par prestataire 0,1438 vs 0,1461 aléatoire.
+- **Équité** : la mitigation par seuils a été testée ; elle **échoue** sur deux
+  dimensions (sexe, âge) et n'est pas déployée. Voir `docs/equity_mitigation.md`.
+
+```bash
+python -m predicare.ml.training_v11 --cv    # CV + v1.1.0 + promotion
+python -m predicare.ml.business             # évaluation métier
+python -m predicare.ml.grouped_eval         # généralisation par prestataire
+python -m predicare.ml.equity_mitigation    # mitigation d'équité
+python -m predicare.ml.experiments_v11      # expériences négatives
 ```

@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_RAW = PROJECT_ROOT / "data" / "raw"
 MODELS_ROOT = PROJECT_ROOT / "models"
 MODELS_DIR = MODELS_ROOT / "v1.0.0"
+MODELS_DIR_V11 = MODELS_ROOT / "v1.1.0"
 REPORTS_DIR = PROJECT_ROOT / "reports" / "ml"
 DOCS_DIR = PROJECT_ROOT / "docs"
 
@@ -124,6 +125,23 @@ PARAMS_XGBOOST = {
     "n_jobs": -1,
     "eval_metric": "aucpr",
     "tree_method": "hist",
+}
+
+# v1.1.0 — hyperparamètres retenus par validation croisée (Optuna, 30 essais,
+# 3 plis sur le train). Modèle volontairement plus régularisé : le jeu ne
+# contient que 699 positifs, et la v1.0.0 (31 feuilles) sur-apprenait.
+PARAMS_LIGHTGBM_V11 = {
+    "n_estimators": 350,
+    "learning_rate": 0.026482103608788436,
+    "num_leaves": 9,
+    "min_child_samples": 91,
+    "subsample": 0.6158523677219352,
+    "colsample_bytree": 0.7070214098458489,
+    "reg_lambda": 0.021141332377484955,
+    "reg_alpha": 0.0019243440381274631,
+    "random_state": SEED,
+    "n_jobs": -1,
+    "verbose": -1,
 }
 
 # --------------------------------------------------------------------------- #

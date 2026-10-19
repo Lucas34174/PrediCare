@@ -62,6 +62,8 @@ models/*
 !models/registry.json
 !models/v1.0.0/
 !models/v1.0.0/**
+!models/v1.1.0/
+!models/v1.1.0/**
 web/.agents
 web/@
 # Interface Web / Node (si applicable dans /web)

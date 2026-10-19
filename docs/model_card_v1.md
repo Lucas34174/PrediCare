@@ -1,8 +1,15 @@
 # Model card — PrediCare modèle de risque de contrôle médical (v1.0.0)
 
-> **Statut** : version candidate transmise à M2 (intégration plateforme).
+> **Statut** : version **archivée** (rollback disponible). La version en
+> production est **v1.1.0** — voir `docs/model_card_v11.md`.
 > **Équipe** : M1 (Data Science / ML).
 > **Cible du backlog** : PB-11 (figer le modèle v1 et rédiger la model card).
+
+> **Correctif d'intégrité (v1.1.0)** : lors de l'entraînement initial,
+> `imbalanced-learn` n'était pas installé et le repli de `_smote` renvoyait
+> silencieusement les données non rééchantillonnées. La v1.0.0 est donc un
+> **LightGBM sans traitement du déséquilibre**, et non « LightGBM + SMOTE ».
+> Le code lève désormais une erreur explicite si `imbalanced-learn` manque.
 
 ## 1. Vue d'ensemble
 
@@ -14,7 +21,7 @@
 | Artefact | `models/v1.0.0/model.joblib` |
 | Métadonnées | `models/v1.0.0/metadata.json` |
 | Registre | `models/registry.json` (statut : `production`) |
-| Algorithme | **LightGBM** (gradient boosting) + sur-échantillonnage **SMOTE** |
+| Algorithme | **LightGBM** (gradient boosting), **sans rééchantillonnage effectif** (voir correctif ci-dessus) |
 | Calibration | Régression isotonique (validation) |
 | Type de tâche | Classification binaire supervisée, population déséquilibrée |
 | Cadre réglementaire | Module 3 (CDC), AI Act — système d'IA à **risque élevé** (voir `docs/eu_ai_act_classification.md`) |
@@ -87,13 +94,14 @@ donne le compromis pour tout budget d'alertes.
 
 | Modèle | Déséquilibre | PR-AUC (val.) |
 |---|---|---:|
-| **LightGBM** | **SMOTE** | **0,1562** ✅ retenu |
+| **LightGBM** | **aucun** (repli SMOTE silencieux) | **0,1562** ✅ retenu |
 | LightGBM | poids de classe | 0,1378 |
 | XGBoost | poids de classe | 0,1273 |
 
-**Amélioration testée (PB-10)** : ajouter les 6 variables d'alerte prescription
-PB-09 fait passer la PR-AUC de **0,1412 → 0,1509** et le rappel de 0,797 → 0,813
-(`reports/ml/pb10/amelioration.csv`). Piste retenue pour la v1.1.
+**Amélioration testée (PB-10)** : ajouter les variables d'alerte prescription
+PB-09 a fait passer la PR-AUC de 0,1412 → 0,1509 sur un découpage donné. Ce
+gain **n'est pas confirmé** par la validation croisée de la v1.1.0 (voir
+`docs/experiments_v11.md`) : il n'a pas été retenu en production.
 
 ## 5. Explicabilité (PB-13)
 
@@ -107,6 +115,9 @@ Exemple (facture `FAC-00005637`) : `score_fraude = 0,011`, principal facteur
 `nb_alertes_metier = 1` (impact +2,05).
 
 ## 6. Équité (PB-14)
+
+> Chiffres **historiques v1.0.0**. L'audit de la version en production est dans
+> `docs/model_card_v11.md` §6 et `docs/equity_audit_modele.md`.
 
 Audit détaillé : `docs/equity_audit_modele.md` et `reports/ml/pb14/`.
 
