@@ -129,3 +129,14 @@ Les notebooks d'exploration sont exemptés des règles ruff E501, N806, E741 et 
 ### Sujet : Pipeline reproductible d'ingestion et de nettoyage des données (PB-04)
 
 Le pipeline d'ingestion et de nettoyage technique (`src/predicare/db/ingest.py`) transforme les 12 CSV bruts et les 2 fichiers de labels en tables propres et typées sans dépendance à PostgreSQL. Les montants sont convertis en entiers stricts (`Int64` en Ariary) et les dates au format ISO AAAA-MM-JJ. Les doublons stricts sont éliminés, tandis que les anomalies métier (§6) et les valeurs manquantes structurelles (`ordonnance_id` null, etc.) sont intégralement préservées sans imputation arbitraire. La table `identites_pii` est validée mais protégée contre toute écriture en clair par défaut (RGPD). Une option d'échantillonnage par fermeture transitive (`--sample N`) garantit 0 orphelin sur toutes les relations. La constante `LEAKAGE_COLUMNS` isole les 4 colonnes à fuite pour PB-05, et la fonction publique `clean_all()` fournit une interface directe en mémoire pour le chargement en base PB-19.
+
+### PB-06 – Split anti-fuite et baseline ML :
+
+Split par groupes d'assurés triés chronologiquement par leur première `date_soin` :
+80 % des assurés (les plus anciens) → train, 20 % → test. Aucun assuré ne traverse
+les deux ensembles ; le train est antérieur au test. `class_weight='balanced'`
+retenu pour gérer le déséquilibre (≈ 7 % de fraudes) sans surcharge de dépendance
+SMOTE. Métrique prioritaire : **Recall** (coût d'un faux négatif > faux positif en
+assurance fraude) ; **PR-AUC** pour le suivi dérive (robuste au déséquilibre).
+Deux baselines : LR (Logistic Regression, lbfgs, max_iter=1000) et RF (300 arbres).
+Modèles sérialisés dans `models/` via joblib ; `feature_names.json` pour PB-22.

@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
@@ -243,3 +244,64 @@ def train_baseline(
         metrics["f1"],
     )
     return pipe, metrics
+
+
+# ---------------------------------------------------------------------------
+# Entrée CLI : python -m predicare.ml.baseline
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":  # pragma: no cover
+    import argparse
+    import json
+    import sys
+
+    def _cli() -> None:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            stream=sys.stderr,
+        )
+        p = argparse.ArgumentParser(description="Baseline ML fraude – PrediCare TPA (PB-06)")
+        p.add_argument("--features", default=FEATURES_PATH)
+        p.add_argument("--labels", default=LABELS_PATH)
+        p.add_argument("--factures", default=FACTURES_PATH)
+        p.add_argument("--models-dir", default=str(MODELS_DIR))
+        p.add_argument("--seed", type=int, default=42)
+        p.add_argument("--test-size", type=float, default=0.2)
+        args = p.parse_args()
+
+        models_dir = Path(args.models_dir)
+        models_dir.mkdir(parents=True, exist_ok=True)
+
+        X, y, meta = load_dataset(args.features, args.labels, args.factures)
+        X_tr, X_te, y_tr, y_te = split_no_leakage(X, y, meta, test_size=args.test_size)
+
+        results: dict[str, dict] = {}
+        for model_name in ("lr", "rf"):
+            pipe, m = train_baseline(X_tr, X_te, y_tr, y_te, model_name=model_name, seed=args.seed)
+            out = models_dir / f"baseline_{model_name}.joblib"
+            joblib.dump(pipe, out)
+            logger.info("Modèle sérialisé : %s", out)
+            results[model_name] = m
+
+        # Noms de features utilisées (après exclusion haute-NaN)
+        feat_path = models_dir / "feature_names.json"
+        feat_path.write_text(
+            json.dumps(results["lr"]["features_used"], ensure_ascii=False, indent=2)
+        )
+        logger.info("feature_names.json : %d features", len(results["lr"]["features_used"]))
+
+        # Rapport
+        print("\n=== Rapport baseline PB-06 ===")
+        for mn, m in results.items():
+            print(f"\n[{mn.upper()}]")
+            print(f"  Train  : {m['n_train']} factures | {m['n_fraude_train']} fraudes")
+            print(f"  Test   : {m['n_test']} factures  | {m['n_fraude_test']} fraudes")
+            print(f"  Recall : {m['recall']:.3f}")
+            print(f"  PR-AUC : {m['pr_auc']:.3f}")
+            print(f"  F1     : {m['f1']:.3f}")
+            print(f"  Matrice: {m['confusion_matrix']}")
+
+        best = max(results, key=lambda k: results[k]["pr_auc"])
+        print(f"\n✓ Meilleur (PR-AUC) : {best.upper()} → models/baseline_{best}.joblib")
+
+    _cli()
