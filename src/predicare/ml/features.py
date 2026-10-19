@@ -308,9 +308,9 @@ FEATURE_CATALOGUE: dict[str, dict[str, Any]] = {
     # --- Groupe 11 : UPCODING (proxy) ---
     "f_type_prest_vs_cat_acte": {
         "description": (
-            "Indicateur (0/1) : le type_prestataire ne correspond pas à la "
-            "spécialité attendue pour la catégorie d'acte la plus représentée "
-            "dans la facture (proxy UPCODING ; sans heure_soin, signal partiel)."
+            "Indicateur (0/1) : consultation de spécialiste (spécialité de l'acte ni "
+            "GENERALISTE ni URGENCE) facturée par un cabinet généraliste, ou par un "
+            "cabinet spécialiste d'une autre spécialité. NaN sans consultation."
         ),
         "fraude_visee": "UPCODING",
         "tables_sources": ["lignes_facture", "referentiel_actes", "prestataires"],
@@ -392,6 +392,8 @@ def _assert_no_leakage(df: pd.DataFrame, context: str = "") -> None:
 
 # Stubs des groupes de features (Commit 1 : interfaces uniquement)
 # Les groupes suivants seront implémentés dans les commits 2 à 6.
+
+_CONSULT_NON_SPECIALISTE: frozenset[str] = frozenset({"GENERALISTE", "URGENCE"})
 
 
 def _add_tarif_features(
@@ -637,8 +639,62 @@ def _add_calendrier_features(
     factures: pd.DataFrame,
     ref_tables: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Groupe 5 – Features calendrier/prestataire. Implémenté en commit 4."""
-    feat["f_soin_jour_ferme"] = float("nan")
+    """Groupe 5 – SOINS_JOUR_FERME.
+
+    jours_ouverture : entier de chiffres concaténés (1=lun … 7=dim), ex. 12345.
+    NaN si le prestataire, ses jours d'ouverture ou la date de soin sont inconnus.
+    """
+    presta = ref_tables.get("prestataires", pd.DataFrame())
+    if presta.empty or "jours_ouverture" not in presta.columns:
+        feat["f_soin_jour_ferme"] = float("nan")
+        return feat
+
+    fac = factures[["facture_id", "prestataire_id", "date_soin"]].merge(
+        presta[["prestataire_id", "jours_ouverture"]], on="prestataire_id", how="left"
+    )
+    jour = pd.to_datetime(fac["date_soin"], errors="coerce").dt.dayofweek + 1
+    jours = fac["jours_ouverture"].astype("string")
+    fac["ferme"] = [
+        float("nan") if pd.isna(j) or pd.isna(s) else float(str(int(j)) not in s)
+        for j, s in zip(jour, jours, strict=True)
+    ]
+    feat["f_soin_jour_ferme"] = fac.set_index("facture_id")["ferme"]
+    return feat
+
+
+def _add_upcoding_features(
+    feat: pd.DataFrame,
+    factures: pd.DataFrame,
+    ref_tables: dict[str, pd.DataFrame],
+) -> pd.DataFrame:
+    """Groupe 11 – UPCODING : consultation de spécialiste hors du bon type de cabinet.
+
+    NaN si la facture n'a aucune ligne de consultation connue du référentiel.
+    Les signaux majoration/urgence (heure, jour) sont traités dans un commit ultérieur.
+    """
+    lignes = ref_tables.get("lignes_facture", pd.DataFrame())
+    ref_actes = ref_tables.get("referentiel_actes", pd.DataFrame())
+    presta = ref_tables.get("prestataires", pd.DataFrame())
+    if lignes.empty or ref_actes.empty or presta.empty:
+        feat["f_type_prest_vs_cat_acte"] = float("nan")
+        return feat
+
+    ra = ref_actes.loc[ref_actes["categorie"] == "CONSULTATION", ["code_acte", "specialite"]]
+    ra = ra.rename(columns={"code_acte": "code", "specialite": "spec_acte"})
+    la = lignes[lignes["type_ligne"] == "ACTE"].merge(ra, on="code", how="inner")
+    la = la.merge(factures[["facture_id", "prestataire_id"]], on="facture_id", how="left")
+    pr = presta[["prestataire_id", "type_prestataire", "specialite"]].rename(
+        columns={"specialite": "spec_prest"}
+    )
+    la = la.merge(pr, on="prestataire_id", how="left")
+
+    spec_acte = la["spec_acte"]
+    type_p = la["type_prestataire"]
+    est_spec = spec_acte.notna() & ~spec_acte.isin(_CONSULT_NON_SPECIALISTE)
+    incoh_gen = est_spec & (type_p == "CABINET_GENERALISTE")
+    incoh_spec = est_spec & (type_p == "CABINET_SPECIALISTE") & (la["spec_prest"] != spec_acte)
+    la["incoh"] = (incoh_gen | incoh_spec).astype("float64").where(type_p.notna())
+    feat["f_type_prest_vs_cat_acte"] = la.groupby("facture_id")["incoh"].max()
     return feat
 
 
@@ -688,14 +744,4 @@ def _add_couverture_features(
         "f_soin_en_carence",
     ]:
         feat[col] = float("nan")
-    return feat
-
-
-def _add_upcoding_features(
-    feat: pd.DataFrame,
-    factures: pd.DataFrame,
-    ref_tables: dict[str, pd.DataFrame],
-) -> pd.DataFrame:
-    """Groupe 11 – Features UPCODING (proxy). Implémenté en commit 4."""
-    feat["f_type_prest_vs_cat_acte"] = float("nan")
     return feat

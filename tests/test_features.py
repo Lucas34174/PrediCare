@@ -584,3 +584,92 @@ def test_delai_nan_si_pas_ordonnance():
     out = build_features(fac, {}, pd.DataFrame())
     assert pd.isna(out.loc["F1", "f_delai_soin_prescription_j"])
     assert pd.isna(out.loc["F1", "f_ordonnance_expiree"])
+
+
+# Tests groupe 5 – calendrier
+
+
+def _presta(rows: list[dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    df["jours_ouverture"] = pd.to_numeric(df["jours_ouverture"], errors="coerce").astype("Int64")
+    return df
+
+
+def test_soin_jour_ferme_samedi():
+    """2025-01-04 est un samedi (6) ; ouvert 12345 → fermé=1."""
+    fac = _fac([{**_FAC_BASE, "date_soin": "2025-01-04"}])
+    pr = _presta(
+        [{"prestataire_id": "P1", "type_prestataire": "PHARMACIE", "jours_ouverture": 12345}]
+    )
+    out = build_features(fac, {"prestataires": pr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_jour_ferme"] == pytest.approx(1.0)
+
+
+def test_soin_jour_ouvert_lundi():
+    """2025-01-06 est un lundi (1) ; ouvert 12345 → fermé=0."""
+    fac = _fac([{**_FAC_BASE, "date_soin": "2025-01-06"}])
+    pr = _presta(
+        [{"prestataire_id": "P1", "type_prestataire": "PHARMACIE", "jours_ouverture": 12345}]
+    )
+    out = build_features(fac, {"prestataires": pr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_jour_ferme"] == pytest.approx(0.0)
+
+
+def test_soin_dimanche_prestataire_7j():
+    """2025-01-05 est un dimanche (7) ; ouvert 1234567 → fermé=0."""
+    fac = _fac([{**_FAC_BASE, "date_soin": "2025-01-05"}])
+    pr = _presta(
+        [{"prestataire_id": "P1", "type_prestataire": "PHARMACIE", "jours_ouverture": 1234567}]
+    )
+    out = build_features(fac, {"prestataires": pr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_jour_ferme"] == pytest.approx(0.0)
+
+
+# Tests groupe 11 – UPCODING
+
+
+def _upcoding(code: str, spec_acte: str, type_p: str, spec_p: str | None) -> float:
+    fac = _fac([_FAC_BASE])
+    lignes = _lignes(
+        [
+            {
+                "ligne_id": "L1",
+                "facture_id": "F1",
+                "num_ligne": 1,
+                "code": code,
+                "type_ligne": "ACTE",
+                "quantite": 1,
+                "prix_unitaire": 30000,
+                "montant": 30000,
+            }
+        ]
+    )
+    ra = _ref_actes(
+        [{**_ACTE_BASE, "code_acte": code, "categorie": "CONSULTATION", "specialite": spec_acte}]
+    )
+    pr = _presta(
+        [
+            {
+                "prestataire_id": "P1",
+                "type_prestataire": type_p,
+                "specialite": spec_p,
+                "jours_ouverture": 12345,
+            }
+        ]
+    )
+    out = build_features(
+        fac, {"lignes_facture": lignes, "referentiel_actes": ra, "prestataires": pr}, pd.DataFrame()
+    )
+    return out.loc["F1", "f_type_prest_vs_cat_acte"]
+
+
+def test_upcoding_specialiste_chez_generaliste():
+    assert _upcoding("CONS-CARDIO", "CARDIOLOGIE", "CABINET_GENERALISTE", None) == 1.0
+
+
+def test_upcoding_specialiste_bon_cabinet():
+    assert _upcoding("CONS-CARDIO", "CARDIOLOGIE", "CABINET_SPECIALISTE", "CARDIOLOGIE") == 0.0
+
+
+def test_upcoding_generaliste_normal():
+    assert _upcoding("CONS-GEN", "GENERALISTE", "CABINET_GENERALISTE", None) == 0.0
