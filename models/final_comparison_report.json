@@ -1,0 +1,202 @@
+{
+  "baseline_lr": {
+    "seuil_applique": 0.5,
+    "recall": 0.4286,
+    "recall_ci_95": [
+      0.0,
+      0.8333
+    ],
+    "precision": 0.6,
+    "f1": 0.5,
+    "f2": 0.4545,
+    "pr_auc": 0.492,
+    "roc_auc": 0.648,
+    "confusion_matrix": [
+      [
+        82,
+        2
+      ],
+      [
+        4,
+        3
+      ]
+    ],
+    "nb_alertes": 5,
+    "recall_by_fraud_type": {
+      "ACTE_FICTIF": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "DOUBLON": {
+        "total_cas": 4,
+        "detectes": 0,
+        "rates": 4,
+        "recall": 0.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SURFACTURATION": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      }
+    }
+  },
+  "baseline_rf": {
+    "seuil_applique": 0.5,
+    "recall": 0.2857,
+    "recall_ci_95": [
+      0.0,
+      0.6667
+    ],
+    "precision": 0.5,
+    "f1": 0.3636,
+    "f2": 0.3125,
+    "pr_auc": 0.4121,
+    "roc_auc": 0.8206,
+    "confusion_matrix": [
+      [
+        82,
+        2
+      ],
+      [
+        5,
+        2
+      ]
+    ],
+    "nb_alertes": 4,
+    "recall_by_fraud_type": {
+      "ACTE_FICTIF": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "DOUBLON": {
+        "total_cas": 4,
+        "detectes": 0,
+        "rates": 4,
+        "recall": 0.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 1,
+        "detectes": 0,
+        "rates": 1,
+        "recall": 0.0
+      },
+      "SURFACTURATION": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      }
+    }
+  },
+  "xgboost_optimal": {
+    "seuil_applique": 0.3,
+    "recall": 0.2857,
+    "recall_ci_95": [
+      0.0,
+      0.6667
+    ],
+    "precision": 0.3333,
+    "f1": 0.3077,
+    "f2": 0.2941,
+    "pr_auc": 0.434,
+    "roc_auc": 0.7517,
+    "confusion_matrix": [
+      [
+        80,
+        4
+      ],
+      [
+        5,
+        2
+      ]
+    ],
+    "nb_alertes": 6,
+    "recall_by_fraud_type": {
+      "ACTE_FICTIF": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "DOUBLON": {
+        "total_cas": 4,
+        "detectes": 0,
+        "rates": 4,
+        "recall": 0.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 1,
+        "detectes": 0,
+        "rates": 1,
+        "recall": 0.0
+      },
+      "SURFACTURATION": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      }
+    }
+  },
+  "lightgbm_optimal": {
+    "seuil_applique": 0.05,
+    "recall": 0.4286,
+    "recall_ci_95": [
+      0.0,
+      0.8333
+    ],
+    "precision": 0.4286,
+    "f1": 0.4286,
+    "f2": 0.4286,
+    "pr_auc": 0.4114,
+    "roc_auc": 0.6769,
+    "confusion_matrix": [
+      [
+        80,
+        4
+      ],
+      [
+        4,
+        3
+      ]
+    ],
+    "nb_alertes": 7,
+    "recall_by_fraud_type": {
+      "ACTE_FICTIF": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "DOUBLON": {
+        "total_cas": 4,
+        "detectes": 1,
+        "rates": 3,
+        "recall": 0.25
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 1,
+        "detectes": 0,
+        "rates": 1,
+        "recall": 0.0
+      },
+      "SURFACTURATION": {
+        "total_cas": 1,
+        "detectes": 1,
+        "rates": 0,
+        "recall": 1.0
+      }
+    }
+  }
+}
