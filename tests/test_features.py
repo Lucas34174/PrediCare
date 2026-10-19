@@ -824,3 +824,186 @@ def test_soin_dans_periode_contrat():
     ct = pd.DataFrame([{"contrat_id": "C1", "date_effet": "2024-01-01", "date_fin": "2025-12-31"}])
     out = build_features(fac, {"contrats": ct}, pd.DataFrame())
     assert out.loc["F1", "f_soin_hors_periode_contrat"] == pytest.approx(0.0)
+
+
+# Tests groupe 6+7 – Features historiques
+
+
+def test_history_vide_tout_nan():
+    """History vide → toutes les features historiques = NaN."""
+    fac = _fac([_FAC_BASE])
+    out = build_features(fac, {}, pd.DataFrame())
+    for col in [
+        "f_nb_doublons_anterieurs",
+        "f_numero_facture_deja_vu",
+        "f_nb_factures_meme_jour_prest",
+        "f_nb_prest_meme_ordo_anterieurs",
+    ]:
+        assert pd.isna(out.loc["F1", col]), f"{col} devrait être NaN avec history vide"
+
+
+def test_doublon_exact_detecte():
+    """Même (assure, prest, date, montant) dans history → doublon=1, meme_jour=1."""
+    fac = _fac([{**_FAC_BASE, "numero_facture": "NUM-001", "montant_total": 10000}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "numero_facture": "NUM-000",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2025-01-01",
+                "montant_total": 10000,
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_nb_doublons_anterieurs"] == pytest.approx(1.0)
+    assert out.loc["F1", "f_nb_factures_meme_jour_prest"] == pytest.approx(1.0)
+
+
+def test_doublon_montant_different():
+    """Même triplet mais montant différent → doublon=0, meme_jour=1."""
+    fac = _fac([{**_FAC_BASE, "numero_facture": "NUM-001", "montant_total": 10000}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "numero_facture": "NUM-000",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2025-01-01",
+                "montant_total": 20000,
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_nb_doublons_anterieurs"] == pytest.approx(0.0)
+    assert out.loc["F1", "f_nb_factures_meme_jour_prest"] == pytest.approx(1.0)
+
+
+def test_pas_doublon_historique_different():
+    """Historique différent (autre assure) → doublon=0, meme_jour=0."""
+    fac = _fac([{**_FAC_BASE, "numero_facture": "NUM-001", "montant_total": 10000}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "numero_facture": "NUM-000",
+                "prestataire_id": "P1",
+                "assure_id": "A2",  # autre assuré
+                "date_soin": "2025-01-01",
+                "montant_total": 10000,
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_nb_doublons_anterieurs"] == pytest.approx(0.0)
+    assert out.loc["F1", "f_nb_factures_meme_jour_prest"] == pytest.approx(0.0)
+
+
+def test_numero_facture_deja_vu():
+    """Même numero_facture dans history → flag=1."""
+    fac = _fac([{**_FAC_BASE, "numero_facture": "NUM-001", "montant_total": 10000}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "numero_facture": "NUM-001",  # même numéro
+                "prestataire_id": "P2",
+                "assure_id": "A2",
+                "date_soin": "2024-12-01",
+                "montant_total": 5000,
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_numero_facture_deja_vu"] == pytest.approx(1.0)
+
+
+def test_numero_facture_nouveau():
+    """Nouveau numero_facture → flag=0."""
+    fac = _fac([{**_FAC_BASE, "numero_facture": "NUM-999", "montant_total": 10000}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "numero_facture": "NUM-001",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2024-12-01",
+                "montant_total": 10000,
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_numero_facture_deja_vu"] == pytest.approx(0.0)
+
+
+def test_surconsommation_ordo_deux_prestataires():
+    """2 prestataires distincts ont facturé la même ordonnance → nb=2."""
+    fac = _fac([{**_FAC_BASE, "ordonnance_id": "ORD-1"}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2024-12-01",
+                "ordonnance_id": "ORD-1",
+                "montant_total": 5000,
+                "numero_facture": "NUM-A",
+            },
+            {
+                "facture_id": "F-1",
+                "prestataire_id": "P2",
+                "assure_id": "A1",
+                "date_soin": "2024-12-02",
+                "ordonnance_id": "ORD-1",
+                "montant_total": 3000,
+                "numero_facture": "NUM-B",
+            },
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_nb_prest_meme_ordo_anterieurs"] == pytest.approx(2.0)
+
+
+def test_ordo_aucun_match_historique():
+    """Ordonnance présente mais pas dans history → nb=0 (pas NaN)."""
+    fac = _fac([{**_FAC_BASE, "ordonnance_id": "ORD-NEW"}])
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2024-12-01",
+                "ordonnance_id": "ORD-OLD",
+                "montant_total": 5000,
+                "numero_facture": "NUM-A",
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert out.loc["F1", "f_nb_prest_meme_ordo_anterieurs"] == pytest.approx(0.0)
+
+
+def test_sans_ordonnance_nb_prest_nan():
+    """Facture sans ordonnance_id → f_nb_prest_meme_ordo_anterieurs = NaN."""
+    fac = _fac([_FAC_BASE])  # ordonnance_id null
+    hist = _fac(
+        [
+            {
+                "facture_id": "F0",
+                "prestataire_id": "P1",
+                "assure_id": "A1",
+                "date_soin": "2024-12-01",
+                "ordonnance_id": "ORD-1",
+                "montant_total": 5000,
+                "numero_facture": "NUM-A",
+            }
+        ]
+    )
+    out = build_features(fac, {}, hist)
+    assert pd.isna(out.loc["F1", "f_nb_prest_meme_ordo_anterieurs"])
