@@ -9,8 +9,7 @@ Ce module centralise :
 from typing import Final
 
 # ------------------------------------------------------------------------------
-# Colonnes à fuite de données (ML Data Leakage)
-# Issues du processus d'arbitrage a posteriori (Dictionnaire §4, PB-03)
+# Colonnes à fuite de données
 # ------------------------------------------------------------------------------
 LEAKAGE_COLUMNS: Final[list[str]] = [
     "statut",
@@ -20,7 +19,7 @@ LEAKAGE_COLUMNS: Final[list[str]] = [
 ]
 
 # ------------------------------------------------------------------------------
-# Colonnes PII sensibles (RGPD)
+# Colonnes PII sensibles
 # ------------------------------------------------------------------------------
 PII_COLUMNS: Final[list[str]] = [
     "nom",

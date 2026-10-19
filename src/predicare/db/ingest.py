@@ -1,6 +1,9 @@
 """Pipeline d'ingestion et de nettoyage des données pour PrediCare TPA (PB-04)."""
 
+import argparse
+import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -301,3 +304,126 @@ def clean_all(
         "anomalies_orphelins": orphan_reports,
     }
     return cleaned_tables, quality_report
+
+
+def save_dataframe_atomic(df: pd.DataFrame, target_path: Path) -> None:
+    """Écrit un DataFrame en CSV de manière atomique et déterministe (Règle 8).
+    - Pas d'index.
+    - Écriture dans un fichier temporaire .tmp puis renommage atomique.
+    - Garantit que deux exécutions successives produisent des octets identiques.
+    """
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = target_path.with_suffix(".csv.tmp")
+    df.to_csv(temp_path, index=False, encoding="utf-8")
+    os.replace(temp_path, target_path)
+
+
+def run_pipeline(
+    raw_dir: Path | str = "data/raw",
+    processed_dir: Path | str = "data/processed",
+    sample_n: int | None = None,
+    seed: int = 42,
+    export_pii_unencrypted: bool = False,
+) -> dict[str, Any]:
+    """Exécute le pipeline de bout en bout :
+    1. Nettoyage technique et échantillonnage cohérent.
+    2. Écriture atomique des CSV nettoyés dans data/processed/.
+    3. Respect PII (identites_pii non exporté par défaut).
+    4. Écriture du rapport de qualité JSON dans data/processed/qualite_rapport.json.
+    """
+    path_raw = Path(raw_dir)
+    path_proc = Path(processed_dir)
+    path_proc.mkdir(parents=True, exist_ok=True)
+    logger.info(
+        "Démarrage du pipeline d'ingestion (source=%s, cible=%s, sample=%s)",
+        path_raw,
+        path_proc,
+        sample_n,
+    )
+    cleaned_tables, quality_report = clean_all(
+        raw_dir=path_raw,
+        sample_n=sample_n,
+        seed=seed,
+    )
+    # Écriture déterministe de chaque table
+    for table_name, df_clean in cleaned_tables.items():
+        if table_name == "identites_pii" and not export_pii_unencrypted:
+            logger.info(
+                "Table 'identites_pii' validée mais NON écrite en clair dans %s (Règle 7 - RGPD).",
+                path_proc,
+            )
+            continue
+        target_file = path_proc / f"{table_name}.csv"
+        save_dataframe_atomic(df_clean, target_file)
+        logger.info("Table '%s' écrite avec succès (%d lignes)", table_name, len(df_clean))
+    # Écriture du rapport de qualité JSON (sans PII)
+    report_file = path_proc / "qualite_rapport.json"
+    temp_report = path_proc / "qualite_rapport.json.tmp"
+    with open(temp_report, "w", encoding="utf-8") as f:
+        json.dump(quality_report, f, indent=2, ensure_ascii=False)
+    os.replace(temp_report, report_file)
+    logger.info("Rapport de qualité généré dans %s", report_file)
+    return quality_report
+
+
+def main() -> None:
+    """CLI du pipeline d'ingestion PrediCare TPA."""
+    parser = argparse.ArgumentParser(
+        description="Pipeline reproductible d'ingestion et de nettoyage PrediCare TPA (PB-04)"
+    )
+    parser.add_argument(
+        "--raw-dir",
+        default="data/raw",
+        help="Dossier contenant les CSV bruts (défaut: data/raw)",
+    )
+    parser.add_argument(
+        "--processed-dir",
+        default="data/processed",
+        help="Dossier de destination des tables nettoyées (défaut: data/processed)",
+    )
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=None,
+        help="Taille de l'échantillon de factures à extraire avec cohérence référentielle",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Graine aléatoire pour l'échantillonnage (défaut: 42)",
+    )
+    parser.add_argument(
+        "--export-pii-unencrypted",
+        action="store_true",
+        default=False,
+        help="Autorise l'écriture de identites_pii en clair (interdit en prod, réservé débug sécurisé)",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Active les logs de niveau DEBUG",
+    )
+    args = parser.parse_args()
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    report = run_pipeline(
+        raw_dir=args.raw_dir,
+        processed_dir=args.processed_dir,
+        sample_n=args.sample,
+        seed=args.seed,
+        export_pii_unencrypted=args.export_pii_unencrypted,
+    )
+    print(
+        f"Pipeline terminé avec succès. Tables traitées : {len(report['tables'])}, "
+        f"Conflits PK : {report['total_quarantaine_conflits_pk']}, "
+        f"Orphelins : {len(report['anomalies_orphelins'])}"
+    )
+
+
+if __name__ == "__main__":
+    main()
