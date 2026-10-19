@@ -1,6 +1,7 @@
 """Pipeline d'ingestion et de nettoyage des données pour PrediCare TPA (PB-04)."""
 
 import logging
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -133,3 +134,170 @@ def clean_referentiels_and_providers(
             reports[table] = st
 
     return cleaned, all_quarantine, reports
+
+
+def check_referential_integrity(
+    cleaned_tables: dict[str, pd.DataFrame],
+) -> list[dict[str, Any]]:
+    """Vérifie l'intégrité des clés étrangères entre les tables nettoyées.
+    Règle 4 : Aucune suppression silencieuse. Les éventuels orphelins sont
+    enregistrés dans la liste de quarantaine.
+    """
+    foreign_keys = [
+        ("assures", "contrat_id", "contrats", "contrat_id"),
+        ("factures", "assure_id", "assures", "assure_id"),
+        ("factures", "prestataire_id", "prestataires", "prestataire_id"),
+        ("factures", "contrat_id", "contrats", "contrat_id"),
+        ("factures", "ordonnance_id", "ordonnances", "ordonnance_id"),
+        ("lignes_facture", "facture_id", "factures", "facture_id"),
+        ("ordonnances", "assure_id", "assures", "assure_id"),
+        ("ordonnances", "prescripteur_id", "prestataires", "prestataire_id"),
+        (
+            "ordonnance_lignes",
+            "ordonnance_id",
+            "ordonnances",
+            "ordonnance_id",
+        ),
+        ("grille_tarifaire", "prestataire_id", "prestataires", "prestataire_id"),
+        ("identites_pii", "assure_id", "assures", "assure_id"),
+        ("labels_fraude", "facture_id", "factures", "facture_id"),
+        (
+            "labels_prestataires",
+            "prestataire_id",
+            "prestataires",
+            "prestataire_id",
+        ),
+    ]
+    orphan_reports = []
+    for f_src, col_src, f_ref, col_ref in foreign_keys:
+        if f_src in cleaned_tables and f_ref in cleaned_tables:
+            df_src = cleaned_tables[f_src]
+            df_ref = cleaned_tables[f_ref]
+            # Exclusion des valeurs nulles légitimes (ex: ordonnance_id absent)
+            src_series = df_src[col_src].dropna()
+            ref_set = set(df_ref[col_ref].dropna())
+            orphelins_mask = ~src_series.isin(ref_set)
+            if orphelins_mask.any():
+                nb_orph = int(orphelins_mask.sum())
+                orphan_reports.append(
+                    {
+                        "table_source": f_src,
+                        "colonne_source": col_src,
+                        "table_reference": f_ref,
+                        "colonne_reference": col_ref,
+                        "nombre_orphelins": nb_orph,
+                        "motif": "ORPHELIN_CLE_ETRANGERE",
+                    }
+                )
+                logger.warning(
+                    "Orphelins détectés : %s.%s -> %s.%s (%d lignes)",
+                    f_src,
+                    col_src,
+                    f_ref,
+                    col_ref,
+                    nb_orph,
+                )
+    return orphan_reports
+
+
+def clean_all(
+    raw_dir: Path | str = "data/raw",
+    sample_n: int | None = None,
+    seed: int = 42,
+) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
+    path_raw = Path(raw_dir)
+    all_table_names = list(TABLE_SCHEMAS.keys())
+    # 1. Chargement brut en mémoire
+    dfs_raw = {}
+    for table in all_table_names:
+        csv_file = path_raw / f"{table}.csv"
+        if csv_file.exists():
+            dfs_raw[table] = pd.read_csv(csv_file, low_memory=False)
+    # 2. Nettoyage technique table par table
+    cleaned_tables = {}
+    all_quarantine = []
+    reports = {}
+    for table in all_table_names:
+        if table in dfs_raw:
+            df_c, quar, st = clean_dataframe_base(dfs_raw[table], table)
+            cleaned_tables[table] = df_c
+            all_quarantine.extend(quar)
+            reports[table] = st
+
+    # 3. Échantillonnage cohérent par fermeture transitive (Règle 9)
+    if sample_n and "factures" in cleaned_tables:
+        df_fac = cleaned_tables["factures"]
+        n_sample = min(sample_n, len(df_fac))
+        sampled_fac = df_fac.sample(n=n_sample, random_state=seed)
+        cleaned_tables["factures"] = sampled_fac
+
+        kept_fac_ids = set(sampled_fac["facture_id"])
+        kept_assure_ids = set(sampled_fac["assure_id"].dropna())
+        kept_prest_ids = set(sampled_fac["prestataire_id"].dropna())
+        kept_contrat_ids = set(sampled_fac["contrat_id"].dropna())
+        kept_ordo_ids = set(sampled_fac["ordonnance_id"].dropna())
+
+        # Suivi des ordonnances et extension des prescripteurs et assurés
+        if "ordonnances" in cleaned_tables:
+            cleaned_tables["ordonnances"] = cleaned_tables["ordonnances"][
+                cleaned_tables["ordonnances"]["ordonnance_id"].isin(kept_ordo_ids)
+            ]
+            kept_assure_ids |= set(cleaned_tables["ordonnances"]["assure_id"].dropna())
+            kept_prest_ids |= set(cleaned_tables["ordonnances"]["prescripteur_id"].dropna())
+
+        if "ordonnance_lignes" in cleaned_tables:
+            cleaned_tables["ordonnance_lignes"] = cleaned_tables["ordonnance_lignes"][
+                cleaned_tables["ordonnance_lignes"]["ordonnance_id"].isin(kept_ordo_ids)
+            ]
+
+        # Suivi des assurés et extension des contrats
+        if "assures" in cleaned_tables:
+            cleaned_tables["assures"] = cleaned_tables["assures"][
+                cleaned_tables["assures"]["assure_id"].isin(kept_assure_ids)
+            ]
+            kept_contrat_ids |= set(cleaned_tables["assures"]["contrat_id"].dropna())
+
+        if "identites_pii" in cleaned_tables:
+            cleaned_tables["identites_pii"] = cleaned_tables["identites_pii"][
+                cleaned_tables["identites_pii"]["assure_id"].isin(kept_assure_ids)
+            ]
+
+        if "contrats" in cleaned_tables:
+            cleaned_tables["contrats"] = cleaned_tables["contrats"][
+                cleaned_tables["contrats"]["contrat_id"].isin(kept_contrat_ids)
+            ]
+
+        if "prestataires" in cleaned_tables:
+            cleaned_tables["prestataires"] = cleaned_tables["prestataires"][
+                cleaned_tables["prestataires"]["prestataire_id"].isin(kept_prest_ids)
+            ]
+
+        if "grille_tarifaire" in cleaned_tables:
+            cleaned_tables["grille_tarifaire"] = cleaned_tables["grille_tarifaire"][
+                cleaned_tables["grille_tarifaire"]["prestataire_id"].isin(kept_prest_ids)
+            ]
+
+        if "lignes_facture" in cleaned_tables:
+            cleaned_tables["lignes_facture"] = cleaned_tables["lignes_facture"][
+                cleaned_tables["lignes_facture"]["facture_id"].isin(kept_fac_ids)
+            ]
+
+        if "labels_fraude" in cleaned_tables:
+            cleaned_tables["labels_fraude"] = cleaned_tables["labels_fraude"][
+                cleaned_tables["labels_fraude"]["facture_id"].isin(kept_fac_ids)
+            ]
+
+        if "labels_prestataires" in cleaned_tables:
+            cleaned_tables["labels_prestataires"] = cleaned_tables["labels_prestataires"][
+                cleaned_tables["labels_prestataires"]["prestataire_id"].isin(kept_prest_ids)
+            ]
+
+    # 4. Contrôle d'intégrité référentielle
+    orphan_reports = check_referential_integrity(cleaned_tables)
+    quality_report = {
+        "tables": {t: reports[t] for t in cleaned_tables if t in reports},
+        "total_quarantaine_conflits_pk": len(all_quarantine),
+        "quarantaine_details": all_quarantine,
+        "anomalies_orphelins": orphan_reports,
+    }
+    return cleaned_tables, quality_report
