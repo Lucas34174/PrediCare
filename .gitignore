@@ -77,3 +77,9 @@ ehthumbs.db
 backups/
 *.dump
 
+# Artefacts de modèles volumineux (à versionner via registre/volume/DVC/MLflow)
+models/*
+!models/.gitkeep
+!models/*.json
+
+generate_eda_notebook.py
