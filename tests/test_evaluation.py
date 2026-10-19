@@ -1,9 +1,13 @@
 """Tests unitaires du module d'évaluation globale (PB-08)."""
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
+from predicare.ml.baseline import FORBIDDEN_COLUMNS
 from predicare.ml.evaluation import (
     ALL_FRAUD_TYPES,
     compute_calibration,
@@ -136,3 +140,52 @@ def test_compute_metrics_by_fraud_type_exhaustif_14_types():
     assert res["FRACTIONNEMENT"]["effectif_test"] == 0
     assert res["FRACTIONNEMENT"]["statut"] == "ABSENT_DU_TEST"
     assert res["FRACTIONNEMENT"]["recall"] == 0.0
+
+
+def test_feature_names_artefact_garantit_absence_totale_de_fuite():
+    """Garantit que le fichier models/feature_names.json ne contient aucune variable interdite."""
+    feat_file = Path("models/feature_names.json")
+    if feat_file.exists():
+        feature_names = json.loads(feat_file.read_text())
+        intersection = set(feature_names) & FORBIDDEN_COLUMNS
+        assert not intersection, f"Fuite détectée dans feature_names.json : {intersection}"
+
+
+def test_confusion_metrics_seuils_limites():
+    """Au seuil 0.0, toutes les prédictions sont positives. Au seuil 1.0, aucune."""
+    y_true = np.array([0, 1, 0, 1])
+    y_prob = np.array([0.2, 0.4, 0.6, 0.8])
+    # Seuil 0.0 : tout est prédit positif -> Recall 1.0, TN = 0
+    m_zero = compute_confusion_metrics(y_true, y_prob, threshold=0.0)
+    assert m_zero["recall"] == 1.0
+    assert m_zero["matrice_brute"]["tn"] == 0
+    assert m_zero["nb_alertes"] == 4
+    # Seuil 1.01 (strictement au-dessus de tout score) : rien n'est positif
+    m_un = compute_confusion_metrics(y_true, y_prob, threshold=1.01)
+    assert m_un["recall"] == 0.0
+    assert m_un["nb_alertes"] == 0
+    assert m_un["matrice_brute"]["fp"] == 0
+
+
+def test_evaluate_classes_sans_fraude():
+    """Garantit qu'aucun crash n'a lieu si un sous-échantillon n'a aucune fraude."""
+    y_true = np.array([0, 0, 0, 0])
+    y_prob = np.array([0.1, 0.2, 0.3, 0.4])
+    m = compute_confusion_metrics(y_true, y_prob, threshold=0.30)
+    assert m["recall"] == 0.0
+    assert m["matrice_brute"]["tp"] == 0
+    assert m["matrice_brute"]["fn"] == 0
+    curves = compute_pr_roc_curves(y_true, y_prob)
+    assert curves["prevalence_baseline"] == 0.0
+
+
+def test_wilson_ci_decroissance_largeur_avec_taille_echantillon():
+    """La largeur de l'IC de Wilson doit se resserrer lorsque n augmente (à p=0.5)."""
+    low_10, high_10 = compute_wilson_ci(5, 10)
+    width_10 = high_10 - low_10
+    low_100, high_100 = compute_wilson_ci(50, 100)
+    width_100 = high_100 - low_100
+    low_1000, high_1000 = compute_wilson_ci(500, 1000)
+    width_1000 = high_1000 - low_1000
+    assert width_10 > width_100 > width_1000
+    assert 0.45 < low_1000 < 0.55
