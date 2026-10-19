@@ -1,0 +1,6 @@
+metrique,valeur
+positifs_test,128.0
+vrais_positifs,105.0
+faux_negatifs,23.0
+rappel,0.8203125
+precision,0.13427109974424553

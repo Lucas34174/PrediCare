@@ -58,6 +58,10 @@ models/*
 *.pt
 *.pth
 *.safetensors
+# ... sauf le registre et la version figée v1.0.0 (candidate transmise à M2)
+!models/registry.json
+!models/v1.0.0/
+!models/v1.0.0/**
 web/.agents
 web/@
 # Interface Web / Node (si applicable dans /web)

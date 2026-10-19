@@ -1,0 +1,47 @@
+{
+  "dimensions": {
+    "sexe": {
+      "nb_groupes": 2,
+      "nb_groupes_faibles": 0,
+      "ecart_tpr_max_min": 0.07252747252747249,
+      "ecart_fpr_max_min": 0.002779978021782814,
+      "alerte_equite": []
+    },
+    "tranche_age": {
+      "nb_groupes": 4,
+      "nb_groupes_faibles": 0,
+      "ecart_tpr_max_min": 0.158371040723982,
+      "ecart_fpr_max_min": 0.023481174905519188,
+      "alerte_equite": [
+        "écart de rappel 0.158 > 0.1"
+      ]
+    },
+    "formule": {
+      "nb_groupes": 3,
+      "nb_groupes_faibles": 0,
+      "ecart_tpr_max_min": 0.11842105263157898,
+      "ecart_fpr_max_min": 0.012926454857522182,
+      "alerte_equite": [
+        "écart de rappel 0.118 > 0.1"
+      ]
+    },
+    "ville_assure": {
+      "nb_groupes": 7,
+      "nb_groupes_faibles": 2,
+      "ecart_tpr_max_min": 0.33333333333333337,
+      "ecart_fpr_max_min": 0.03616555913124644,
+      "alerte_equite": [
+        "écart de rappel 0.333 > 0.1"
+      ]
+    },
+    "ville_prestataire": {
+      "nb_groupes": 7,
+      "nb_groupes_faibles": 2,
+      "ecart_tpr_max_min": 0.32307692307692315,
+      "ecart_fpr_max_min": 0.07118898178029628,
+      "alerte_equite": [
+        "écart de rappel 0.323 > 0.1"
+      ]
+    }
+  }
+}

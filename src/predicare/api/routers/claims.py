@@ -165,33 +165,72 @@ def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
     responses={404: {"description": "Facture inexistante."}},
 )
 def get_prediction(facture_id: str) -> PredictionResponse:
-    """Score de fraude et explicabilité SHAP (mock)."""
+    """Score de risque réel et explicabilité SHAP (modèle B en production).
+
+    Le score est le **score de risque normalisé** : le seuil produit (0,80 par
+    défaut, configurable) correspond au point de fonctionnement métier du
+    modèle. La probabilité calibrée reste disponible dans l'artefact du modèle.
+
+    Si le modèle ou le magasin de variables n'est pas accessible (environnement
+    de test isolé), un repli documenté est renvoyé pour ne pas rompre le contrat.
+    """
     _get_or_404(facture_id)
+
+    resultat = _predire(facture_id)
+    if resultat is None:
+        return _prediction_repli(facture_id)
+
     return PredictionResponse(
         facture_id=facture_id,
         prediction=PredictionInfo(
-            score_fraude=0.87,
+            score_fraude=resultat["prediction"]["score_fraude"],
+            seuil_applique=resultat["prediction"]["seuil_applique"],
+            est_anomalie=resultat["prediction"]["est_anomalie"],
+            version_modele=resultat["prediction"]["version_modele"],
+            date_prediction=datetime.now(UTC),
+        ),
+        explicabilite=ExplicabiliteInfo(
+            top_facteurs=[
+                ShapFactor(**facteur) for facteur in resultat["explicabilite"]["top_facteurs"]
+            ],
+            recommandation=resultat["explicabilite"]["recommandation"],
+        ),
+    )
+
+
+def _predire(facture_id: str) -> dict | None:
+    """Appelle le service ML ; renvoie ``None`` si l'environnement est incomplet."""
+    try:
+        from predicare.ml.service import FactureInconnue, ModeleIndisponible, predire_facture
+    except Exception:
+        return None
+    try:
+        return predire_facture(facture_id)
+    except (FactureInconnue, ModeleIndisponible, FileNotFoundError, KeyError):
+        return None
+
+
+def _prediction_repli(facture_id: str) -> PredictionResponse:
+    """Repli documenté : même contrat, valeurs neutres (modèle non chargé)."""
+    return PredictionResponse(
+        facture_id=facture_id,
+        prediction=PredictionInfo(
+            score_fraude=0.0,
             seuil_applique=0.80,
-            est_anomalie=True,
-            version_modele="v1.0.0-xgb",
+            est_anomalie=False,
+            version_modele="indisponible",
             date_prediction=_NOW,
         ),
         explicabilite=ExplicabiliteInfo(
             top_facteurs=[
                 ShapFactor(
-                    feature="ecart_tarif_conventionne",
-                    valeur=15000,
-                    impact_shap=0.38,
-                    description="Tarif facturé supérieur de 50 % au barème de référence",
-                ),
-                ShapFactor(
-                    feature="jour_fermeture_etablissement",
-                    valeur=1,
-                    impact_shap=0.25,
-                    description="Acte réalisé un jour de fermeture hebdomadaire",
-                ),
+                    feature="modele_indisponible",
+                    valeur="n/a",
+                    impact_shap=0.0,
+                    description="Modèle non chargé dans cet environnement.",
+                )
             ],
-            recommandation="Contrôle requis : anomalie tarifaire et temporelle détectée.",
+            recommandation="Modèle indisponible : contrôle manuel requis.",
         ),
     )
 
