@@ -910,3 +910,57 @@ def _add_couverture_features(
         m["hors_periode"] = _flag(hors, m["ds"].notna() & m["effet"].notna())
         feat["f_soin_hors_periode_contrat"] = m.set_index("facture_id")["hors_periode"]
     return feat
+
+
+# Entrée CLI : python -m predicare.ml.features
+if __name__ == "__main__":  # pragma: no cover
+    import argparse
+    import sys
+    from pathlib import Path
+
+    from predicare.db.ingest import clean_all  # noqa: PLC0415
+
+    def _cli() -> None:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            stream=sys.stderr,
+        )
+        p = argparse.ArgumentParser(description="Feature engineering – PrediCare TPA (PB-05)")
+        p.add_argument("--raw-dir", default="data/raw")
+        p.add_argument("--out-dir", default="data/processed")
+        p.add_argument("--sample", type=int, default=None)
+        p.add_argument("--seed", type=int, default=42)
+        args = p.parse_args()
+
+        logger.info(
+            "Démarrage (source=%s, sortie=%s, sample=%s)", args.raw_dir, args.out_dir, args.sample
+        )
+        tables, _ = clean_all(args.raw_dir, sample_n=args.sample, seed=args.seed)
+
+        # Supprimer fuite + labels avant d'appeler build_features
+        fac = tables["factures"].copy()
+        fac = fac.drop(
+            columns=[c for c in fac.columns if c in FORBIDDEN_FEATURE_COLS], errors="ignore"
+        )
+
+        ref = {k: v for k, v in tables.items() if k != "factures"}
+        logger.info("Calcul de %d features sur %d factures…", len(FEATURE_NAMES), len(fac))
+
+        feat = build_features(fac, ref, history=pd.DataFrame())
+
+        out_path = Path(args.out_dir) / "features.csv"
+        feat.reset_index().to_csv(out_path, index=False)
+        logger.info(
+            "features.csv écrit : %d lignes × %d colonnes → %s",
+            feat.shape[0],
+            feat.shape[1],
+            out_path,
+        )
+        # Rapport NaN
+        taux_nan = feat.isna().mean().sort_values(ascending=False)
+        high = taux_nan[taux_nan > 0.5]
+        if not high.empty:
+            logger.warning("Features >50 %% NaN :\n%s", high.to_string())
+
+    _cli()
