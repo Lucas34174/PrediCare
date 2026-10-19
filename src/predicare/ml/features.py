@@ -399,15 +399,75 @@ def _add_tarif_features(
     factures: pd.DataFrame,
     ref_tables: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Groupe 1 – Features tarifaires (SURFACTURATION). Implémenté en commit 2."""
-    for col in [
+    """Groupe 1 – Features tarifaires (SURFACTURATION).
+
+    Jointures :
+      - lignes_facture (ACTE)  × referentiel_actes  → écarts et ratios tarifaires
+      - lignes_facture (MED)   × referentiel_meds   → ratio prix médicament
+      - lignes_facture × factures[prestataire_id] × grille_tarifaire → écart grille
+    """
+    _cols = [
         "f_ecart_tarif_max_moy",
         "f_ratio_tarif_ref_max",
         "f_ecart_grille_prest_moy",
         "f_nb_lignes_hors_tarif_max",
         "f_ratio_med_prix_ref_max",
-    ]:
-        feat[col] = float("nan")
+    ]
+    lignes = ref_tables.get("lignes_facture", pd.DataFrame())
+    if lignes.empty:
+        for col in _cols:
+            feat[col] = float("nan")
+        return feat
+
+    ref_actes = ref_tables.get("referentiel_actes", pd.DataFrame())
+    ref_meds = ref_tables.get("referentiel_medicaments", pd.DataFrame())
+    grille = ref_tables.get("grille_tarifaire", pd.DataFrame())
+
+    # -- f1, f2, f4 : actes vs référentiel --
+    if not ref_actes.empty and "code_acte" in ref_actes.columns:
+        ref_a = ref_actes[["code_acte", "tarif_reference", "tarif_max"]].rename(
+            columns={"code_acte": "code"}
+        )
+        la = lignes[lignes["type_ligne"] == "ACTE"].merge(ref_a, on="code", how="left")
+        pu = la["prix_unitaire"].astype("float64")
+        t_max = la["tarif_max"].astype("float64")
+        t_ref = la["tarif_reference"].astype("float64")
+        la["ecart_max"] = pu - t_max
+        la["ratio_ref"] = pu / t_ref.where(t_ref > 0)
+        la["hors_max"] = (pu > t_max).astype("float64").where(t_max.notna())
+        grp_a = la.groupby("facture_id")
+        feat["f_ecart_tarif_max_moy"] = grp_a["ecart_max"].mean()
+        feat["f_ratio_tarif_ref_max"] = grp_a["ratio_ref"].max()
+        feat["f_nb_lignes_hors_tarif_max"] = grp_a["hors_max"].sum()
+    else:
+        for col in ["f_ecart_tarif_max_moy", "f_ratio_tarif_ref_max", "f_nb_lignes_hors_tarif_max"]:
+            feat[col] = float("nan")
+
+    # -- f5 : médicaments vs référentiel --
+    if not ref_meds.empty and "code_medicament" in ref_meds.columns:
+        ref_m = ref_meds[["code_medicament", "prix_reference"]].rename(
+            columns={"code_medicament": "code"}
+        )
+        lm = lignes[lignes["type_ligne"] == "MEDICAMENT"].merge(ref_m, on="code", how="left")
+        pu_m = lm["prix_unitaire"].astype("float64")
+        p_ref = lm["prix_reference"].astype("float64")
+        lm["ratio_med"] = pu_m / p_ref.where(p_ref > 0)
+        feat["f_ratio_med_prix_ref_max"] = lm.groupby("facture_id")["ratio_med"].max()
+    else:
+        feat["f_ratio_med_prix_ref_max"] = float("nan")
+
+    # -- f3 : écart grille prestataire --
+    if not grille.empty and "tarif_pratique" in grille.columns:
+        fac_pr = factures[["facture_id", "prestataire_id"]]
+        lg = lignes.merge(fac_pr, on="facture_id", how="left")
+        lg = lg.merge(grille, on=["prestataire_id", "code"], how="left")
+        pu_g = lg["prix_unitaire"].astype("float64")
+        t_prat = lg["tarif_pratique"].astype("float64")
+        lg["ecart_grille"] = pu_g - t_prat
+        feat["f_ecart_grille_prest_moy"] = lg.groupby("facture_id")["ecart_grille"].mean()
+    else:
+        feat["f_ecart_grille_prest_moy"] = float("nan")
+
     return feat
 
 
@@ -416,9 +476,46 @@ def _add_quantite_features(
     factures: pd.DataFrame,
     ref_tables: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Groupe 2 – Features quantité (QUANTITE_EXCESSIVE). Implémenté en commit 3."""
-    for col in ["f_qte_fac_vs_prescrite_max", "f_nb_lignes_qte_excessive"]:
-        feat[col] = float("nan")
+    """Groupe 2 – Features quantité excessive (QUANTITE_EXCESSIVE).
+
+    Jointure : lignes_facture × factures[ordonnance_id] × ordonnance_lignes.
+    NaN si la facture n'a pas d'ordonnance.
+    """
+    _cols = ["f_qte_fac_vs_prescrite_max", "f_nb_lignes_qte_excessive"]
+    lignes = ref_tables.get("lignes_facture", pd.DataFrame())
+    ol = ref_tables.get("ordonnance_lignes", pd.DataFrame())
+
+    if lignes.empty or ol.empty:
+        for col in _cols:
+            feat[col] = float("nan")
+        return feat
+
+    fac_ordo = factures[["facture_id", "ordonnance_id"]].dropna(subset=["ordonnance_id"])
+    if fac_ordo.empty:
+        for col in _cols:
+            feat[col] = float("nan")
+        return feat
+
+    # Lignes facturées avec leur ordonnance_id
+    lg_ordo = lignes.merge(fac_ordo, on="facture_id", how="inner")
+
+    # Quantité prescrite agrégée par (ordonnance_id, code)
+    ol_agg = (
+        ol.groupby(["ordonnance_id", "code"])["quantite"]
+        .sum()
+        .reset_index()
+        .rename(columns={"quantite": "qte_prescrite"})
+    )
+
+    lg = lg_ordo.merge(ol_agg, on=["ordonnance_id", "code"], how="left")
+    qte_f = lg["quantite"].astype("float64")
+    qte_p = lg["qte_prescrite"].astype("float64")
+    lg["ratio_qte"] = qte_f / qte_p.where(qte_p > 0)
+    lg["qte_excessive"] = (qte_f > qte_p).astype("float64").where(qte_p.notna())
+
+    grp_q = lg.groupby("facture_id")
+    feat["f_qte_fac_vs_prescrite_max"] = grp_q["ratio_qte"].max()
+    feat["f_nb_lignes_qte_excessive"] = grp_q["qte_excessive"].sum()
     return feat
 
 
