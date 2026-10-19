@@ -673,3 +673,154 @@ def test_upcoding_specialiste_bon_cabinet():
 
 def test_upcoding_generaliste_normal():
     assert _upcoding("CONS-GEN", "GENERALISTE", "CABINET_GENERALISTE", None) == 0.0
+
+
+# Tests groupes 8, 9, 10 – profil, prestataire radié, couverture
+
+
+def _assures(rows: list[dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    df["annee_naissance"] = pd.to_numeric(df["annee_naissance"], errors="coerce").astype("Int64")
+    return df
+
+
+def _une_ligne_acte(code: str) -> pd.DataFrame:
+    return _lignes(
+        [
+            {
+                "ligne_id": "L1",
+                "facture_id": "F1",
+                "num_ligne": 1,
+                "code": code,
+                "type_ligne": "ACTE",
+                "quantite": 1,
+                "prix_unitaire": 30000,
+                "montant": 30000,
+            }
+        ]
+    )
+
+
+def test_age_au_soin():
+    """Soin en 2025, né en 2020 → 5 ans."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures([{"assure_id": "A1", "sexe": "F", "annee_naissance": 2020}])
+    out = build_features(fac, {"assures": asr}, pd.DataFrame())
+    assert out.loc["F1", "f_age_au_soin"] == pytest.approx(5.0)
+
+
+def test_age_hors_bornes_detecte():
+    """Pédiatrie (age_max 17) pour un assuré de 35 ans → flag=1."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures([{"assure_id": "A1", "sexe": "F", "annee_naissance": 1990}])
+    ra = _ref_actes([{**_ACTE_BASE, "code_acte": "CONS-PEDIA", "age_min": 0, "age_max": 17}])
+    out = build_features(
+        fac,
+        {"assures": asr, "lignes_facture": _une_ligne_acte("CONS-PEDIA"), "referentiel_actes": ra},
+        pd.DataFrame(),
+    )
+    assert out.loc["F1", "f_age_hors_bornes_ref"] == pytest.approx(1.0)
+
+
+def test_age_dans_bornes():
+    """Pédiatrie pour un enfant de 5 ans → flag=0."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures([{"assure_id": "A1", "sexe": "F", "annee_naissance": 2020}])
+    ra = _ref_actes([{**_ACTE_BASE, "code_acte": "CONS-PEDIA", "age_min": 0, "age_max": 17}])
+    out = build_features(
+        fac,
+        {"assures": asr, "lignes_facture": _une_ligne_acte("CONS-PEDIA"), "referentiel_actes": ra},
+        pd.DataFrame(),
+    )
+    assert out.loc["F1", "f_age_hors_bornes_ref"] == pytest.approx(0.0)
+
+
+def test_sexe_incompatible_detecte():
+    """Acte réservé aux hommes (PSA) facturé pour une femme → flag=1."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures([{"assure_id": "A1", "sexe": "F", "annee_naissance": 1980}])
+    ra = _ref_actes([{**_ACTE_BASE, "code_acte": "LAB-PSA", "sexe_requis": "M", "age_min": 40}])
+    out = build_features(
+        fac,
+        {"assures": asr, "lignes_facture": _une_ligne_acte("LAB-PSA"), "referentiel_actes": ra},
+        pd.DataFrame(),
+    )
+    assert out.loc["F1", "f_sexe_incompatible_ref"] == pytest.approx(1.0)
+
+
+def test_sexe_compatible():
+    """Acte sans restriction de sexe → flag=0."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures([{"assure_id": "A1", "sexe": "F", "annee_naissance": 1980}])
+    ra = _ref_actes([_ACTE_BASE])
+    out = build_features(
+        fac,
+        {"assures": asr, "lignes_facture": _une_ligne_acte("ACT-01"), "referentiel_actes": ra},
+        pd.DataFrame(),
+    )
+    assert out.loc["F1", "f_sexe_incompatible_ref"] == pytest.approx(0.0)
+
+
+def test_soin_apres_fin_convention():
+    """Soin 2025-01-01, convention terminée le 2024-12-31 → flag=1."""
+    fac = _fac([_FAC_BASE])
+    pr = pd.DataFrame(
+        [{"prestataire_id": "P1", "conventionne": 1, "date_fin_convention": "2024-12-31"}]
+    )
+    out = build_features(fac, {"prestataires": pr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_apres_fin_convention"] == pytest.approx(1.0)
+    assert out.loc["F1", "f_prestataire_non_conventionne"] == pytest.approx(0.0)
+
+
+def test_prestataire_non_conventionne_sans_fin():
+    """conventionne=0 et pas de date de fin → non conventionné=1, après fin=0."""
+    fac = _fac([_FAC_BASE])
+    pr = pd.DataFrame([{"prestataire_id": "P1", "conventionne": 0, "date_fin_convention": None}])
+    out = build_features(fac, {"prestataires": pr}, pd.DataFrame())
+    assert out.loc["F1", "f_prestataire_non_conventionne"] == pytest.approx(1.0)
+    assert out.loc["F1", "f_soin_apres_fin_convention"] == pytest.approx(0.0)
+
+
+def test_soin_avant_adhesion():
+    """Soin 2025-01-01, adhésion 2025-02-01 → flag=1."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures(
+        [{"assure_id": "A1", "annee_naissance": 1980, "date_adhesion": "2025-02-01"}]
+    ).assign(date_radiation=None)
+    out = build_features(fac, {"assures": asr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_avant_adhesion"] == pytest.approx(1.0)
+    assert out.loc["F1", "f_soin_apres_radiation"] == pytest.approx(0.0)
+
+
+def test_soin_apres_radiation():
+    """Soin 2025-01-01, radiation 2024-12-01 → flag=1."""
+    fac = _fac([_FAC_BASE])
+    asr = _assures(
+        [
+            {
+                "assure_id": "A1",
+                "annee_naissance": 1980,
+                "date_adhesion": "2024-01-01",
+                "date_radiation": "2024-12-01",
+            }
+        ]
+    )
+    out = build_features(fac, {"assures": asr}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_apres_radiation"] == pytest.approx(1.0)
+    assert out.loc["F1", "f_soin_avant_adhesion"] == pytest.approx(0.0)
+
+
+def test_soin_hors_periode_contrat():
+    """Soin 2025-01-01, contrat effectif dès 2025-06-01 → flag=1."""
+    fac = _fac([{**_FAC_BASE, "contrat_id": "C1"}])
+    ct = pd.DataFrame([{"contrat_id": "C1", "date_effet": "2025-06-01", "date_fin": None}])
+    out = build_features(fac, {"contrats": ct}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_hors_periode_contrat"] == pytest.approx(1.0)
+
+
+def test_soin_dans_periode_contrat():
+    """Soin 2025-01-01, contrat du 2024-01-01 au 2025-12-31 → flag=0."""
+    fac = _fac([{**_FAC_BASE, "contrat_id": "C1"}])
+    ct = pd.DataFrame([{"contrat_id": "C1", "date_effet": "2024-01-01", "date_fin": "2025-12-31"}])
+    out = build_features(fac, {"contrats": ct}, pd.DataFrame())
+    assert out.loc["F1", "f_soin_hors_periode_contrat"] == pytest.approx(0.0)

@@ -396,6 +396,21 @@ def _assert_no_leakage(df: pd.DataFrame, context: str = "") -> None:
 _CONSULT_NON_SPECIALISTE: frozenset[str] = frozenset({"GENERALISTE", "URGENCE"})
 
 
+def _to_dt(s: pd.Series) -> pd.Series:
+    return pd.to_datetime(s, errors="coerce")
+
+
+def _flag(cond: pd.Series, valid: pd.Series) -> pd.Series:
+    """Indicateur 0/1 (float64), NaN là où `valid` est faux."""
+    return cond.astype("float64").where(valid)
+
+
+def _cols(df: pd.DataFrame, names: list[str]) -> pd.DataFrame:
+    """Sélectionne `names` ; les colonnes absentes sont créées à NaN."""
+    out = df.reindex(columns=names).copy()
+    return out
+
+
 def _add_tarif_features(
     feat: pd.DataFrame,
     factures: pd.DataFrame,
@@ -719,13 +734,47 @@ def _add_profil_features(
     factures: pd.DataFrame,
     ref_tables: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Groupe 8 – Features profil assuré. Implémenté en commit 5."""
-    for col in [
-        "f_age_au_soin",
-        "f_age_hors_bornes_ref",
-        "f_sexe_incompatible_ref",
-    ]:
-        feat[col] = float("nan")
+    """Groupe 8 – INCOHERENCE_PROFIL (âge, sexe vs bornes du référentiel d'actes)."""
+    cols = ["f_age_au_soin", "f_age_hors_bornes_ref", "f_sexe_incompatible_ref"]
+    assures = ref_tables.get("assures", pd.DataFrame())
+    if assures.empty:
+        for col in cols:
+            feat[col] = float("nan")
+        return feat
+
+    fac = factures[["facture_id", "assure_id", "date_soin"]].merge(
+        _cols(assures, ["assure_id", "sexe", "annee_naissance"]), on="assure_id", how="left"
+    )
+    annee = fac["annee_naissance"].astype("float64")
+    fac["age"] = _to_dt(fac["date_soin"]).dt.year.astype("float64") - annee
+    feat["f_age_au_soin"] = fac.set_index("facture_id")["age"]
+
+    lignes = ref_tables.get("lignes_facture", pd.DataFrame())
+    ref_actes = ref_tables.get("referentiel_actes", pd.DataFrame())
+    if lignes.empty or ref_actes.empty:
+        feat["f_age_hors_bornes_ref"] = float("nan")
+        feat["f_sexe_incompatible_ref"] = float("nan")
+        return feat
+
+    ra = _cols(ref_actes, ["code_acte", "age_min", "age_max", "sexe_requis"])
+    ra = ra.rename(columns={"code_acte": "code"})
+    la = lignes.loc[lignes["type_ligne"] == "ACTE", ["facture_id", "code"]]
+    la = la.merge(ra, on="code", how="left", indicator=True)
+    la = la.merge(fac[["facture_id", "age", "sexe"]], on="facture_id", how="left")
+    connu = la["_merge"] == "both"
+
+    a_min = la["age_min"].astype("float64")
+    a_max = la["age_max"].astype("float64")
+    hors = (la["age"] < a_min) | (la["age"] > a_max)
+    la["hors_bornes"] = _flag(hors, connu & la["age"].notna() & a_min.notna() & a_max.notna())
+
+    sexe_req = la["sexe_requis"]
+    incompat = sexe_req.notna() & (la["sexe"] != sexe_req)
+    la["sexe_incompat"] = _flag(incompat, connu & la["sexe"].notna())
+
+    grp = la.groupby("facture_id")
+    feat["f_age_hors_bornes_ref"] = grp["hors_bornes"].max()
+    feat["f_sexe_incompatible_ref"] = grp["sexe_incompat"].max()
     return feat
 
 
@@ -734,14 +783,60 @@ def _add_couverture_features(
     factures: pd.DataFrame,
     ref_tables: dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
-    """Groupe 9+10 – Features prestataire radié et couverture. Implémenté en commit 5."""
-    for col in [
-        "f_prestataire_non_conventionne",
-        "f_soin_apres_fin_convention",
-        "f_soin_avant_adhesion",
-        "f_soin_apres_radiation",
-        "f_soin_hors_periode_contrat",
-        "f_soin_en_carence",
-    ]:
-        feat[col] = float("nan")
+    """Groupes 9 et 10 – PRESTATAIRE_RADIE et HORS_COUVERTURE (sans carence).
+
+    f_soin_en_carence reste NaN : implémenté dans un commit ultérieur.
+    """
+    feat["f_soin_en_carence"] = float("nan")
+    base = factures[["facture_id", "prestataire_id", "assure_id", "contrat_id", "date_soin"]].copy()
+    base["ds"] = _to_dt(base["date_soin"])
+
+    # -- Prestataire : convention --
+    presta = ref_tables.get("prestataires", pd.DataFrame())
+    if presta.empty:
+        feat["f_prestataire_non_conventionne"] = float("nan")
+        feat["f_soin_apres_fin_convention"] = float("nan")
+    else:
+        pr = _cols(presta, ["prestataire_id", "conventionne", "date_fin_convention"])
+        pr["_p"] = 1.0
+        pr["fin_conv"] = _to_dt(pr["date_fin_convention"])
+        m = base.merge(pr.drop(columns="date_fin_convention"), on="prestataire_id", how="left")
+        conv = m["conventionne"].astype("float64")
+        m["non_conv"] = _flag(conv == 0, conv.notna())
+        apres = m["fin_conv"].notna() & (m["ds"] > m["fin_conv"])
+        m["apres_fin"] = _flag(apres, m["_p"].notna() & m["ds"].notna())
+        idx = m.set_index("facture_id")
+        feat["f_prestataire_non_conventionne"] = idx["non_conv"]
+        feat["f_soin_apres_fin_convention"] = idx["apres_fin"]
+
+    # -- Assuré : adhésion et radiation --
+    assures = ref_tables.get("assures", pd.DataFrame())
+    if assures.empty:
+        feat["f_soin_avant_adhesion"] = float("nan")
+        feat["f_soin_apres_radiation"] = float("nan")
+    else:
+        asr = _cols(assures, ["assure_id", "date_adhesion", "date_radiation"])
+        asr["_a"] = 1.0
+        asr["adh"] = _to_dt(asr["date_adhesion"])
+        asr["rad"] = _to_dt(asr["date_radiation"])
+        m = base.merge(asr[["assure_id", "_a", "adh", "rad"]], on="assure_id", how="left")
+        m["avant_adh"] = _flag(m["ds"] < m["adh"], m["ds"].notna() & m["adh"].notna())
+        apres_rad = m["rad"].notna() & (m["ds"] > m["rad"])
+        m["apres_rad"] = _flag(apres_rad, m["_a"].notna() & m["ds"].notna())
+        idx = m.set_index("facture_id")
+        feat["f_soin_avant_adhesion"] = idx["avant_adh"]
+        feat["f_soin_apres_radiation"] = idx["apres_rad"]
+
+    # -- Contrat : période de couverture --
+    contrats = ref_tables.get("contrats", pd.DataFrame())
+    if contrats.empty:
+        feat["f_soin_hors_periode_contrat"] = float("nan")
+    else:
+        ct = _cols(contrats, ["contrat_id", "date_effet", "date_fin"])
+        ct["effet"] = _to_dt(ct["date_effet"])
+        ct["fin"] = _to_dt(ct["date_fin"])
+        m = base.merge(ct[["contrat_id", "effet", "fin"]], on="contrat_id", how="left")
+        hors = (m["ds"] < m["effet"]) | (m["fin"].notna() & (m["ds"] > m["fin"]))
+        m["hors_periode"] = _flag(hors, m["ds"].notna() & m["effet"].notna())
+        feat["f_soin_hors_periode_contrat"] = m.set_index("facture_id")["hors_periode"]
     return feat
