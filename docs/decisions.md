@@ -125,3 +125,7 @@ Le notebook `notebooks/01_eda_exploration_donnees.ipynb` explore les 12 CSV et l
 ### Lint des notebooks :
 
 Les notebooks d'exploration sont exemptés des règles ruff E501, N806, E741 et B905 (`per-file-ignores` sur `notebooks/*.ipynb`), car ils contiennent des lignes d'affichage denses et des noms de variables courts de type exploratoire. Ils restent soumis à `ruff format` et aux autres règles (E, W, F, I, N, UP, B). Le code de production sous `src/` garde la limite de 100 caractères.
+
+### Sujet : Pipeline reproductible d'ingestion et de nettoyage des données (PB-04)
+
+Le pipeline d'ingestion et de nettoyage technique (`src/predicare/db/ingest.py`) transforme les 12 CSV bruts et les 2 fichiers de labels en tables propres et typées sans dépendance à PostgreSQL. Les montants sont convertis en entiers stricts (`Int64` en Ariary) et les dates au format ISO AAAA-MM-JJ. Les doublons stricts sont éliminés, tandis que les anomalies métier (§6) et les valeurs manquantes structurelles (`ordonnance_id` null, etc.) sont intégralement préservées sans imputation arbitraire. La table `identites_pii` est validée mais protégée contre toute écriture en clair par défaut (RGPD). Une option d'échantillonnage par fermeture transitive (`--sample N`) garantit 0 orphelin sur toutes les relations. La constante `LEAKAGE_COLUMNS` isole les 4 colonnes à fuite pour PB-05, et la fonction publique `clean_all()` fournit une interface directe en mémoire pour le chargement en base PB-19.
