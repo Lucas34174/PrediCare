@@ -470,3 +470,210 @@ button:disabled { cursor: progress; }
   .fiche-score { grid-template-columns: 1fr; gap: 14px; }
   .fiche-totals { grid-template-columns: 1fr; }
 }
+
+/* Justificatifs — section 03 du formulaire */
+
+.justif-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .justif-grid { grid-template-columns: 1fr; }
+}
+
+.justif-block {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--canvas);
+}
+.justif-block > legend {
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.justif-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.justif-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 560;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.justif-radio:hover {
+  border-color: color-mix(in srgb, var(--green) 40%, var(--line));
+}
+.justif-radio.is-active {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+.justif-radio input { display: none; }
+
+.file-drop-wrapper { display: grid; gap: 6px; }
+.file-drop-label {
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 590;
+}
+.file-drop-zone {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 22px 14px;
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.file-drop-zone:hover,
+.file-drop-zone.is-dragging {
+  border-color: var(--green);
+  background: var(--green-light);
+}
+.file-drop-zone.is-disabled { cursor: not-allowed; opacity: 0.5; }
+.file-drop-zone strong { color: var(--ink); font-size: 12px; font-weight: 600; }
+.file-drop-zone small { color: var(--ink-muted); font-size: 10px; }
+.file-drop-zone svg { color: var(--green); }
+
+.file-drop-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.file-drop-preview svg { color: var(--green); flex: 0 0 auto; }
+.file-drop-preview-text { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.file-drop-preview-text strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-drop-preview-text small { color: var(--ink-muted); font-size: 10px; }
+.file-drop-remove {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.file-drop-remove:hover { border-color: var(--red); color: var(--red); }
+
+.file-drop-error {
+  margin: 4px 0 0;
+  color: var(--red);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.justif-manual {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.justif-notes { grid-column: 1 / -1; }
+.justif-manual textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+@media (max-width: 720px) {
+  .justif-manual { grid-template-columns: 1fr; }
+}
+
+/* Upload parser — extraction PDF */
+.upload-parser { display: grid; gap: 6px; }
+.upload-parser-reading,
+.upload-parser-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.upload-parser-reading svg { color: var(--green); }
+.upload-parser-done {
+  border-color: color-mix(in srgb, var(--green) 40%, var(--line));
+  background: var(--green-light);
+}
+.upload-parser-done svg { color: var(--green); }
+.upload-parser-reading strong,
+.upload-parser-done strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.upload-parser-reading small,
+.upload-parser-done small {
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+.upload-parser-done > div,
+.upload-parser-reading > div {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.upload-parser-warnings {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 8%, var(--surface));
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.5;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.upload-parser-warnings li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.upload-parser-warnings svg {
+  flex: 0 0 13px;
+  color: var(--amber);
+  margin-top: 1px;
+}

@@ -66,6 +66,8 @@ export interface ClaimDraft {
   mode_reglement: SettlementMethod
   part_assure: string
   lines: DraftLine[]
+  patient_nom: string
+  attestation_pec: string
 }
 
 export interface ClaimLineSubmission {
@@ -248,3 +250,44 @@ export interface ApiErrorPayload {
   detail?: ApiErrorDetail
   message?: string
 }
+
+export interface JustificatifRef {
+  kind: 'FACTURE' | 'ORDONNANCE'
+  mode: 'UPLOAD' | 'MANUAL'
+  /** Si UPLOAD */
+  fileId?: string
+  fileName?: string
+  fileSize?: number
+  /** Si MANUAL : champs libres */
+  manual?: {
+    numero?: string
+    date?: string
+    prescripteur?: string
+    notes?: string
+  }
+}
+
+export type JustificatifMode = 'NONE' | 'UPLOAD' | 'MANUAL'
+
+export interface JustificatifBlock {
+  mode: JustificatifMode
+  file: { id: string; name: string; size: number } | null
+  manual: { numero: string; date: string; prescripteur: string; notes: string }
+}
+
+export const emptyJustificatifBlock: JustificatifBlock = {
+  mode: 'NONE',
+  file: null,
+  manual: { numero: '', date: '', prescripteur: '', notes: '' },
+}
+
+export interface JustificatifErrors {
+  general?: string
+  facture?: string
+  ordonnance?: string
+}
+
+export interface ClaimCreateRequestWithJustificatifs extends ClaimCreateRequest {
+  justificatifs: JustificatifRef[]
+}
+

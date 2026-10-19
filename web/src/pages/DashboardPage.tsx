@@ -1,7 +1,7 @@
+// web/src/pages/DashboardPage.tsx
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, BadgeCheck, CircleAlert, FileText, WalletCards } from 'lucide-react'
 import { request } from '@/api/request'
-import type { DashboardKpis, DashboardPrediction } from '@/api/types'
 import { useAuth } from '@/auth/AuthContext'
 import { roleTitles } from '@/components/navigation'
 import { normalizeFactors } from '@/lib/normalizeFactors'
@@ -10,22 +10,40 @@ const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const { data: kpis } = useQuery({ queryKey: ['kpis'], queryFn: () => request<DashboardKpis>('/dashboard/kpis') })
+  
+  // On tape dans la vraie structure de l'API
+  const { data: apiKpis } = useQuery({ 
+    queryKey: ['kpis'], 
+    queryFn: () => request<any>('/dashboard/kpis'),
+    enabled: false,
+  })
+  
   const { data: prediction } = useQuery({
     queryKey: ['prediction'],
-    queryFn: () => request<DashboardPrediction>('/predictions/latest'),
+    queryFn: () => request<any>('/predictions/latest'),
+    retry: false,
+    enabled: !!user,
   })
-  const factors = normalizeFactors(prediction?.explanation.top_factors)
 
   if (!user) return null
 
+  const factors = normalizeFactors(prediction?.explanation?.top_factors)
+
+  // On extrait les bonnes valeurs du contrat
+  const kpis = apiKpis ? {
+    received: apiKpis.kpis.total_factures_traitees ?? 0,
+    to_review: apiKpis.kpis.dossiers_en_attente_arbitrage ?? 0,
+    processed: apiKpis.kpis.total_factures_traitees ?? 0,
+    amount: apiKpis.kpis.montant_total_demande ?? 0,
+  } : null
+
   const cards = [
-    { label: 'Dossiers reçus', value: kpis?.claims_received ?? '—', note: 'sur la période', icon: FileText },
-    { label: 'À examiner', value: kpis?.claims_to_review ?? '—', note: 'vérification recommandée', icon: CircleAlert },
-    { label: 'Dossiers traités', value: kpis?.claims_processed ?? '—', note: 'sur la période', icon: BadgeCheck },
+    { label: 'Dossiers reçus', value: kpis ? kpis.received : '—', note: 'sur la période', icon: FileText },
+    { label: 'À examiner', value: kpis ? kpis.to_review : '—', note: 'vérification recommandée', icon: CircleAlert },
+    { label: 'Dossiers traités', value: kpis ? kpis.processed : '—', note: 'sur la période', icon: BadgeCheck },
     {
       label: 'Remboursements',
-      value: kpis ? `${formatMGA.format(kpis.reimbursements_mga)} MGA` : '—',
+      value: kpis ? `${formatMGA.format(kpis.amount)} MGA` : '—',
       note: 'montant total',
       icon: WalletCards,
     },
@@ -51,7 +69,8 @@ export function DashboardPage() {
           </article>
         ))}
       </section>
-
+      
+      {/* Le reste de ton composant avec les graphiques (activity-visual, etc.) */}
       <section className="dashboard-lower">
         <article className="overview-panel">
           <div className="panel-heading">
@@ -61,9 +80,9 @@ export function DashboardPage() {
           <div className="activity-visual" aria-label="Résumé de l’activité">
             <div className="activity-orbit orbit-one" />
             <div className="activity-orbit orbit-two" />
-            <div className="activity-core"><span>TPA</span><strong>{kpis?.claims_processed ?? '—'}</strong><small>dossiers suivis</small></div>
+            <div className="activity-core"><span>TPA</span><strong>{kpis?.processed ?? '—'}</strong><small>dossiers suivis</small></div>
             <div className="activity-note note-left"><span className="note-dot green" /> Traitement fluide</div>
-            <div className="activity-note note-right"><span className="note-dot amber" /> {kpis?.claims_to_review ?? '—'} à revoir</div>
+            <div className="activity-note note-right"><span className="note-dot amber" /> {kpis?.to_review ?? '—'} à revoir</div>
           </div>
           <div className="panel-footer"><span>Dernière mise à jour</span><strong>2026-10-14 · 09:42</strong></div>
         </article>
@@ -75,7 +94,7 @@ export function DashboardPage() {
               <div className="signal-score"><span>Score de risque</span><strong>{Math.round(prediction.fraud_probability * 100)}<small>%</small></strong><div className="score-track"><span style={{ width: `${Math.round(prediction.fraud_probability * 100)}%` }} /></div></div>
               <p className="claim-reference">Dossier <strong>{prediction.claim_id}</strong><span>Version {prediction.model_version}</span></p>
               <p className="signal-disclaimer">Un score élevé est un signal à examiner, jamais une preuve de fraude.</p>
-              <ul className="factor-list">{factors.slice(0, 2).map((factor) => <li key={factor.feature}><ArrowUpRight aria-hidden="true" size={15} />{factor.label}</li>)}</ul>
+              <ul className="factor-list">{factors.slice(0, 2).map((factor) => <li key={factor.feature}><ArrowUpRight aria-hidden="true" size={19} />{factor.label}</li>)}</ul>
             </div>
           ) : (
             <div className="empty-signal"><CircleAlert aria-hidden="true" /><strong>Aucun signal à afficher</strong><span>Les nouvelles analyses apparaîtront ici.</span></div>

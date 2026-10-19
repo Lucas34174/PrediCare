@@ -1,3 +1,4 @@
+// web/src/auth/AuthContext.tsx
 import {
   createContext,
   useCallback,
@@ -39,13 +40,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [])
 
   const logout = useCallback(() => clearStoredSession(), [])
+  
   const user = session
     ? { display_name: session.user.nom_complet, role: toUiRole(session.user.role) }
     : null
 
   return (
     <AuthContext.Provider
-      value={{ user, role: session ? toUiRole(session.user.role) : null, isAuthenticated: Boolean(session), login, logout }}
+      value={{ 
+        user, 
+        role: session ? toUiRole(session.user.role) : null, 
+        isAuthenticated: Boolean(session), 
+        login, 
+        logout 
+      }}
     >
       {children}
     </AuthContext.Provider>

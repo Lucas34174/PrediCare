@@ -1,3 +1,4 @@
+// web/src/components/navigation.ts
 import {
   Activity,
   BriefcaseMedical,
@@ -5,6 +6,9 @@ import {
   FileHeart,
   Gauge,
   FilePlus2,
+  Settings,
+  Cpu,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react'
 import type { UiRole } from '@/api/types'
@@ -33,19 +37,20 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
     { label: 'Dossiers à examiner', path: '/gestionnaire/dossiers', icon: ClipboardCheck },
-    { label: 'Factures', path: '/gestionnaire/factures/nouvelle', icon: FilePlus2 },
   ],
   professionnel_sante: [
     { label: 'Mon activité', path: '/app', icon: Activity },
-    { label: 'Mes dossiers', path: '/professionnel-sante', icon: BriefcaseMedical },
+    { label: 'Nouvelle facture', path: '/professionnel-sante/factures/nouvelle', icon: FilePlus2 },
+    { label: 'Mes dossiers', path: '/professionnel-sante/dossiers', icon: BriefcaseMedical },
   ],
   assure: [
-    { label: 'Mon espace', path: '/app', icon: FileHeart },
-    { label: 'Mon dossier', path: '/assure', icon: ClipboardCheck },
+    { label: 'Mes dossiers', path: '/assure', icon: FileHeart },
+    { label: 'Assistant', path: '/assure/chat', icon: MessageSquare },
   ],
   admin: [
-    { label: 'Supervision', path: '/app', icon: Gauge },
-    { label: 'Administration', path: '/admin', icon: Activity },
+    { label: 'Supervision', path: '/admin', icon: Gauge },
+    { label: 'Configuration', path: '/admin/config', icon: Settings },
+    { label: 'Modèles ML', path: '/admin/models', icon: Cpu },
   ],
 }
 

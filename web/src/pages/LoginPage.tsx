@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+// import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+
 import {
   ArrowRight,
   Check,
@@ -17,9 +19,9 @@ import { useAuth } from "@/auth/AuthContext";
 import { roleLabels } from "@/components/navigation";
 import type { UiRole } from "@/api/types";
 
-interface LocationState {
-  from?: { pathname?: string };
-}
+// interface LocationState {
+//   from?: { pathname?: string };
+// }
 
 const roleDescriptions: Record<UiRole, string> = {
   gestionnaire: "Gestion des dossiers",
@@ -43,8 +45,8 @@ export function LoginPage({
   onToggleTheme: () => void;
 }) {
   const { isAuthenticated, login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  // const navigate = useNavigate();
+  // const location = useLocation();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -59,9 +61,9 @@ export function LoginPage({
     setSubmitting(true);
     try {
       await login({ identifier: identifier.trim(), password });
-      const destination =
-        (location.state as LocationState | null)?.from?.pathname ?? "/app";
-      navigate(destination, { replace: true });
+      // const destination =
+      //   (location.state as LocationState | null)?.from?.pathname ?? "/app";
+      // navigate(destination, { replace: true });
     } catch (caught) {
       setError(
         caught instanceof ApiError

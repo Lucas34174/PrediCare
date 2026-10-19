@@ -92,6 +92,8 @@ export function makeClaimPayload(draft: ClaimDraft) {
       prix_unitaire: Number(line.prix_unitaire),
       montant_total: Number(line.quantite) * Number(line.prix_unitaire),
     })),
+    patient_nom: draft.patient_nom.trim(),
+    attestation_pec: draft.attestation_pec.trim(),
   }
 }
 
