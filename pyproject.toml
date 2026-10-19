@@ -16,9 +16,11 @@ ignore = [
     "B008",
     "E501",
     "N806",
+    "N803",
     "E741",
     "B905",
 ]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
