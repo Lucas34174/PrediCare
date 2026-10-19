@@ -87,6 +87,13 @@ def _ordo_lignes(rows: list[dict]) -> pd.DataFrame:
     return df
 
 
+def _ordonnances(rows: list[dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    if "validite_jours" in df.columns:
+        df["validite_jours"] = pd.to_numeric(df["validite_jours"], errors="coerce").astype("Int64")
+    return df
+
+
 # Tests anti-fuite (commit 1 + garde permanente)
 
 
@@ -429,3 +436,151 @@ def test_parite_lot_unitaire_tarif():
         assert out_lot.loc["F1", col] == pytest.approx(out_solo.loc["F1", col]), (
             f"Parité échouée pour {col}"
         )
+
+
+# Tests groupes 3+4 – Features ordonnance
+
+
+_ORDO_BASE = {
+    "ordonnance_id": "ORD-1",
+    "assure_id": "A1",
+    "prescripteur_id": "P1",
+    "date_prescription": "2025-01-01",
+    "validite_jours": 10,
+    "type_ordonnance": "STANDARD",
+    "diagnostic": None,
+    "renseignement_clinique": None,
+}
+
+
+def test_lignes_hors_ordonnance_part():
+    """2 lignes, 1 dans ordonnance, 1 hors → part=0.5."""
+    fac = _fac([{**_FAC_BASE, "ordonnance_id": "ORD-1"}])
+    lignes = _lignes(
+        [
+            {
+                "ligne_id": "L1",
+                "facture_id": "F1",
+                "num_ligne": 1,
+                "code": "ACT-01",
+                "type_ligne": "ACTE",
+                "libelle": "X",
+                "quantite": 1,
+                "prix_unitaire": 10000,
+                "montant": 10000,
+            },
+            {
+                "ligne_id": "L2",
+                "facture_id": "F1",
+                "num_ligne": 2,
+                "code": "ACT-99",
+                "type_ligne": "ACTE",
+                "libelle": "Y",
+                "quantite": 1,
+                "prix_unitaire": 10000,
+                "montant": 10000,
+            },
+        ]
+    )
+    ol = _ordo_lignes(
+        [
+            {
+                "ordonnance_id": "ORD-1",
+                "num_ligne": 1,
+                "code": "ACT-01",
+                "libelle": "X",
+                "quantite": 1,
+                "posologie": "",
+            },
+        ]
+    )
+    out = build_features(fac, {"lignes_facture": lignes, "ordonnance_lignes": ol}, pd.DataFrame())
+    assert out.loc["F1", "f_part_lignes_hors_ordonnance"] == pytest.approx(0.5)
+
+
+def test_ordonnance_absente_requise_flag():
+    """Facture sans ordonnance, acte avec ordonnance_requise=1 → flag=1."""
+    fac = _fac([_FAC_BASE])  # ordonnance_id null
+    lignes = _lignes(
+        [
+            {
+                "ligne_id": "L1",
+                "facture_id": "F1",
+                "num_ligne": 1,
+                "code": "ACT-01",
+                "type_ligne": "ACTE",
+                "libelle": "X",
+                "quantite": 1,
+                "prix_unitaire": 30000,
+                "montant": 30000,
+            },
+        ]
+    )
+    ra = _ref_actes([{**_ACTE_BASE, "ordonnance_requise": 1}])
+    out = build_features(fac, {"lignes_facture": lignes, "referentiel_actes": ra}, pd.DataFrame())
+    assert out.loc["F1", "f_ordonnance_absente_requise"] == pytest.approx(1.0)
+
+
+def test_ordonnance_non_requise_pas_flag():
+    """Facture sans ordonnance, acte avec ordonnance_requise=0 → flag=0."""
+    fac = _fac([_FAC_BASE])
+    lignes = _lignes(
+        [
+            {
+                "ligne_id": "L1",
+                "facture_id": "F1",
+                "num_ligne": 1,
+                "code": "ACT-01",
+                "type_ligne": "ACTE",
+                "libelle": "X",
+                "quantite": 1,
+                "prix_unitaire": 30000,
+                "montant": 30000,
+            },
+        ]
+    )
+    ra = _ref_actes([{**_ACTE_BASE, "ordonnance_requise": 0}])
+    out = build_features(fac, {"lignes_facture": lignes, "referentiel_actes": ra}, pd.DataFrame())
+    assert out.loc["F1", "f_ordonnance_absente_requise"] == pytest.approx(0.0)
+
+
+def test_ordonnance_autre_assure_flag():
+    """Ordonnance appartient à A2, facture pour A1 → flag=1."""
+    fac = _fac([{**_FAC_BASE, "ordonnance_id": "ORD-1"}])  # assure_id = A1
+    ordo = _ordonnances([{**_ORDO_BASE, "assure_id": "A2"}])  # ordo pour A2
+    out = build_features(fac, {"ordonnances": ordo}, pd.DataFrame())
+    assert out.loc["F1", "f_ordonnance_autre_assure"] == pytest.approx(1.0)
+
+
+def test_ordonnance_meme_assure_pas_flag():
+    """Ordonnance appartient au même assuré A1 → flag=0."""
+    fac = _fac([{**_FAC_BASE, "ordonnance_id": "ORD-1"}])
+    ordo = _ordonnances([{**_ORDO_BASE, "assure_id": "A1"}])
+    out = build_features(fac, {"ordonnances": ordo}, pd.DataFrame())
+    assert out.loc["F1", "f_ordonnance_autre_assure"] == pytest.approx(0.0)
+
+
+def test_ordonnance_expiree_detectee():
+    """Soin 15j après prescription, validité 10j → expiree=1, delai=15."""
+    fac = _fac([{**_FAC_BASE, "date_soin": "2025-01-16", "ordonnance_id": "ORD-1"}])
+    ordo = _ordonnances([{**_ORDO_BASE, "date_prescription": "2025-01-01", "validite_jours": 10}])
+    out = build_features(fac, {"ordonnances": ordo}, pd.DataFrame())
+    assert out.loc["F1", "f_delai_soin_prescription_j"] == pytest.approx(15.0)
+    assert out.loc["F1", "f_ordonnance_expiree"] == pytest.approx(1.0)
+
+
+def test_ordonnance_valide_non_expiree():
+    """Soin 5j après prescription, validité 10j → expiree=0, delai=5."""
+    fac = _fac([{**_FAC_BASE, "date_soin": "2025-01-06", "ordonnance_id": "ORD-1"}])
+    ordo = _ordonnances([{**_ORDO_BASE, "date_prescription": "2025-01-01", "validite_jours": 10}])
+    out = build_features(fac, {"ordonnances": ordo}, pd.DataFrame())
+    assert out.loc["F1", "f_delai_soin_prescription_j"] == pytest.approx(5.0)
+    assert out.loc["F1", "f_ordonnance_expiree"] == pytest.approx(0.0)
+
+
+def test_delai_nan_si_pas_ordonnance():
+    """Facture sans ordonnance_id → delai et expiree = NaN."""
+    fac = _fac([_FAC_BASE])
+    out = build_features(fac, {}, pd.DataFrame())
+    assert pd.isna(out.loc["F1", "f_delai_soin_prescription_j"])
+    assert pd.isna(out.loc["F1", "f_ordonnance_expiree"])
