@@ -10,6 +10,7 @@ import { RiskBadge } from '@/components/RiskBadge'
 import { StatusBadge } from '@/components/StatusBadge'
 import { claimLineTypeLabels, rejectionReasonLabels, rejectionReasons } from '@/lib/config'
 import { normalizeFactors, type NormalizedFactor } from '@/lib/normalizeFactors'
+import { ManagerDecisionBlock } from '@/features/claims/ManagerDecisionBlock'
 
 /** Phrase fixe exigée sur toute carte de score : le score n'établit jamais une fraude. */
 const SCORE_DISCLAIMER =
@@ -241,6 +242,10 @@ export function ManagerClaimDetailPage() {
             </>
           )}
         </section>
+        <ManagerDecisionBlock 
+          factureId={detail.facture_id} 
+          montantDemande={detail.montant_demande} 
+        />
       </div>
     </div>
   )

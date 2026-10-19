@@ -3,7 +3,7 @@ import { ApiError } from './errors'
 import { clearStoredSession, getStoredSession } from './session'
 import type { ApiErrorPayload } from './types'
 
-const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
+// const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 
 export interface RequestOptions {
   forceMock?: boolean
@@ -12,7 +12,7 @@ export interface RequestOptions {
 export async function request<T>(
   path: string,
   init: RequestInit = {},
-  options: RequestOptions = {},
+  // options: RequestOptions = {},
 ): Promise<T> {
   // if (options.forceMock ?? useMock) return resolveMock<T>(path, init)
 
