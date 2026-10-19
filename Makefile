@@ -27,6 +27,8 @@ baseline: ## Entraîne et évalue les baselines LR et RF
 	PYTHONPATH=src python -m predicare.ml.baseline
 tune: ## Optimise XGBoost et LightGBM avec Optuna
 	PYTHONPATH=src python -m predicare.ml.tuning --n-trials 20
+evaluate: ## Génère le rapport d'évaluation complet et les figures
+	PYTHONPATH=src python scripts/generate_evaluation_report.py
 
 
 
