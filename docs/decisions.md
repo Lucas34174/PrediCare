@@ -130,7 +130,7 @@ Les notebooks d'exploration sont exemptés des règles ruff E501, N806, E741 et 
 
 Le pipeline d'ingestion et de nettoyage technique (`src/predicare/db/ingest.py`) transforme les 12 CSV bruts et les 2 fichiers de labels en tables propres et typées sans dépendance à PostgreSQL. Les montants sont convertis en entiers stricts (`Int64` en Ariary) et les dates au format ISO AAAA-MM-JJ. Les doublons stricts sont éliminés, tandis que les anomalies métier (§6) et les valeurs manquantes structurelles (`ordonnance_id` null, etc.) sont intégralement préservées sans imputation arbitraire. La table `identites_pii` est validée mais protégée contre toute écriture en clair par défaut (RGPD). Une option d'échantillonnage par fermeture transitive (`--sample N`) garantit 0 orphelin sur toutes les relations. La constante `LEAKAGE_COLUMNS` isole les 4 colonnes à fuite pour PB-05, et la fonction publique `clean_all()` fournit une interface directe en mémoire pour le chargement en base PB-19.
 
-### PB-06 – Split anti-fuite et baseline ML :
+### Split anti-fuite et baseline ML :
 
 Split par groupes d'assurés triés chronologiquement par leur première `date_soin` :
 80 % des assurés (les plus anciens) → train, 20 % → test. Aucun assuré ne traverse
@@ -140,3 +140,13 @@ SMOTE. Métrique prioritaire : **Recall** (coût d'un faux négatif > faux posit
 assurance fraude) ; **PR-AUC** pour le suivi dérive (robuste au déséquilibre).
 Deux baselines : LR (Logistic Regression, lbfgs, max_iter=1000) et RF (300 arbres).
 Modèles sérialisés dans `models/` via joblib ; `feature_names.json` pour PB-22.
+
+### Optimisation XGBoost/LightGBM et sélection du seuil de décision :
+
+L'optimisation bayésienne Optuna (20 trials) a comparé XGBoost et LightGBM via une validation croisée stratifiée et groupée par assuré (5-fold StratifiedGroupKFold) sur le jeu d'entraînement, préservant l'étanchéité absolue du jeu de test. La métrique directrice est la PR-AUC (Average Precision). Le déséquilibre de classes (ratio ≈ 10.5:1) est traité via `scale_pos_weight` : Optuna converge vers une pondération forte (7.51 pour XGBoost, 5.58 pour LightGBM), surclassant nettement la configuration non pondérée.
+
+Le modèle champion retenu pour le déploiement est **XGBoost** (`v1.0.0-xgb`) : il atteint la meilleure PR-AUC en CV (0.6640), une compatibilité native parfaite avec `shap.TreeExplainer` pour l'explicabilité requise par `GET /claims/{id}/prediction`, et des prédictions bornées strictement dans [0, 1].
+
+La sélection du seuil de décision a été réalisée sur les prédictions Out-Of-Fold (OOF) de validation croisée selon la règle métier : _maximiser la précision sous contrainte de Recall ≥ 80 %_. Le seuil optimal s'établit à **0.30**, générant un volume d'alertes modéré de 40.3 % pour un Recall OOF de 80.0 %, contre un seuil à 0.05 pour LightGBM générant un volume excessif de 63.8 % d'alertes. L'écart avec la valeur par défaut du contrat d'interface (`fraud_score_threshold = 0.80`) est documenté : l'endpoint `PUT /admin/config` permet d'ajuster ce seuil en exploitation sans rupture contractuelle.
+
+Sur le jeu de test final inviolé (91 factures, 7 fraudes), XGBoost détecte 100 % des fraudes `ACTE_FICTIF` et `SURFACTURATION`. Les fraudes `DOUBLON` sont manquées sur l'échantillon réduit car le filtre `_drop_high_nan` (> 95 % NaN) a écarté les features d'antériorité de réémission faute d'historique sur 500 lignes ; ce comportement est documenté et se résout sur le jeu complet de 84 593 factures. Les métadonnées du modèle sont sérialisées dans `models/models_metadata.json` au format validable par `GET /admin/models`.

@@ -164,3 +164,86 @@ def test_train_baseline_drop_nan():
     _, m = train_baseline(X_tr, X_te, y_tr, y_te, model_name="lr")
     assert "f_nan" in m["features_dropped"]
     assert "f_ok" in m["features_used"]
+
+
+# ---------------------------------------------------------------------------
+# Tests anti-fuite et chargement labels (PB-07)
+# ---------------------------------------------------------------------------
+def test_check_no_leakage_valide():
+    """Un DataFrame propre sans colonnes interdites passe sans erreur."""
+    from predicare.ml.baseline import check_no_leakage
+
+    df = pd.DataFrame({"f_ratio": [1.0, 2.0], "f_ecart": [10, 20]})
+    check_no_leakage(df)
+
+
+@pytest.mark.parametrize(
+    "colonne_interdite",
+    [
+        "statut",
+        "motif_rejet",
+        "montant_pris_en_charge",
+        "date_traitement",
+        "est_fraude",
+        "type_fraude",
+        "detail_fraude",
+        "est_valide",
+    ],
+)
+def test_check_no_leakage_echec_colonne_interdite(colonne_interdite):
+    """Toute colonne interdite (fuite ou label) déclenche une ValueError."""
+    from predicare.ml.baseline import check_no_leakage
+
+    df = pd.DataFrame({"f_ok": [1, 2], colonne_interdite: [0, 1]})
+    with pytest.raises(ValueError, match="Fuite de données détectée"):
+        check_no_leakage(df)
+
+
+def test_train_baseline_rejette_fuite():
+    """train_baseline refuse de s'entraîner si X_train contient une variable de fuite."""
+    from predicare.ml.baseline import train_baseline
+
+    X_tr, X_te, y_tr, y_te = _make_xy()
+    X_tr["montant_pris_en_charge"] = 1000
+    with pytest.raises(ValueError, match="Fuite de données détectée"):
+        train_baseline(X_tr, X_te, y_tr, y_te, model_name="lr")
+
+
+def test_load_dataset_filtre_labels_invalides(tmp_path):
+    """load_dataset exclut les factures dont est_valide == 0."""
+    from predicare.ml.baseline import load_dataset
+
+    feat_path = tmp_path / "features.csv"
+    lbl_path = tmp_path / "labels.csv"
+    fac_path = tmp_path / "factures.csv"
+
+    pd.DataFrame(
+        {"f_1": [1.0, 2.0, 3.0]},
+        index=pd.Index(["F1", "F2", "F3"], name="facture_id"),
+    ).to_csv(feat_path)
+
+    pd.DataFrame(
+        {
+            "facture_id": ["F1", "F2", "F3"],
+            "est_fraude": [0, 1, 1],
+            "type_fraude": ["AUCUNE", "SURFACTURATION", "DOUBLON"],
+            "est_valide": [1, 0, 1],
+            "motif_invalidite": [None, "erreur saisie", None],
+        }
+    ).to_csv(lbl_path, index=False)
+
+    pd.DataFrame(
+        {
+            "facture_id": ["F1", "F2", "F3"],
+            "assure_id": ["A1", "A2", "A3"],
+            "date_soin": ["2025-01-01", "2025-01-02", "2025-01-03"],
+        }
+    ).to_csv(fac_path, index=False)
+
+    feat, lbl, meta = load_dataset(str(feat_path), str(lbl_path), str(fac_path))
+
+    assert "F2" not in feat.index, "F2 (est_valide=0) aurait dû être exclu"
+    assert "F2" not in lbl.index
+    assert set(feat.index) == {"F1", "F3"}
+    assert "type_fraude" in meta.columns
+    assert meta.loc[meta["facture_id"] == "F3", "type_fraude"].iloc[0] == "DOUBLON"
