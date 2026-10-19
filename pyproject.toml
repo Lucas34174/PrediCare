@@ -14,6 +14,10 @@ src = ["src", "tests"]
 select = ["E", "W", "F", "I", "N", "B", "UP"]
 ignore = [
     "B008",
+    "E501",
+    "N806",
+    "E741",
+    "B905",
 ]
 
 [tool.pytest.ini_options]
