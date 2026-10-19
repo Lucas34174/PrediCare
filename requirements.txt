@@ -13,3 +13,5 @@ bcrypt>=4.1
 pytest>=8.0
 pytest-cov>=5.0
 pandas>=2.2
+scikit-learn>=1.5
+imbalanced-learn>=0.13

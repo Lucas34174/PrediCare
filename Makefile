@@ -19,10 +19,13 @@ test-cov: ## Exécute les tests avec rapport de couverture de code
 	pytest --cov=predicare --cov-report=term-missing -m "not llm"
 ingest: ## Nettoie et prépare les tables dans data/processed
 	PYTHONPATH=src python -m predicare.db.ingest
-features:
+features: ## Construit le jeu de features pour le ML
 	PYTHONPATH=src python -m predicare.ml.features
-features-sample:
+features-sample: ## Construit un échantillon du jeu de features pour le ML
 	PYTHONPATH=src python -m predicare.ml.features --sample 500 --seed 42
+baseline: ## Entraîne et évalue les baselines LR et RF
+	PYTHONPATH=src python -m predicare.ml.baseline
+
 
 
 	
