@@ -38,6 +38,36 @@ MODELS_DIR = Path("models")
 # Features exclues avant fitting si taux de NaN > seuil dans le train
 NAN_THRESHOLD = 0.95
 
+# Colonnes strictement interdites dans la matrice de features X (entraînement et inférence)
+LEAKAGE_COLUMNS: frozenset[str] = frozenset(
+    [
+        "statut",
+        "motif_rejet",
+        "montant_pris_en_charge",
+        "date_traitement",
+    ]
+)
+LABEL_COLUMNS: frozenset[str] = frozenset(
+    [
+        "est_fraude",
+        "type_fraude",
+        "detail_fraude",
+        "est_valide",
+        "motif_invalidite",
+        "est_suspect",
+    ]
+)
+FORBIDDEN_COLUMNS: frozenset[str] = LEAKAGE_COLUMNS | LABEL_COLUMNS
+
+
+def check_no_leakage(X: pd.DataFrame) -> None:
+    """Vérifie l'absence absolue de colonnes interdites (fuite ou label) dans la matrice X."""
+    present_forbidden = set(X.columns) & FORBIDDEN_COLUMNS
+    if present_forbidden:
+        raise ValueError(
+            f"Fuite de données détectée dans X ! Colonnes interdites présentes : {sorted(present_forbidden)}"
+        )
+
 
 # Chargement
 def load_dataset(
@@ -45,12 +75,25 @@ def load_dataset(
     labels_path: str = LABELS_PATH,
     factures_path: str = FACTURES_PATH,
 ) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
-    """Charge et joint features, labels (est_fraude) et métadonnées de split."""
+    """Charge et joint features, labels (est_fraude) et métadonnées de split.
+
+    Filtre est_valide == 1 si la colonne existe (exclusion des labels invalides).
+    Garantit l'absence de colonnes de fuite ou de labels dans X.
+    """
     logger.info("Chargement features : %s", features_path)
     feat = pd.read_csv(features_path, index_col="facture_id")
 
     logger.info("Chargement labels : %s", labels_path)
-    lbl = pd.read_csv(labels_path).set_index("facture_id")["est_fraude"].astype(int)
+    lbl_df = pd.read_csv(labels_path)
+    if "est_valide" in lbl_df.columns:
+        n_before = len(lbl_df)
+        lbl_df = lbl_df[lbl_df["est_valide"] == 1]
+        n_dropped = n_before - len(lbl_df)
+        if n_dropped > 0:
+            logger.warning("Labels invalides exclus (est_valide != 1) : %d factures", n_dropped)
+
+    lbl_df = lbl_df.set_index("facture_id")
+    lbl = lbl_df["est_fraude"].astype(int)
 
     logger.info("Chargement métadonnées factures : %s", factures_path)
     meta = pd.read_csv(factures_path, usecols=["facture_id", "assure_id", "date_soin"])
@@ -60,6 +103,11 @@ def load_dataset(
     feat = feat.loc[common]
     lbl = lbl.loc[common]
     meta = meta[meta["facture_id"].isin(common)].reset_index(drop=True)
+    if "type_fraude" in lbl_df.columns:
+        meta["type_fraude"] = meta["facture_id"].map(lbl_df["type_fraude"])
+
+    # Vérification anti-fuite sur les features chargées
+    check_no_leakage(feat)
 
     logger.info(
         "Dataset : %d factures | %d fraudes (%.1f %%)",
@@ -211,6 +259,10 @@ def train_baseline(
 
     Étapes : suppression features haute-NaN → fit → évaluation.
     """
+    # Vérifications de sécurité anti-fuite
+    check_no_leakage(X_train)
+    check_no_leakage(X_test)
+
     X_tr, X_te, dropped = _drop_high_nan(X_train, X_test, threshold=nan_threshold)
     features_used = list(X_tr.columns)
 
