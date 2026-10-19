@@ -25,6 +25,8 @@ features-sample: ## Construit un échantillon du jeu de features pour le ML
 	PYTHONPATH=src python -m predicare.ml.features --sample 500 --seed 42
 baseline: ## Entraîne et évalue les baselines LR et RF
 	PYTHONPATH=src python -m predicare.ml.baseline
+tune: ## Optimise XGBoost et LightGBM avec Optuna
+	PYTHONPATH=src python -m predicare.ml.tuning --n-trials 20
 
 
 
