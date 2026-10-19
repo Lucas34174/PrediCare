@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from predicare.ml.baseline import split_no_leakage
 
@@ -85,3 +86,81 @@ def test_split_taille_test_proportion_assures():
     n_total = meta["assure_id"].nunique()
 
     assert 0.15 <= n_test_assures / n_total <= 0.30
+
+
+# ---------------------------------------------------------------------------
+# Tests make_pipeline / evaluate / train_baseline
+# ---------------------------------------------------------------------------
+def _make_xy(n_train=150, n_test=50, n_fraud_train=15, n_fraud_test=5, n_feat=5, seed=0):
+    rng = np.random.default_rng(seed)
+    cols = [f"f_{i}" for i in range(n_feat)]
+    X_tr = pd.DataFrame(rng.normal(0, 1, (n_train, n_feat)), columns=cols)
+    X_te = pd.DataFrame(rng.normal(0, 1, (n_test, n_feat)), columns=cols)
+    y_tr = pd.Series([0] * (n_train - n_fraud_train) + [1] * n_fraud_train)
+    y_te = pd.Series([0] * (n_test - n_fraud_test) + [1] * n_fraud_test)
+    return X_tr, X_te, y_tr, y_te
+
+
+def test_make_pipeline_lr_est_pipeline():
+    from sklearn.pipeline import Pipeline
+
+    from predicare.ml.baseline import make_pipeline
+
+    pipe = make_pipeline("lr")
+    assert isinstance(pipe, Pipeline)
+    assert "clf" in pipe.named_steps
+
+
+def test_make_pipeline_rf_est_pipeline():
+    from sklearn.pipeline import Pipeline
+
+    from predicare.ml.baseline import make_pipeline
+
+    pipe = make_pipeline("rf")
+    assert isinstance(pipe, Pipeline)
+    assert "clf" in pipe.named_steps
+
+
+def test_make_pipeline_inconnu_leve_erreur():
+    from predicare.ml.baseline import make_pipeline
+
+    with pytest.raises(ValueError, match="inconnu"):
+        make_pipeline("xgb")
+
+
+def test_evaluate_cles_presentes():
+    from predicare.ml.baseline import evaluate, make_pipeline
+
+    X_tr, X_te, y_tr, y_te = _make_xy()
+    pipe = make_pipeline("lr")
+    pipe.fit(X_tr, y_tr)
+    m = evaluate(pipe, X_te, y_te)
+    for key in ("recall", "pr_auc", "f1", "confusion_matrix"):
+        assert key in m
+    assert 0.0 <= m["recall"] <= 1.0
+    assert 0.0 <= m["pr_auc"] <= 1.0
+
+
+def test_train_baseline_lr_metriques_coherentes():
+    from predicare.ml.baseline import train_baseline
+
+    X_tr, X_te, y_tr, y_te = _make_xy()
+    pipe, m = train_baseline(X_tr, X_te, y_tr, y_te, model_name="lr")
+    assert hasattr(pipe, "predict")
+    assert m["n_train"] == len(y_tr)
+    assert m["n_fraude_test"] == int(y_te.sum())
+    assert 0.0 <= m["recall"] <= 1.0
+
+
+def test_train_baseline_drop_nan():
+    """La colonne 100 % NaN dans le train est exclue."""
+    from predicare.ml.baseline import train_baseline
+
+    rng = np.random.default_rng(0)
+    X_tr = pd.DataFrame({"f_ok": rng.normal(0, 1, 100), "f_nan": [float("nan")] * 100})
+    X_te = pd.DataFrame({"f_ok": rng.normal(0, 1, 20), "f_nan": [float("nan")] * 20})
+    y_tr = pd.Series([0] * 90 + [1] * 10)
+    y_te = pd.Series([0] * 18 + [1] * 2)
+    _, m = train_baseline(X_tr, X_te, y_tr, y_te, model_name="lr")
+    assert "f_nan" in m["features_dropped"]
+    assert "f_ok" in m["features_used"]
