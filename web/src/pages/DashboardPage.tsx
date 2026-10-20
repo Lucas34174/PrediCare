@@ -11,30 +11,49 @@ const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 export function DashboardPage() {
   const { user } = useAuth()
   
-  // On tape dans la vraie structure de l'API
   const { data: apiKpis } = useQuery({ 
     queryKey: ['kpis'], 
     queryFn: () => request<any>('/dashboard/kpis'),
-    enabled: false,
   })
   
-  const { data: prediction } = useQuery({
-    queryKey: ['prediction'],
-    queryFn: () => request<any>('/predictions/latest'),
+  const { data: latestClaimData } = useQuery({
+    queryKey: ['latest-alert-claim'],
+    queryFn: () => request<any>('/claims?fraud_alert_only=true&page_size=1'),
+    enabled: !!user && (user.role === 'gestionnaire' || user.role === 'admin'),
+  })
+
+  const latestClaimId = latestClaimData?.items?.[0]?.facture_id
+
+  const { data: predictionData } = useQuery({
+    queryKey: ['prediction', latestClaimId],
+    queryFn: () => request<any>(`/claims/${latestClaimId}/prediction`),
+    enabled: Boolean(latestClaimId),
     retry: false,
-    enabled: !!user,
   })
 
   if (!user) return null
+
+  const prediction = predictionData ? {
+    claim_id: predictionData.facture_id,
+    fraud_probability: predictionData.prediction.score_fraude,
+    model_version: predictionData.prediction.version_modele,
+    explanation: {
+      top_factors: predictionData.explicabilite?.top_facteurs?.map((f: any) => ({
+        feature: f.feature,
+        shap_value: f.impact_shap,
+        direction: f.impact_shap > 0 ? 'increases' : 'decreases',
+      })) ?? [],
+    },
+  } : null
 
   const factors = normalizeFactors(prediction?.explanation?.top_factors)
 
   // On extrait les bonnes valeurs du contrat
   const kpis = apiKpis ? {
-    received: apiKpis.kpis.total_factures_traitees ?? 0,
-    to_review: apiKpis.kpis.dossiers_en_attente_arbitrage ?? 0,
-    processed: apiKpis.kpis.total_factures_traitees ?? 0,
-    amount: apiKpis.kpis.montant_total_demande ?? 0,
+    received: apiKpis.kpis?.total_factures_traitees ?? 0,
+    to_review: apiKpis.kpis?.dossiers_en_attente_arbitrage ?? 0,
+    processed: apiKpis.kpis?.total_factures_traitees ?? 0,
+    amount: apiKpis.kpis?.montant_total_demande ?? 0,
   } : null
 
   const cards = [

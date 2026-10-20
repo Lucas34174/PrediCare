@@ -223,7 +223,7 @@ function clearOrdonnance() {
         if (profile === 'professionnel_sante') {
           navigate(`/professionnel-sante/factures/${encodeURIComponent(created.facture_id)}`)
         } else {
-          navigate(`/gestionnaire/factures/${encodeURIComponent(created.facture_id)}`)
+          navigate(`/gestionnaire/dossiers/${encodeURIComponent(created.facture_id)}`)
         }
       })
       .catch((error: unknown) => {
