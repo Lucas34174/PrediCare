@@ -81,5 +81,6 @@ backups/
 models/*
 !models/.gitkeep
 !models/*.json
+!models/model_champion.joblib
 
 generate_eda_notebook.py

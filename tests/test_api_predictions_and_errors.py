@@ -95,6 +95,15 @@ def test_prediction_rbac_permissions():
 
 def test_prediction_persisted_from_submission():
     """Vérifie la relecture de la prédiction persistée lors d'une soumission réelle (PB-22)."""
+    from pathlib import Path
+
+    import pytest
+
+    from predicare.core.config import model_path
+
+    if not Path(model_path()).is_file():
+        pytest.skip("Artefact modèle champion absent de cet environnement")
+
     payload = {
         "numero_facture": "F-2026-PERSIST-01",
         "assure_id": "ASS-00421",
