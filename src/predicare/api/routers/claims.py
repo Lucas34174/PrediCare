@@ -708,6 +708,35 @@ def create_claim(
         date_prediction=date_prediction,
     )
 
+        # Émission de l'alerte webhook vers n8n si anomalie détectée (PB-24)
+    if est_anomalie:
+        try:
+            from predicare.api.services.alertes import (
+                construire_payload_alerte,
+                emettre_alerte_fraude,
+            )
+
+            payload_alerte = construire_payload_alerte(
+                facture={
+                    "facture_id": facture_id,
+                    "numero_facture": body.numero_facture,
+                    "date_soin": body.date_soin,
+                    "montant_total": body.montant_total,
+                    "part_assure": body.part_assure,
+                    "prestataire_id": body.prestataire_id,
+                    "assure_id": body.assure_id,
+                },
+                score_fraude=score_fraude,
+                seuil_applique=seuil_applique,
+                version_modele=version_modele,
+                top_facteurs=top_facteurs,
+                horodatage=date_prediction,
+            )
+            emettre_alerte_fraude(payload_alerte)
+        except Exception as exc:
+            logger.warning("Échec émission alerte n8n pour %s : %s", facture_id, exc)
+
+
     return ClaimCreateResponse(
         facture_id=facture_id,
         statut=StatutFacture.EN_COURS,

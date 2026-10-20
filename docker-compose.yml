@@ -75,7 +75,7 @@ services:
       PII_ENCRYPTION_KEY: "${PII_ENCRYPTION_KEY:?PII_ENCRYPTION_KEY manquant dans .env}"
       PII_KEY_VERSION: ${PII_KEY_VERSION:-1}
       ALERT_THRESHOLD: ${ALERT_THRESHOLD:-0.5}
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/claim-alert}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/fraud-alert}
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       LLM_API_KEY: ${LLM_API_KEY:-}
       DATA_DIR: /data/raw
