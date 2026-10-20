@@ -52,3 +52,19 @@ def test_compute_pr_curve_data():
     assert "precision" in data and "recall" in data
     assert len(data["precision"]) == len(data["recall"])
     assert len(data["precision"]) > 0
+
+
+def test_select_optimal_threshold_cost_utility():
+    y_true, probs = _make_dummy_probs()
+    table = compute_threshold_table(y_true, probs)
+    opt = select_optimal_threshold(table, criterion="cost_utility", cost_fn=10.0, cost_fp=1.0)
+    assert 0.0 < opt["seuil_optimal"] < 1.0
+    assert "Coût métier" in opt["regle_decision"]
+
+
+def test_select_optimal_threshold_max_f2():
+    y_true, probs = _make_dummy_probs()
+    table = compute_threshold_table(y_true, probs)
+    opt = select_optimal_threshold(table, criterion="max_f2")
+    assert 0.0 < opt["seuil_optimal"] < 1.0
+    assert "F2-score" in opt["regle_decision"]

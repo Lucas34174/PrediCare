@@ -1,0 +1,26 @@
+{
+  "active_baseline_version": "v1.0.0-xgb",
+  "new_candidate_version": "v1.1.0-xgb",
+  "parite_unitaire_batch_max_diff": 0.0,
+  "global_avant_apres": {
+    "v1.0.0-xgb": {
+      "seuil": 0.3,
+      "recall": 0.2857,
+      "precision": 0.3333,
+      "f1": 0.3077
+    },
+    "v1.1.0-xgb": {
+      "seuil": 0.25,
+      "recall": 0.4286,
+      "precision": 0.4286,
+      "f1": 0.4286
+    }
+  },
+  "gains": {
+    "gain_recall_points": "+14.29 pts",
+    "gain_precision_points": "+9.53 pts",
+    "gain_f1_points": "+12.09 pts",
+    "ariary_recuperes": "20 000 MGA",
+    "faux_positifs_supplementaires": 0
+  }
+}

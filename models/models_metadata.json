@@ -18,6 +18,15 @@
       "f1_score": 0.5,
       "date_entrainement": "2026-10-19",
       "statut": "STANDBY"
+    },
+    {
+      "version_id": "v1.1.0-xgb",
+      "type": "XGBoost",
+      "recall_test": 0.4286,
+      "precision_test": 0.4286,
+      "f1_score": 0.4286,
+      "date_entrainement": "2026-10-20",
+      "statut": "STANDBY"
     }
   ]
 }

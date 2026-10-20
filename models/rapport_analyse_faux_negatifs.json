@@ -1,0 +1,355 @@
+{
+  "seuil_analyse": 0.3,
+  "par_type_fraude": [
+    {
+      "type_fraude": "DOUBLON",
+      "total_fraudes": 4,
+      "detectes_tp": 0,
+      "manques_fn": 4,
+      "recall": 0.0,
+      "score_moyen_fn": 0.082,
+      "score_median_fn": 0.0195,
+      "montant_total_ariary": 63000,
+      "montant_manque_ariary": 63000
+    },
+    {
+      "type_fraude": "PRESTATAIRE_RADIE",
+      "total_fraudes": 1,
+      "detectes_tp": 0,
+      "manques_fn": 1,
+      "recall": 0.0,
+      "score_moyen_fn": 0.0021,
+      "score_median_fn": 0.0021,
+      "montant_total_ariary": 36000,
+      "montant_manque_ariary": 36000
+    },
+    {
+      "type_fraude": "ACTE_FICTIF",
+      "total_fraudes": 1,
+      "detectes_tp": 1,
+      "manques_fn": 0,
+      "recall": 1.0,
+      "score_moyen_fn": 0.0,
+      "score_median_fn": 0.0,
+      "montant_total_ariary": 68500,
+      "montant_manque_ariary": 0
+    },
+    {
+      "type_fraude": "SURFACTURATION",
+      "total_fraudes": 1,
+      "detectes_tp": 1,
+      "manques_fn": 0,
+      "recall": 1.0,
+      "score_moyen_fn": 0.0,
+      "score_median_fn": 0.0,
+      "montant_total_ariary": 70000,
+      "montant_manque_ariary": 0
+    }
+  ],
+  "par_detail_fraude": [
+    {
+      "type_fraude": "PRESTATAIRE_RADIE",
+      "detail_fraude": "Docteur RAHARIVONY Haingo déconventionné depuis le 2026-04-23",
+      "nb_manques": 1,
+      "montant_manque_ariary": 36000,
+      "score_moyen": 0.0021
+    },
+    {
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00059213 (n° DAH083/2026/00413)",
+      "nb_manques": 1,
+      "montant_manque_ariary": 20000,
+      "score_moyen": 0.2704
+    },
+    {
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00066162 (n° LF166/2026/00192)",
+      "nb_manques": 1,
+      "montant_manque_ariary": 19500,
+      "score_moyen": 0.0191
+    },
+    {
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00062958 (n° PKI052/2026/00523)",
+      "nb_manques": 1,
+      "montant_manque_ariary": 11900,
+      "score_moyen": 0.02
+    },
+    {
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00057778 (n° PK036/2026/00488)",
+      "nb_manques": 1,
+      "montant_manque_ariary": 11600,
+      "score_moyen": 0.0184
+    }
+  ],
+  "analyse_transverse": {
+    "nb_fn": 5,
+    "nb_tp": 2,
+    "scores_fn": {
+      "min": 0.0021,
+      "mean": 0.066,
+      "median": 0.0191,
+      "max": 0.2704
+    },
+    "scores_tp": {
+      "min": 0.9173,
+      "mean": 0.9496,
+      "median": 0.9496,
+      "max": 0.9819
+    },
+    "montants_fn": {
+      "total_ariary": 99000,
+      "mean_ariary": 19800,
+      "median_ariary": 19500
+    },
+    "repartition_type_facture_fn": {
+      "CONSULTATION": 2,
+      "PHARMACIE": 2,
+      "LABORATOIRE": 1
+    },
+    "prestataires_suspects_fn": {
+      "nb_suspects": 0,
+      "nb_non_suspects": 5
+    },
+    "repartition_formule_fn": {
+      "ESSENTIEL": 3,
+      "CONFORT": 1,
+      "PREMIUM": 1
+    }
+  },
+  "explications_shap": [
+    {
+      "facture_id": "FAC-00083354",
+      "top_features_negatives": [
+        {
+          "feature": "f_type_prest_vs_cat_acte",
+          "shap_value": -0.5593,
+          "valeur": 0.0
+        },
+        {
+          "feature": "f_age_au_soin",
+          "shap_value": -0.5464,
+          "valeur": 63.0
+        },
+        {
+          "feature": "f_sexe_incompatible_ref",
+          "shap_value": -0.4082,
+          "valeur": 0.0
+        }
+      ],
+      "top_features_positives": [
+        {
+          "feature": "f_qte_fac_vs_prescrite_max",
+          "shap_value": 0.5957,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_ratio_tarif_ref_max",
+          "shap_value": 0.4088,
+          "valeur": 1.0
+        },
+        {
+          "feature": "f_ratio_med_prix_ref_max",
+          "shap_value": 0.3911,
+          "valeur": NaN
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083087",
+      "top_features_negatives": [
+        {
+          "feature": "f_age_au_soin",
+          "shap_value": -2.1857,
+          "valeur": 4.0
+        },
+        {
+          "feature": "f_qte_fac_vs_prescrite_max",
+          "shap_value": -1.0546,
+          "valeur": 1.0
+        },
+        {
+          "feature": "f_delai_soin_prescription_j",
+          "shap_value": -0.5465,
+          "valeur": 3.0
+        }
+      ],
+      "top_features_positives": [
+        {
+          "feature": "f_ratio_med_prix_ref_max",
+          "shap_value": 0.7131,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_type_prest_vs_cat_acte",
+          "shap_value": 0.3234,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_ecart_tarif_max_moy",
+          "shap_value": 0.223,
+          "valeur": 1500.0
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00084677",
+      "top_features_negatives": [
+        {
+          "feature": "f_ecart_tarif_max_moy",
+          "shap_value": -2.0875,
+          "valeur": -36280.0
+        },
+        {
+          "feature": "f_ratio_tarif_ref_max",
+          "shap_value": -1.9476,
+          "valeur": 1.0285714285714285
+        },
+        {
+          "feature": "f_age_au_soin",
+          "shap_value": -1.2784,
+          "valeur": 2.0
+        }
+      ],
+      "top_features_positives": [
+        {
+          "feature": "f_qte_fac_vs_prescrite_max",
+          "shap_value": 0.3736,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_ratio_med_prix_ref_max",
+          "shap_value": 0.3288,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_nb_lignes_hors_tarif_max",
+          "shap_value": 0.0252,
+          "valeur": 0.0
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083196",
+      "top_features_negatives": [
+        {
+          "feature": "f_ratio_med_prix_ref_max",
+          "shap_value": -3.2564,
+          "valeur": 1.042857142857143
+        },
+        {
+          "feature": "f_qte_fac_vs_prescrite_max",
+          "shap_value": -1.4406,
+          "valeur": 1.0
+        },
+        {
+          "feature": "f_ratio_tarif_ref_max",
+          "shap_value": -0.5023,
+          "valeur": NaN
+        }
+      ],
+      "top_features_positives": [
+        {
+          "feature": "f_ecart_tarif_max_moy",
+          "shap_value": 0.8467,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_sexe_incompatible_ref",
+          "shap_value": 0.6332,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_age_hors_bornes_ref",
+          "shap_value": 0.5549,
+          "valeur": NaN
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083360",
+      "top_features_negatives": [
+        {
+          "feature": "f_ratio_med_prix_ref_max",
+          "shap_value": -3.1277,
+          "valeur": 1.022222222222222
+        },
+        {
+          "feature": "f_qte_fac_vs_prescrite_max",
+          "shap_value": -1.4357,
+          "valeur": 1.0
+        },
+        {
+          "feature": "f_delai_soin_prescription_j",
+          "shap_value": -0.8452,
+          "valeur": -1.0
+        }
+      ],
+      "top_features_positives": [
+        {
+          "feature": "f_ecart_tarif_max_moy",
+          "shap_value": 0.8477,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_sexe_incompatible_ref",
+          "shap_value": 0.6255,
+          "valeur": NaN
+        },
+        {
+          "feature": "f_age_hors_bornes_ref",
+          "shap_value": 0.6083,
+          "valeur": NaN
+        }
+      ]
+    }
+  ],
+  "faux_negatifs_factures": [
+    {
+      "facture_id": "FAC-00083354",
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00059213 (n° DAH083/2026/00413)",
+      "score_fraude": 0.2704,
+      "montant_total": 20000,
+      "prestataire_id": "PRE-00083",
+      "type_facture": "CONSULTATION"
+    },
+    {
+      "facture_id": "FAC-00083087",
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00066162 (n° LF166/2026/00192)",
+      "score_fraude": 0.0191,
+      "montant_total": 19500,
+      "prestataire_id": "PRE-00166",
+      "type_facture": "LABORATOIRE"
+    },
+    {
+      "facture_id": "FAC-00084677",
+      "type_fraude": "PRESTATAIRE_RADIE",
+      "detail_fraude": "Docteur RAHARIVONY Haingo déconventionné depuis le 2026-04-23",
+      "score_fraude": 0.0021,
+      "montant_total": 36000,
+      "prestataire_id": "PRE-00097",
+      "type_facture": "CONSULTATION"
+    },
+    {
+      "facture_id": "FAC-00083196",
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00062958 (n° PKI052/2026/00523)",
+      "score_fraude": 0.02,
+      "montant_total": 11900,
+      "prestataire_id": "PRE-00052",
+      "type_facture": "PHARMACIE"
+    },
+    {
+      "facture_id": "FAC-00083360",
+      "type_fraude": "DOUBLON",
+      "detail_fraude": "Copie de FAC-00057778 (n° PK036/2026/00488)",
+      "score_fraude": 0.0184,
+      "montant_total": 11600,
+      "prestataire_id": "PRE-00036",
+      "type_facture": "PHARMACIE"
+    }
+  ]
+}
