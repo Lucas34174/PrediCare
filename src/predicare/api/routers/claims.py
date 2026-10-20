@@ -1,10 +1,12 @@
 """Router factures – /claims."""
-import math
+
 import json
 import logging
+import math
+import uuid
 from datetime import UTC, date, datetime
 from typing import Annotated
-import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 
@@ -189,11 +191,15 @@ def _persister_facture_db(
                         ),
                         {
                             "prediction_id": pred_id,
-                            "top_features": json.dumps([
-                                {k: (None if isinstance(v, float) and math.isnan(v) else v)
-                                for k, v in f.items()}
-                                for f in top_facteurs
-                            ]),
+                            "top_features": json.dumps(
+                                [
+                                    {
+                                        k: (None if isinstance(v, float) and math.isnan(v) else v)
+                                        for k, v in f.items()
+                                    }
+                                    for f in top_facteurs
+                                ]
+                            ),
                             "date_generation": date_prediction,
                         },
                     )
@@ -214,7 +220,7 @@ def _facture_existe(facture_id: str) -> bool:
                 res = conn.execute(
                     text("SELECT 1 FROM factures WHERE facture_id = :id LIMIT 1"),
                     {"id": facture_id},
-                ).first()   
+                ).first()
                 if res is not None:
                     return True
     except Exception:
@@ -229,7 +235,9 @@ def _get_claim_db(facture_id: str) -> ClaimDetail | None:
         if engine is None:
             return None
         with engine.connect() as conn:
-            row = conn.execute(text("""
+            row = (
+                conn.execute(
+                    text("""
                 SELECT f.facture_id, f.numero_facture, f.assure_id, f.prestataire_id,
                        pr.nom AS nom_etablissement, f.ordonnance_id,
                        f.date_soin, f.date_facture AS date_emission,
@@ -239,27 +247,52 @@ def _get_claim_db(facture_id: str) -> ClaimDetail | None:
                 FROM factures f
                 LEFT JOIN prestataires pr ON pr.prestataire_id = f.prestataire_id
                 WHERE f.facture_id = :fid
-            """), {"fid": facture_id}).mappings().first()
+            """),
+                    {"fid": facture_id},
+                )
+                .mappings()
+                .first()
+            )
             if row is None:
                 return None
-            lignes = conn.execute(text("""
+            lignes = (
+                conn.execute(
+                    text("""
                 SELECT num_ligne, code, type_ligne, quantite, prix_unitaire,
                        montant AS montant_total
                 FROM lignes_facture WHERE facture_id = :fid ORDER BY num_ligne
-            """), {"fid": facture_id}).mappings().all()
+            """),
+                    {"fid": facture_id},
+                )
+                .mappings()
+                .all()
+            )
             return ClaimDetail(
-                facture_id=row["facture_id"], numero_facture=row["numero_facture"],
-                assure_id=row["assure_id"], prestataire_id=row["prestataire_id"],
-                nom_etablissement=row["nom_etablissement"], ordonnance_id=row["ordonnance_id"],
-                date_soin=row["date_soin"], date_emission=row["date_emission"],
-                montant_total=row["montant_total"], part_assure=row["part_assure"],
-                montant_demande=row["montant_demande"], statut=StatutFacture(row["statut"]),
-                motif_rejet=row["motif_rejet"], montant_pris_en_charge=row["montant_pris_en_charge"],
-                lignes=[LigneFacture(
-                    num_ligne=l["num_ligne"], code=l["code"],
-                    type_ligne=TypeLigne(l["type_ligne"]), quantite=l["quantite"],
-                    prix_unitaire=l["prix_unitaire"], montant_total=l["montant_total"],
-                ) for l in lignes],
+                facture_id=row["facture_id"],
+                numero_facture=row["numero_facture"],
+                assure_id=row["assure_id"],
+                prestataire_id=row["prestataire_id"],
+                nom_etablissement=row["nom_etablissement"],
+                ordonnance_id=row["ordonnance_id"],
+                date_soin=row["date_soin"],
+                date_emission=row["date_emission"],
+                montant_total=row["montant_total"],
+                part_assure=row["part_assure"],
+                montant_demande=row["montant_demande"],
+                statut=StatutFacture(row["statut"]),
+                motif_rejet=row["motif_rejet"],
+                montant_pris_en_charge=row["montant_pris_en_charge"],
+                lignes=[
+                    LigneFacture(
+                        num_ligne=l["num_ligne"],
+                        code=l["code"],
+                        type_ligne=TypeLigne(l["type_ligne"]),
+                        quantite=l["quantite"],
+                        prix_unitaire=l["prix_unitaire"],
+                        montant_total=l["montant_total"],
+                    )
+                    for l in lignes
+                ],
             )
     except Exception as exc:
         logger.warning("DB indisponible pour get_claim(%s) : %s", facture_id, exc)
@@ -276,7 +309,6 @@ def _get_or_404(facture_id: str) -> ClaimDetail:
     if facture_id not in _KNOWN_CLAIM_IDS:
         raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
     return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
-
 
 
 def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
@@ -399,11 +431,7 @@ def list_claims(
                 if fraud_alert_only:
                     conditions.append("p.est_anomalie = true")
 
-                where = (
-                    "WHERE " + " AND ".join(conditions)
-                    if conditions
-                    else ""
-                )
+                where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
                 # Dernière prédiction de chaque facture
                 join = """
@@ -417,26 +445,30 @@ def list_claims(
                 """
 
                 # Nombre total de résultats correspondant aux filtres
-                total = conn.execute(
-                    text(
-                        f"""
+                total = (
+                    conn.execute(
+                        text(
+                            f"""
                         SELECT COUNT(*)
                         FROM factures f
                         {join}
                         {where}
                         """
-                    ),
-                    params,
-                ).scalar() or 0
+                        ),
+                        params,
+                    ).scalar()
+                    or 0
+                )
 
                 # Paramètres de pagination
                 params["lim"] = page_size
                 params["off"] = (page - 1) * page_size
 
                 # Récupération de la page demandée
-                rows = conn.execute(
-                    text(
-                        f"""
+                rows = (
+                    conn.execute(
+                        text(
+                            f"""
                         SELECT
                             f.facture_id,
                             f.numero_facture,
@@ -460,9 +492,12 @@ def list_claims(
                             f.facture_id DESC
                         LIMIT :lim OFFSET :off
                         """
-                    ),
-                    params,
-                ).mappings().all()
+                        ),
+                        params,
+                    )
+                    .mappings()
+                    .all()
+                )
 
                 return ClaimsListResponse(
                     total=total,
@@ -481,14 +516,10 @@ def list_claims(
                             montant_demande=r["montant_demande"],
                             statut=StatutFacture(r["statut"]),
                             score_fraude=(
-                                float(r["score_fraude"])
-                                if r["score_fraude"] is not None
-                                else None
+                                float(r["score_fraude"]) if r["score_fraude"] is not None else None
                             ),
                             est_anomalie=(
-                                bool(r["est_anomalie"])
-                                if r["est_anomalie"] is not None
-                                else None
+                                bool(r["est_anomalie"]) if r["est_anomalie"] is not None else None
                             ),
                         )
                         for r in rows
@@ -502,10 +533,7 @@ def list_claims(
         )
 
     # Repli mock existant
-    if (
-        current_user.role == Role.ASSURE
-        and current_user.assure_id != _MOCK_CLAIM.assure_id
-    ):
+    if current_user.role == Role.ASSURE and current_user.assure_id != _MOCK_CLAIM.assure_id:
         return ClaimsListResponse(
             total=0,
             page=page,
@@ -576,6 +604,7 @@ def list_claims(
         page_size=page_size,
         items=[item],
     )
+
 
 @router.get(
     "/{facture_id}",

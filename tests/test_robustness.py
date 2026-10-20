@@ -38,7 +38,10 @@ def test_10_codes_invalidite_couverts(lot):
     assert set(CODES_INVALIDITE).issubset(codes_lot)
 
 
-@pytest.mark.skipif(not SOURCE_DIR.is_dir(), reason="CSV sources absents")
+@pytest.mark.skipif(
+    not (SOURCE_DIR / "referentiel_actes.csv").is_file(),
+    reason="CSV sources absents",
+)
 def test_factures_invalides_rejetees_avec_code(lot):
     referentiels = charger_referentiels(SOURCE_DIR)
     for cas in lot["invalides"]:
@@ -46,7 +49,10 @@ def test_factures_invalides_rejetees_avec_code(lot):
         assert set(cas["attendu"]).issubset(set(codes)), (cas["facture_id"], codes)
 
 
-@pytest.mark.skipif(not SOURCE_DIR.is_dir(), reason="CSV sources absents")
+@pytest.mark.skipif(
+    not (SOURCE_DIR / "referentiel_actes.csv").is_file(),
+    reason="CSV sources absents",
+)
 def test_facture_valide_acceptee(lot):
     referentiels = charger_referentiels(SOURCE_DIR)
     base = dict(lot["invalides"][0]["facture"])
