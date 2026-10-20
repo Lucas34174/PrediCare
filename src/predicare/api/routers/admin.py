@@ -1,9 +1,15 @@
 """Router administration – /admin."""
 
+import logging
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from predicare.api.deps import require_roles
+from predicare.core.config import model_version
+from predicare.ml.config import MODELS_ROOT
+from predicare.ml.registry import lister_versions, promouvoir, rollback, version_production
 
 from ..schemas import (
     AdminAuditResponse,
@@ -17,9 +23,11 @@ from ..schemas import (
     ModelActivateResponse,
     ModelVersion,
     Role,
+    UserInfo,
 )
 
 router = APIRouter(prefix="/admin", tags=["Administration"])
+logger = logging.getLogger(__name__)
 
 _NOW = datetime(2026, 10, 15, 11, 0, tzinfo=UTC)
 
@@ -29,8 +37,6 @@ _CONFIG = AdminConfig(
     semantic_cache_enabled=True,
     semantic_cache_threshold=0.85,
 )
-
-_KNOWN_VERSIONS = {"v1.0.0-xgb", "v0.9.0-baseline"}
 
 
 @router.get("/config", response_model=AdminConfig)
@@ -49,30 +55,47 @@ def update_config(body: AdminConfigUpdateRequest) -> AdminConfig:
 
 @router.get("/models", response_model=AdminModelsResponse)
 def list_models() -> AdminModelsResponse:
-    """Liste des versions de modèles disponibles (mock)."""
-    return AdminModelsResponse(
-        active_version="v1.0.0-xgb",
-        available_models=[
-            ModelVersion(
-                version_id="v1.0.0-xgb",
-                type="XGBoost",
-                recall_test=0.912,
-                precision_test=0.843,
-                f1_score=0.876,
-                date_entrainement=date(2026, 10, 14),
-                statut="ACTIVE",
-            ),
-            ModelVersion(
-                version_id="v0.9.0-baseline",
-                type="RandomForest",
-                recall_test=0.835,
-                precision_test=0.791,
-                f1_score=0.812,
-                date_entrainement=date(2026, 10, 13),
-                statut="STANDBY",
-            ),
-        ],
-    )
+    """Liste les modèles réellement enregistrés, avec repli sur le catalogue historique."""
+    versions = lister_versions()
+    if versions:
+        available = []
+        for entry in versions:
+            meta = entry.get("metadonnees") or {}
+            metrics = meta.get("metriques_test") or meta.get("test") or {}
+            created = str(entry.get("cree", ""))[:10]
+            try:
+                trained = date.fromisoformat(created)
+            except ValueError:
+                trained = date.today()
+            available.append(
+                ModelVersion(
+                    version_id=entry["version"],
+                    type=str(meta.get("modele", "XGBoost")),
+                    recall_test=float(metrics.get("recall", 0.0)),
+                    precision_test=float(metrics.get("precision", 0.0)),
+                    f1_score=float(metrics.get("f1", 0.0)),
+                    date_entrainement=trained,
+                    statut={
+                        "production": "ACTIVE",
+                        "staging": "STANDBY",
+                        "archive": "ARCHIVED",
+                    }.get(str(entry.get("statut", "staging")), "STANDBY"),
+                )
+            )
+        return AdminModelsResponse(
+            active_version=version_production() or model_version(),
+            available_models=available,
+        )
+
+    metadata_path = MODELS_ROOT / "models_metadata.json"
+    if metadata_path.is_file():
+        try:
+            return AdminModelsResponse.model_validate_json(
+                metadata_path.read_text(encoding="utf-8")
+            )
+        except (ValueError, OSError):
+            logger.exception("Catalogue historique des modèles invalide : %s", metadata_path)
+    return AdminModelsResponse(active_version=model_version(), available_models=[])
 
 
 @router.post(
@@ -80,14 +103,40 @@ def list_models() -> AdminModelsResponse:
     response_model=ModelActivateResponse,
     responses={404: {"description": "Version de modèle inconnue."}},
 )
-def activate_model(version_id: str) -> ModelActivateResponse:
-    """Bascule vers une version de modèle (mock)."""
-    if version_id not in _KNOWN_VERSIONS:
-        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.")
+def activate_model(
+    version_id: str,
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+) -> ModelActivateResponse:
+    """Bascule atomiquement le pointeur vers une version validée."""
+    try:
+        promouvoir(version_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.") from exc
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return ModelActivateResponse(
-        message="Bascule effectuée avec succès.",
+        message="Bascule effectuée ; les requêtes en cours terminent sur leur modèle initial.",
         active_version=version_id,
-        switched_at=_NOW,
+        switched_at=datetime.now(UTC),
+    )
+
+
+@router.post("/models/rollback", response_model=ModelActivateResponse)
+def rollback_model(
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+    version_id: str | None = Query(default=None),
+) -> ModelActivateResponse:
+    """Revient à la version précédente (ou à celle explicitement demandée)."""
+    try:
+        registre = rollback(version_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.") from exc
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return ModelActivateResponse(
+        message="Retour arrière effectué.",
+        active_version=registre["production"],
+        switched_at=datetime.now(UTC),
     )
 
 
