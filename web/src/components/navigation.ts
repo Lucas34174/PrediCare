@@ -59,7 +59,7 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
     { label: 'Modèles ML', path: '/admin/models', icon: Cpu },
     {
     path: '/dashboardi',
-    label: 'Tableau de bord',
+    label: 'Dasboard BI',
     icon: LayoutDashboard,
   },
   ],

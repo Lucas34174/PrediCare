@@ -2,14 +2,13 @@
 
 import logging
 from pathlib import Path
-
 from sqlalchemy import create_engine
-
 from predicare.core.config import database_url
 from predicare.rag.config import RagConfig
 from predicare.rag.ingest import Ingestor
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -19,7 +18,7 @@ def main() -> None:
 
     corpus = Path("/data/raw")
     if not corpus.exists():
-        print(f"⚠️  Corpus {corpus} absent — skip.")
+        print(f"  __Corpus {corpus} absent — skip.")
         return
 
     pdfs = sorted(corpus.glob("*.pdf"))
@@ -30,9 +29,10 @@ def main() -> None:
             rapport = ingestor.ingest_file(pdf)
             print(f"  {pdf.name} → {rapport}")
         except Exception as exc:
-            print(f"  ❌ {pdf.name} : {exc}")
+            print(f"  ___{pdf.name} : {exc}")
 
     ingestor.close()
+    logger.info("Ingestion terminée.")
 
 
 if __name__ == "__main__":
