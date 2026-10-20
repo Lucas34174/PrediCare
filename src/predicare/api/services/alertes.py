@@ -25,7 +25,9 @@ def construire_payload_alerte(
     """Construit le payload JSON conforme au §4 du contrat d'interface."""
     fid = str(facture.get("facture_id", ""))
     date_soin = facture.get("date_soin")
-    date_soin_str = date_soin.isoformat() if hasattr(date_soin, "isoformat") else str(date_soin or "")
+    date_soin_str = (
+        date_soin.isoformat() if hasattr(date_soin, "isoformat") else str(date_soin or "")
+    )
 
     montant_total = int(facture.get("montant_total", 0))
     part_assure = int(facture.get("part_assure", 0))
@@ -42,13 +44,16 @@ def construire_payload_alerte(
     else:
         ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-
     facteurs = top_facteurs or []
     if len(facteurs) >= 2:
-        f1 = facteurs[0].get("description") or str(facteurs[0].get("feature", "Anomalie principale"))
+        f1 = facteurs[0].get("description") or str(
+            facteurs[0].get("feature", "Anomalie principale")
+        )
         f2 = facteurs[1].get("description") or str(facteurs[1].get("feature", "Facteur secondaire"))
     elif len(facteurs) == 1:
-        f1 = facteurs[0].get("description") or str(facteurs[0].get("feature", "Anomalie principale"))
+        f1 = facteurs[0].get("description") or str(
+            facteurs[0].get("feature", "Anomalie principale")
+        )
         f2 = "Aucun facteur secondaire identifié"
     else:
         f1 = "Dépassement du seuil de risque"
