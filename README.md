@@ -38,6 +38,8 @@ présentée comme une vérité terrain.
 
 - Modèle : XGBoost, 60 variables comportementales ;
 - Test : PR-AUC 0,754, ROC-AUC 0,903, rappel 0,781, précision 0,420 ;
+- Audit indépendant : **15/20** (détail et limites dans
+  [`reports/ml/v2/audit_independant.md`](reports/ml/v2/audit_independant.md)) ;
 - Registre : `v2.0.0-weak` en production, `v1.1.0` archivée (rollback) ;
 - Documentation : [`docs/model_card_v2.md`](docs/model_card_v2.md),
   [`docs/weak_labels.md`](docs/weak_labels.md),

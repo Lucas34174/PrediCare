@@ -274,6 +274,9 @@ reconstruits.
 | Modèle v2 | `models/v2.0.0-weak/model.joblib` |
 | Métriques v2 | `reports/ml/v2/metrics.json` |
 | Scores test | `reports/ml/v2/scores_test.csv` |
+| Audit indépendant | `reports/ml/v2/audit_independant.md` |
+| Audit indépendant (JSON) | `reports/ml/v2/audit_independant.json` |
+| Importance par permutation | `reports/ml/v2/importance_permutation.csv` |
 | Registre | `models/registry.json` |
 | Équité | `reports/ml/pb14/synthese_equite.json` |
 | Dérive | `reports/ml/pb12/synthese_derive.json` |

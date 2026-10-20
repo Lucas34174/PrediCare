@@ -326,6 +326,8 @@ v1.1.0, ce qui provoquerait une incompatibilité de features.
 8. **Pas d'audit humain** : aucun expert n'a validé les labels.
 9. **Pas de causalité** : SHAP explique le modèle, pas la fraude.
 10. **Usage** : le score est une aide à la priorisation, pas une preuve.
+11. **Audit indépendant (20/10/2026)** : 15/20 ; rappel faible sur
+    `PRESTATAIRE_RADIE`, `ORDONNANCE_EXPIREE`, `DOUBLON` et `FRACTIONNEMENT`.
 
 ## 12. Reproduction
 
@@ -358,6 +360,9 @@ PYTHONPATH=src python -m predicare.ml.drift
 PYTHONPATH=src python -m predicare.ml.fairness
 PYTHONPATH=src python -m predicare.ml.robustness
 PYTHONPATH=src python -m predicare.ml.batch_jury
+
+# Audit indépendant (métriques recalculées, robustesse, note /20)
+PYTHONPATH=src python -m predicare.ml.audit_v2
 
 # Tests
 PYTHONPATH=src python -m pytest -q tests/test_ml_v2.py
