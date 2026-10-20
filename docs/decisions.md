@@ -163,7 +163,7 @@ L'analyse détaillée des 14 types de fraude (CDC §6) avec intervalles de Wilso
 
 L'analyse systématique des 5 faux négatifs (FN) du modèle champion `v1.0.0-xgb` sur le jeu de test scellé (91 factures, 7 fraudes) a révélé 99 000 MGA de perte financière manquée, concentrée sur `DOUBLON` (4 cas, 63 000 MGA) et `PRESTATAIRE_RADIE` (1 cas, 36 000 MGA). L'analyse SHAP démontre que les factures en doublon sont unitairement parfaitement conformes au barème, et que leur non-détection initiale découlait de l'élimination des variables d'antériorité par `_drop_high_nan` sur l'échantillon de 500 lignes. L'optimisation du seuil opérationnel à **0.25** (validé sur la CV OOF avec Recall $\ge 85 \%$ atteignant 90.0 % en CV) permet d'intercepter la fraude en doublon limitrophe `FAC-00083354` sans générer le moindre faux positif supplémentaire (FP stables à 4). Sur le test inviolé, le rappel global progresse de 28.57 % à **42.86 %** (+14.3 pts), la précision de 33.33 % à **42.86 %** (+9.5 pts), le F1-score de 0.3077 à **0.4286**, et 20 000 MGA sont récupérés, sans aucune régression sur `ACTE_FICTIF` (100 %) ni `SURFACTURATION` (100 %). La parité mathématique stricte entre inférence batch et inférence unitaire est vérifiée ($\max \Delta = 0.00 < 10^{-6}$). La nouvelle version est enregistrée en tant que **`v1.1.0-xgb`** dans `models/models_metadata.json` avec le statut `STANDBY`, maintenant `v1.0.0-xgb` actif par défaut conformément au principe de non-activation sans accord explicite et garantissant la réversibilité complète pour `GET /admin/models`.
 
-### Intégration du modèle de fraude, SHAP et stockage des prédictions (PB-22) :
+### Intégration du modèle de fraude, SHAP et stockage des prédictions:
 
 L'intégration du modèle de détection de fraude et de son explicabilité locale au sein de la plateforme backend (CDC §2, Module 4, Flux 1) concrétise le passage des scores simulés à l'inférence temps réel en production :
 
@@ -183,3 +183,16 @@ L'intégration du modèle de détection de fraude et de son explicabilité local
 4. **Endpoint `GET /claims/{id}/prediction` et contrôle RBAC** :
    - L'accès à l'évaluation et aux explications SHAP est réservé aux rôles `gestionnaire` et `administrateur` (`403 Forbidden` pour `assure` et `professionnel_sante`).
    - Les cas d'erreur 404 sont désormais distincts et explicites : rejet `404 Facture {id} introuvable.` si le dossier n'existe pas, et `404 Aucune prédiction disponible pour la facture {id}.` si la facture a été enregistrée sans prédiction exploitable.
+## PB-19 — Chargement automatique et chiffrement PII
+
+- Un service Docker `init` one-shot applique `alembic upgrade head`, puis charge
+  les 12 CSV métier avant le démarrage de l'API.
+- Le chargement est idempotent : `ingest_state` stocke le checksum des sources,
+  le statut et les counts. Un checksum inchangé ne déclenche aucun rechargement.
+- Les identités sont isolées dans `identites_pii` et chiffrées avec `pgcrypto`
+  (`pgp_sym_encrypt`, AES-256). Le module `predicare.core.pii` centralise les
+  opérations ; aucun autre module n'appelle pgcrypto directement.
+- La clé `PII_ENCRYPTION_KEY` n'est jamais écrite en base ni dans les logs.
+  `PII_KEY_VERSION` prépare une rotation future.
+- Les labels ne sont pas chargés en base : ils restent dans `data/raw/labels`
+  pour l'entraînement ML.

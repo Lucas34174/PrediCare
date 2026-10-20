@@ -63,3 +63,18 @@ features_candidates = [col for col in df_factures.columns if col not in LEAKAGE_
 - labels_fraude.csv (84 593 lignes - stocké séparément)
 - labels_prestataires.csv (251 lignes - stocké séparément)
 - qualite_rapport.json (rapport d'intégrité, rejets, doublons et valeurs nulles)
+
+## 5. Chargement automatique en PostgreSQL (PB-19)
+
+Le service Docker `init` exécute `python -m predicare.db.bootstrap` avant l'API.
+Il applique les migrations, vérifie la clé PII, puis charge les 12 CSV métier
+dans l'ordre des clés étrangères.
+
+- `ingest_state` mémorise le checksum et les counts : un second démarrage ne
+  recharge pas les données.
+- `identites_pii` reçoit uniquement des colonnes `*_chiffre` (`pgcrypto`).
+- Les labels ne sont pas chargés : ils restent dans `data/raw/labels`.
+- En cas d'échec, la transaction est annulée et `ingest_state.status = failed`.
+- `FORCE_RELOAD=1` permet un rechargement destructif explicite.
+
+Voir `docs/pb19_auto_load_pii.md` pour le runbook complet.

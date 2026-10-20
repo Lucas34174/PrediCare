@@ -4,18 +4,23 @@
 
 ```bash
 cp .env.example .env          # une seule fois ; .env n'est jamais commité
+# Remplacer les secrets de démonstration, notamment PII_ENCRYPTION_KEY.
 docker compose up --build -d
-docker compose ps             # 4 services "healthy" au bout d'environ 30 s
+docker compose ps             # init doit être "exited (0)" ; les autres "healthy"
 ```
 
 | Service | URL                          | Rôle                                                |
 | ------- | ---------------------------- | --------------------------------------------------- |
+| init    | —                            | Migrations + chargement automatique des 12 CSV      |
 | front   | http://localhost:3000        | Interface React (nginx) ; appelle l'API via `/api/` |
 | api     | http://localhost:8000/health | API FastAPI (documentation : `/docs`)               |
 | n8n     | http://localhost:5678        | Workflows d'alerte                                  |
 | db      | 127.0.0.1:5432               | PostgreSQL 16 + pgvector + pgcrypto                 |
 
-Ordre de démarrage (healthchecks) : db, puis api et n8n, puis front. Les ports se changent dans `.env` (`DB_PORT`, `API_PORT`, `FRONT_PORT`, `N8N_PORT`).
+Ordre de démarrage : db, puis init, puis api et n8n, puis front. Le service
+`init` applique les migrations et charge les données au premier démarrage. Les
+démarrages suivants sont idempotents. Les ports se changent dans `.env`
+(`DB_PORT`, `API_PORT`, `FRONT_PORT`, `N8N_PORT`).
 
 ## Commandes utiles
 
@@ -39,11 +44,13 @@ Les données (volumes `pgdata` et `n8n_data`) survivent à `docker compose down`
 
 ## Base de données et migrations
 
-Le schéma PostgreSQL est créé par des migrations Alembic versionnées (dossier `migrations/versions/`). Elles s'exécutent dans l'image `api`.
+Le schéma PostgreSQL est créé par des migrations Alembic versionnées (dossier `migrations/versions/`). Le service `init` les applique automatiquement avant de charger les données.
 
 | Besoin                                        | Commande                                                                               |
 | --------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Créer / mettre à jour le schéma               | `docker compose up -d db` puis `make migrate`                                          |
+| État du chargement automatique                | `make db-status`                                                                       |
+| Recharger les 12 CSV                          | `make reload-data` (destructif)                                                        |
 | Revenir à une base vide                       | `docker compose run --rm api alembic downgrade base`                                   |
 | Voir la version appliquée                     | `docker compose run --rm api alembic current`                                          |
 | Créer une nouvelle migration                  | `alembic revision -m "sujet"`, écrire `upgrade()` et `downgrade()`, puis `make format` |

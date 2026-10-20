@@ -36,6 +36,7 @@ TABLES_ATTENDUES = {
     "journal_audit",
     "documents",
     "utilisateurs",
+    "ingest_state",
 }
 
 

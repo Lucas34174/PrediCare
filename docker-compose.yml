@@ -24,6 +24,33 @@ services:
       retries: 12
       start_period: 10s
 
+  init:
+    build: .
+    image: predicare-tpa/api:dev
+    container_name: predicare-init
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-predicare}
+      DB_USER: ${POSTGRES_USER:-predicare}
+      DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      PII_ENCRYPTION_KEY: "${PII_ENCRYPTION_KEY:?PII_ENCRYPTION_KEY manquant dans .env}"
+      PII_KEY_VERSION: ${PII_KEY_VERSION:-1}
+      SOURCE_DATA_DIR: /data/source
+      AUTO_LOAD_DATA: ${AUTO_LOAD_DATA:-true}
+      FORCE_RELOAD: ${FORCE_RELOAD:-false}
+    volumes:
+      - ../CohorteAI_datagen/dataset:/data/source:ro
+      - ./migrations:/app/migrations
+      - ./src:/app/src
+    command: ["python", "-m", "predicare.db.bootstrap"]
+
   api:
     build: .
     image: predicare-tpa/api:dev
@@ -32,6 +59,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      init:
+        condition: service_completed_successfully
       ollama:
         condition: service_healthy
     environment:
@@ -41,9 +70,10 @@ services:
       DB_PORT: "5432"
       DB_NAME: ${POSTGRES_DB:-predicare}
       DB_USER: ${POSTGRES_USER:-predicare}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: "${POSTGRES_PASSWORD}"
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET manquant dans .env}"
       PII_ENCRYPTION_KEY: "${PII_ENCRYPTION_KEY:?PII_ENCRYPTION_KEY manquant dans .env}"
+      PII_KEY_VERSION: ${PII_KEY_VERSION:-1}
       ALERT_THRESHOLD: ${ALERT_THRESHOLD:-0.5}
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/claim-alert}
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
