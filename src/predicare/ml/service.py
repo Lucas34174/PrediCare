@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
+import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -21,6 +23,8 @@ from predicare.ml.explain import SHAP_DISPONIBLE, expliquer_facture
 from predicare.ml.features import FORBIDDEN_FEATURE_COLS, build_features
 
 logger = logging.getLogger("predicare.ml.service")
+_MODEL_LOCK = threading.RLock()
+_LAST_GOOD_MODEL = None
 
 FEATURE_NAMES_PATH = MODELS_ROOT / "feature_names.json"
 
@@ -146,15 +150,78 @@ def charger_modele(chemin: str | Path | None = None) -> ModeleFraude:
     )
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=2)
+def _charger_modele_version(
+    version: str, chemin: str, empreinte_attendue: str | None
+) -> ModeleFraude:
+    """Cache un artefact immuable par version, après vérification de son empreinte."""
+    if empreinte_attendue:
+        from predicare.ml.registry import hacher_artefact
+
+        if hacher_artefact(chemin) != empreinte_attendue:
+            raise ModeleIndisponible(f"Empreinte SHA-256 invalide pour le modèle {version}.")
+    modele = charger_modele(chemin)
+    modele.version = version
+    return modele
+
+
 def get_model() -> ModeleFraude:
-    """Singleton paresseux du modèle champion."""
-    return charger_modele()
+    """Renvoie le modèle actif du registre, sans invalider les requêtes en vol.
+
+    Le registre est remplacé atomiquement et relu à chaque résolution. Les
+    objets modèles immuables sont cachés par version : une requête déjà partie
+    peut finir avec l'ancien modèle, tandis que les suivantes chargent le nouveau.
+    """
+    global _LAST_GOOD_MODEL
+    with _MODEL_LOCK:
+        chemin_force = os.environ.get("PREDICARE_MODELE_PATH")
+        if chemin_force:
+            version_force = os.environ.get("PREDICARE_MODELE_VERSION", "configured")
+            modele = _charger_modele_version(version_force, str(Path(chemin_force)), None)
+            _LAST_GOOD_MODEL = modele
+            return modele
+
+        try:
+            from predicare.ml.registry import modele_production
+
+            entree = modele_production()
+            if entree is not None:
+                modele = _charger_modele_version(
+                    str(entree["version"]),
+                    str(entree["chemin_absolu"]),
+                    str(entree["sha256"]),
+                )
+                _LAST_GOOD_MODEL = modele
+                return modele
+        except Exception as exc:
+            if _LAST_GOOD_MODEL is not None:
+                logger.exception(
+                    "Chargement du modèle actif impossible ; maintien du dernier modèle sain."
+                )
+                return _LAST_GOOD_MODEL
+            raise ModeleIndisponible(f"Impossible de charger le modèle actif : {exc}") from exc
+
+        try:
+            modele = _charger_modele_version(model_version(), str(Path(model_path())), None)
+        except Exception as exc:
+            if _LAST_GOOD_MODEL is not None:
+                logger.exception(
+                    "Chargement du modèle par défaut impossible ; maintien du dernier modèle sain."
+                )
+                return _LAST_GOOD_MODEL
+            if isinstance(exc, ModeleIndisponible):
+                raise
+            raise ModeleIndisponible(f"Impossible de charger le modèle par défaut : {exc}") from exc
+        _LAST_GOOD_MODEL = modele
+        return modele
 
 
 def reset_model_cache() -> None:
     """Réinitialise le cache singleton."""
-    get_model.cache_clear()
+    global _LAST_GOOD_MODEL
+    with _MODEL_LOCK:
+        _charger_modele_version.cache_clear()
+        _LAST_GOOD_MODEL = None
 
 
 def construire_features_facture(
