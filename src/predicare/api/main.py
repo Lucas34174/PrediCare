@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from predicare.api.routers import admin, assistant, auth, claims, dashboard
+from predicare.api.routers import admin, assistant, auth, claims, dashboard, predictions
 from predicare.api.schemas import HealthResponse
 from predicare.core.config import database_url
 
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(claims.router)
 app.include_router(dashboard.router)
+app.include_router(predictions.router)
 app.include_router(assistant.router)
 app.include_router(admin.router)
 
