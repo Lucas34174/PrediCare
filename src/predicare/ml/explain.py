@@ -1,4 +1,4 @@
-"""Explicabilité SHAP par alerte (PB-13).
+"""Explicabilité SHAP par alerte.
 
 Produit des facteurs au format du contrat API :
 ``ShapFactor{feature, valeur, impact_shap, description}``.
@@ -70,9 +70,12 @@ def _description(variable: str, modalite: str | None, valeur: Any, manquante: bo
     return f"{label} = {valeur}"
 
 
-def _valeurs_shap(clf: Any, X: Any) -> np.ndarray:  # noqa: N803
-    """Valeurs SHAP de la classe positive, quelle que soit la version de shap."""
-    explainer = shap.TreeExplainer(clf)
+def _valeurs_shap(clf_or_explainer: Any, X: Any) -> np.ndarray:  # noqa: N803
+    """Valeurs SHAP de la classe positive, avec réutilisation de l'explainer."""
+    if hasattr(clf_or_explainer, "shap_values"):
+        explainer = clf_or_explainer
+    else:
+        explainer = shap.TreeExplainer(clf_or_explainer)
     valeurs = explainer.shap_values(X)
     if isinstance(valeurs, list):
         valeurs = valeurs[1] if len(valeurs) > 1 else valeurs[0]
@@ -83,16 +86,30 @@ def _valeurs_shap(clf: Any, X: Any) -> np.ndarray:  # noqa: N803
 
 
 def expliquer_lot(modele: Any, factures: pd.DataFrame, top_k: int = 5) -> pd.DataFrame:
-    """Explications SHAP pour un lot de factures."""
+    """Explications SHAP pour un lot de factures (réutilise l'explainer s'il est déjà instancié)."""
     if not SHAP_DISPONIBLE:
         raise ImportError("Le paquet `shap` est requis pour l'explicabilité.")
 
-    pre = modele.pipeline.named_steps["pre"]
-    clf = modele.pipeline.named_steps["clf"]
-    variables = list(modele.variables)
-    X = pre.transform(factures[variables])
-    noms = _noms_features(pre)
-    valeurs = _valeurs_shap(clf, X)
+    pipeline = getattr(modele, "pipeline", modele)
+    explainer = getattr(modele, "explainer", None)
+    variables = list(getattr(modele, "variables", factures.columns))
+
+    if hasattr(pipeline, "named_steps"):
+        pre = pipeline.named_steps.get("pre")
+        clf = pipeline.named_steps.get("clf", pipeline)
+        X = (
+            pre.transform(factures[variables])
+            if pre is not None
+            else factures[variables].to_numpy()
+        )
+        noms = _noms_features(pre) if pre is not None else variables
+    else:
+        clf = pipeline
+        X = factures[variables].to_numpy()
+        noms = variables
+
+    cible_explainer = explainer if explainer is not None else clf
+    valeurs = _valeurs_shap(cible_explainer, X)
 
     lignes: list[dict[str, Any]] = []
     for i, (_, ligne) in enumerate(factures.iterrows()):
