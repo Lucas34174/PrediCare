@@ -91,17 +91,38 @@ def compute_threshold_table(
 # ---------------------------------------------------------------------------
 # Règle de décision opérationnelle
 # ---------------------------------------------------------------------------
-def select_optimal_threshold(table: pd.DataFrame, min_recall: float = 0.80) -> dict[str, Any]:
-    """Sélectionne le seuil maximisant la précision sous contrainte Recall >= min_recall."""
-    eligible = table[table["recall"] >= min_recall]
-    if not eligible.empty:
-        # Meilleure précision sous contrainte Recall >= min_recall (F2 en cas d'égalité)
-        best_row = eligible.sort_values(by=["precision", "f2"], ascending=[False, False]).iloc[0]
-        rule_applied = f"Max Précision avec Recall >= {min_recall:.2f}"
+def select_optimal_threshold(
+    table: pd.DataFrame,
+    min_recall: float = 0.80,
+    criterion: str = "max_precision",
+    cost_fn: float = 5.0,
+    cost_fp: float = 1.0,
+) -> dict[str, Any]:
+    """Sélectionne le seuil optimal selon la règle métier choisie sur validation.
+
+    Critères supportés :
+      - "max_precision" : max Précision sous contrainte Recall >= min_recall (défaut)
+      - "max_f2"        : max F2-score (pondérant 2x plus le Rappel que la Précision)
+      - "cost_utility"  : minimise le coût métier total (cost_fn * FN + cost_fp * FP)
+    """
+    if criterion == "max_f2":
+        best_row = table.sort_values(by=["f2", "recall"], ascending=[False, False]).iloc[0]
+        rule_applied = "Max F2-score (validation)"
+    elif criterion == "cost_utility":
+        t_copy = table.copy()
+        t_copy["cout_total"] = t_copy["fn"] * cost_fn + t_copy["fp"] * cost_fp
+        best_row = t_copy.sort_values(by=["cout_total", "recall"], ascending=[True, False]).iloc[0]
+        rule_applied = f"Min Coût métier (FN x{cost_fn} + FP x{cost_fp})"
     else:
-        # Si aucun seuil n'atteint min_recall, seuil qui maximise le Recall
-        best_row = table.sort_values(by=["recall", "f2"], ascending=[False, False]).iloc[0]
-        rule_applied = "Max Recall (contrainte non atteinte)"
+        eligible = table[table["recall"] >= min_recall]
+        if not eligible.empty:
+            best_row = eligible.sort_values(by=["precision", "f2"], ascending=[False, False]).iloc[
+                0
+            ]
+            rule_applied = f"Max Précision avec Recall >= {min_recall:.2f}"
+        else:
+            best_row = table.sort_values(by=["recall", "f2"], ascending=[False, False]).iloc[0]
+            rule_applied = "Max Recall (contrainte non atteinte)"
 
     return {
         "seuil_optimal": float(best_row["seuil"]),
