@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -39,7 +40,7 @@ class ReactAgent:
         self._retriever = retriever
         self._config = config
         self._tools = Tools(engine, retriever)
-        self._llm_model = llm_model
+        self._llm_model = os.getenv("LLM_MODEL", llm_model)
         # Timeout volontairement court (10s) pour éviter les blocages
         self._client = httpx.Client(
             base_url=config.ollama_base_url,
@@ -82,7 +83,12 @@ class ReactAgent:
         if not context_parts:
             # On utilise la question originale !
             results = self._retriever.search(question, top_k=3)
-            bons = [r for r in results if (r.score_vector or 0) >= SEUIL_ABSTENTION]
+            bons = [
+                r for r in results 
+                if (r.score_vector or 0) >= SEUIL_ABSTENTION 
+                or (r.score_fulltext or 0) > 0.001 
+                or (r.score_rrf or 0) > 0.001
+            ]
 
             if bons:
                 steps.append({"action": "search_documents", "status": "success"})

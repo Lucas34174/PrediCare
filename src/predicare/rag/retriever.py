@@ -101,7 +101,11 @@ class Retriever:
 
         # hybride : récupérer plus de candidats puis fusionner
         candidates_k = top_k * DEFAULT_CANDIDATES_MULTIPLIER
-        vec_results = self._search_vector(query, candidates_k, filters, min_similarity)
+        try:
+            vec_results = self._search_vector(query, candidates_k, filters, min_similarity)
+        except Exception as exc:
+            logger.warning("Recherche vectorielle indisponible (%s), repli sur fulltext", exc)
+            vec_results = []
         ft_results = self._search_fulltext(query, candidates_k, filters)
 
         fused = self._fuse_rrf(vec_results, ft_results, top_k)
@@ -185,6 +189,37 @@ class Retriever:
 
         with self._engine.connect() as conn:
             rows = conn.execute(sql, params).fetchall()
+            if not rows:
+                import re
+                mots_ignores = {
+                    "combien", "coute", "coûte", "prix", "quel", "quelle",
+                    "quels", "quelles", "qui", "comment", "pourquoi", "quand", "est", "sont",
+                    "une", "des", "pour", "dans", "avec"
+                }
+                mots = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 2 and w not in mots_ignores]
+                if mots:
+                    params_clean = dict(params)
+                    params_clean["query"] = " | ".join(mots)
+                    sql_or = text(f"""
+                        SELECT
+                            id AS chunk_id,
+                            chunk_type,
+                            contenu_enrichi AS contenu,
+                            metadonnees AS metadata,
+                            ts_rank(to_tsvector('french', contenu_enrichi),
+                                    to_tsquery('french', :query)) AS rank
+                        FROM documents_vectorises
+                        WHERE actif = true
+                          AND to_tsvector('french', contenu_enrichi) @@
+                              to_tsquery('french', :query)
+                          {where_clauses}
+                        ORDER BY rank DESC
+                        LIMIT :k
+                    """)
+                    try:
+                        rows = conn.execute(sql_or, params_clean).fetchall()
+                    except Exception:
+                        pass
 
         return [
             SearchResult(
