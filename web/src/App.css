@@ -152,11 +152,14 @@ button:disabled { cursor: progress; }
   .main-content { padding-inline: 23px; }
 }
 @media (max-width: 600px) {
+  .login-card{padding: 32px 24 px;}
+  .login-lock-icon{top: 24px; right: 24px; width: 40px; height: 40px;}
   .login-screen { display: block; }
   .login-story { display: none; }
   .login-panel { min-height: 100svh; padding: 22px 22px 17px; }
   .login-form-wrap { width: min(100%, 420px); padding-block: 39px; }
   .form-icon { margin-bottom: 19px; }
+  .form-intro h2{font-size: 24px;}
   .login-panel-footer { font-size: 9px; }
   .login-panel-footer > span { gap: 5px; }
   .login-panel-footer > a { white-space: nowrap; }
@@ -607,12 +610,21 @@ button:disabled { cursor: progress; }
 }
 
 /* Colonne de gauche (Story) */
+/* web/src/App.css */
+
 .login-story {
   position: relative;
   display: flex;
   flex-direction: column;
   padding: 40px clamp(40px, 6vw, 80px);
   background: #F8FAFC;
+  /* Ajout d'un conteneur centré pour les très grands écrans */
+  align-items: flex-start; 
+}
+
+.story-content {
+  max-width: 520px;
+  width: 100%; /* Assure que le contenu prend la place dispo */
 }
 
 .login-brand {
@@ -640,10 +652,6 @@ button:disabled { cursor: progress; }
 }
 
 .brand-word span { color: #0F172A; } /* Plus de vert ici */
-
-.story-content {
-  max-width: 520px;
-}
 
 .story-label {
   display: inline-flex;
@@ -755,21 +763,22 @@ button:disabled { cursor: progress; }
   background: #F8FAFC;
 }
 
+/* web/src/App.css */
+
 .login-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 520px; /* Augmenté de 440px à 520px */
   background: white;
   border-radius: 24px;
-  padding: 40px;
+  padding: 48px; /* Augmenté de 40px à 48px */
   box-shadow: 0 20px 40px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.05);
   position: relative;
 }
 
-/* Icône cadenas en haut à droite */
 .login-lock-icon {
   position: absolute;
-  top: 30px;
-  right: 30px;
+  top: 40px; /* Ajusté pour le nouveau padding */
+  right: 40px;
   width: 48px;
   height: 48px;
   background: #DBEAFE;
@@ -779,6 +788,13 @@ button:disabled { cursor: progress; }
   color: #3B82F6;
 }
 
+.form-intro h2 {
+  font-size: 28px; /* Augmenté de 24px à 28px */
+  font-weight: 600;
+  color: #0F172A;
+  margin: 0 0 32px 0;
+}
+
 .form-intro .eyebrow {
   color: #3B82F6;
   font-size: 10px;
@@ -786,13 +802,6 @@ button:disabled { cursor: progress; }
   letter-spacing: 1px;
   margin-bottom: 8px;
   text-transform: uppercase;
-}
-
-.form-intro h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #0F172A;
-  margin: 0 0 30px 0;
 }
 
 .login-form {
@@ -809,6 +818,8 @@ button:disabled { cursor: progress; }
   letter-spacing: 0.5px;
 }
 
+/* web/src/App.css */
+
 .input-wrap {
   display: flex;
   align-items: center;
@@ -816,12 +827,7 @@ button:disabled { cursor: progress; }
   border: 1px solid #E2E8F0;
   border-radius: 12px;
   padding: 0 16px;
-  height: 48px;
-}
-
-.input-wrap:focus-within {
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  height: 52px; /* Augmenté de 48px à 52px */
 }
 
 .input-wrap input {
@@ -829,29 +835,34 @@ button:disabled { cursor: progress; }
   background: transparent;
   width: 100%;
   height: 100%;
-  font-size: 14px;
+  font-size: 15px; /* Augmenté de 14px à 15px */
   color: #0F172A;
   outline: none;
 }
 
-.input-wrap svg { color: #94A3B8; }
-
 .submit-button {
-  height: 48px;
+  height: 54px; /* Augmenté de 48px à 54px */
   background: #0F172A;
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 14px; /* Augmenté de 13px à 14px */
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  margin-top: 10px;
+  padding: 0 24px;
+  margin-top: 12px;
   cursor: pointer;
   transition: background 0.2s;
 }
+
+.input-wrap:focus-within {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-wrap svg { color: #94A3B8; }
 
 .submit-button:hover { background: #1E293B; }
 

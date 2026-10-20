@@ -38,11 +38,11 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
     { label: 'Dossiers à examiner', path: '/gestionnaire/dossiers', icon: ClipboardCheck },
-    {
-    path: '/dashboardi',
-    label: 'Tableau de bord',
-    icon: LayoutDashboard,
-  },
+  //   {
+  //   path: '/dashboardi',
+  //   label: 'Tableau de bord',
+  //   icon: LayoutDashboard,
+  // },
   ],
   professionnel_sante: [
     { label: 'Mon activité', path: '/app', icon: Activity },

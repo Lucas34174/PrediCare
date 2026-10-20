@@ -211,7 +211,7 @@ class ReactAgent:
                     "model": self._llm_model,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"temperature": 0.1, "num_predict": 60},
+                    "options": {"temperature": 0.1, "num_predict": 90},
                 },
                 timeout=50.0,
             )
