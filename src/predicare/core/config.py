@@ -42,3 +42,13 @@ def model_path() -> str:
 def model_version() -> str:
     """Identifiant de version du modèle champion actif."""
     return os.environ.get("PREDICARE_MODELE_VERSION", "v1.0.0-xgb")
+
+
+def n8n_webhook_url() -> str:
+    """URL du webhook n8n pour les alertes de fraude (contrat §4)."""
+    return os.environ.get("N8N_WEBHOOK_URL", "http://n8n:5678/webhook/fraud-alert")
+
+
+def dashboard_base_url() -> str:
+    """URL de base du dashboard pour les liens d'action des alertes."""
+    return os.environ.get("DASHBOARD_BASE_URL", "http://localhost:3000")

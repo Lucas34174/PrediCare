@@ -1,0 +1,336 @@
+{
+  "name": "PrediCare - Alerte Fraude (Slack & Email)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fraud-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook Alerte Fraude",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst b = raw.body ?? raw;\nconst errors = [];\nconst isStr = (v) => typeof v === 'string' && v.trim() !== '';\nconst isNum = (v) => typeof v === 'number' && Number.isFinite(v);\nconst isRate = (v) => isNum(v) && v >= 0 && v <= 1;\n\nif (!b || typeof b !== 'object') {\n  errors.push('corps JSON absent ou invalide');\n} else {\n  const f = b.facture, p = b.prediction, s = b.explicabilite_shap, a = b.liens_action;\n  if (b.event !== 'FRAUD_ALERT') errors.push(\"event doit valoir 'FRAUD_ALERT'\");\n  if (!f || typeof f !== 'object') {\n    errors.push('facture manquante');\n  } else {\n    if (!isStr(f.facture_id)) errors.push('facture.facture_id manquant');\n    if (!isStr(f.prestataire_id)) errors.push('facture.prestataire_id manquant');\n    if (!isStr(f.assure_id)) errors.push('facture.assure_id manquant');\n    if (!isNum(f.montant_total)) errors.push('facture.montant_total doit etre numerique');\n    if (!isNum(f.montant_demande)) errors.push('facture.montant_demande doit etre numerique');\n  }\n  if (!p || typeof p !== 'object') {\n    errors.push('prediction manquante');\n  } else {\n    if (!isRate(p.score_fraude)) errors.push('prediction.score_fraude doit etre un nombre entre 0 et 1');\n    if (!isRate(p.seuil_applique)) errors.push('prediction.seuil_applique doit etre un nombre entre 0 et 1');\n    if (!isStr(p.version_modele)) errors.push('prediction.version_modele manquant');\n  }\n  if (!s || typeof s !== 'object' || !isStr(s.facteur_principal)) {\n    errors.push('explicabilite_shap.facteur_principal manquant');\n  }\n  if (!a || typeof a !== 'object' || !isStr(a.dashboard_url) || !/^https?:\\/\\//.test(a.dashboard_url)) {\n    errors.push('liens_action.dashboard_url manquant ou invalide');\n  }\n}\n\nreturn [{ json: { ...(b && typeof b === 'object' ? b : {}), valid: errors.length === 0, errors } }];"
+      },
+      "id": "node-valider",
+      "name": "Valider Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-valid",
+              "leftValue": "={{ $json.valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-valid",
+      "name": "Payload Valide ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Payload invalide (contrat §4 non respecte)', details: $json.errors }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "node-rep-400",
+      "name": "Reponse 400 Invalide",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-seuil",
+              "leftValue": "={{ $json.prediction.score_fraude }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "rightValue": "={{ $json.prediction.seuil_applique }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-seuil",
+      "name": "Score >= Seuil ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ignored', message: 'Score sous le seuil : aucune alerte emise', score_fraude: $json.prediction.score_fraude, seuil_applique: $json.prediction.seuil_applique }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-rep-ignore",
+      "name": "Reponse 200 Sous Seuil",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst f = item.facture;\nconst p = item.prediction;\nconst s = item.explicabilite_shap;\nconst a = item.liens_action;\n\nconst html = (v) => String(v ?? 'N/A')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nconst slk = (v) => String(v ?? 'N/A')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst ar = (n) => String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' ') + ' Ar';\nconst score = p.score_fraude.toFixed(2);\nconst seuil = p.seuil_applique.toFixed(2);\nconst second = s.facteur_secondaire || null;\nconst reco = s.recommandation || null;\n\nlet slack_text =\n  ':rotating_light: *ALERTE FRAUDE - PrediCare TPA*\\n' +\n  `- *Facture* : \\`${slk(f.facture_id)}\\`` + (f.numero_facture ? ` (N° ${slk(f.numero_facture)})` : '') + '\\n' +\n  `- *Prestataire* : \\`${slk(f.prestataire_id)}\\` | *Assuré* : \\`${slk(f.assure_id)}\\`\\n` +\n  `- *Montant total* : ${ar(f.montant_total)} (demandé : ${ar(f.montant_demande)})\\n` +\n  `- *Score de risque* : *${score}* (seuil : ${seuil}) | modèle \\`${slk(p.version_modele)}\\`\\n` +\n  `- *Facteur principal* : ${slk(s.facteur_principal)}\\n` +\n  (second ? `- *Facteur secondaire* : ${slk(second)}\\n` : '') +\n  (reco ? `- *Recommandation* : ${slk(reco)}\\n` : '') +\n  `<${a.dashboard_url}|Ouvrir le dossier dans le tableau de bord>`;\n\nconst email_subject = `[ALERTE FRAUDE] Facture ${f.facture_id} - score ${score}`;\n\nconst email_html =\n  '<h2>Alerte détection de fraude - PrediCare TPA</h2>' +\n  '<p>Le score de risque d\\'une facture dépasse le seuil configuré. Un contrôle est requis.</p>' +\n  '<ul>' +\n  `<li><b>Facture :</b> ${html(f.facture_id)}` + (f.numero_facture ? ` (N° ${html(f.numero_facture)})` : '') + '</li>' +\n  `<li><b>Prestataire :</b> ${html(f.prestataire_id)}</li>` +\n  `<li><b>Assuré :</b> ${html(f.assure_id)}</li>` +\n  `<li><b>Montant total :</b> ${ar(f.montant_total)} (demandé : ${ar(f.montant_demande)})</li>` +\n  `<li><b>Score de risque :</b> <b style=\"color:#c00000;\">${score}</b> (seuil : ${seuil})</li>` +\n  `<li><b>Version du modèle :</b> ${html(p.version_modele)}</li>` +\n  '</ul>' +\n  '<h3>Rapport d\\'explicabilité</h3>' +\n  '<ul>' +\n  `<li><b>Facteur principal :</b> ${html(s.facteur_principal)}</li>` +\n  (second ? `<li><b>Facteur secondaire :</b> ${html(second)}</li>` : '') +\n  (reco ? `<li><b>Recommandation :</b> ${html(reco)}</li>` : '') +\n  '</ul>' +\n  `<p><a href=\"${html(a.dashboard_url)}\" style=\"background:#0055ff;color:#ffffff;padding:10px 16px;text-decoration:none;border-radius:4px;\">Consulter le dossier</a></p>`;\n\nreturn [{ json: { ...item, slack_text, email_subject, email_html } }];"
+      },
+      "id": "node-formater",
+      "name": "Formater Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', facture_id: $json.facture.facture_id, score_fraude: $json.prediction.score_fraude }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-rep-ok",
+      "name": "Reponse 200 Alerte Acceptee",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.slack_text }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "node-slack",
+      "name": "Notifier Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $env.ALERT_EMAIL_TO }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.email_html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "node-email",
+      "name": "Notifier Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1100,
+        480
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "node-echec-slack",
+      "name": "Echec canal Slack",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        360
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "node-echec-email",
+      "name": "Echec canal Email",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        540
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Alerte Fraude": {
+      "main": [
+        [
+          {
+            "node": "Valider Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider Payload": {
+      "main": [
+        [
+          {
+            "node": "Payload Valide ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Valide ?": {
+      "main": [
+        [
+          {
+            "node": "Score >= Seuil ?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse 400 Invalide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score >= Seuil ?": {
+      "main": [
+        [
+          {
+            "node": "Formater Messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse 200 Sous Seuil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formater Messages": {
+      "main": [
+        [
+          {
+            "node": "Reponse 200 Alerte Acceptee",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifier Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notifier Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifier Slack": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Echec canal Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifier Email": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Echec canal Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
