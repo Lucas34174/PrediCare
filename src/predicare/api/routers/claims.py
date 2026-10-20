@@ -903,6 +903,16 @@ def get_prediction(
             date_prediction = inference["date_prediction"]
             recommandation = inference["recommandation"]
 
+            clean_top_facteurs = [
+                {
+                    "feature": f["feature"],
+                    "valeur": None if (isinstance(f.get("valeur"), float) and math.isnan(f["valeur"])) else f.get("valeur"),
+                    "impact_shap": float(f["impact_shap"]),
+                    "description": f["description"],
+                }
+                for f in top_facteurs
+            ]
+
             try:
                 engine = _db_engine()
                 if engine is not None:
@@ -923,15 +933,15 @@ def get_prediction(
                                 "dt": date_prediction,
                             },
                         ).first()
-                        if pred_row and top_facteurs:
+                        if pred_row and clean_top_facteurs:
                             conn.execute(
                                 text(
                                     "INSERT INTO explications_shap (prediction_id, top_features, date_generation) "
-                                    "VALUES (:pid, :tf::jsonb, :dt)"
+                                    "VALUES (:pid, CAST(:tf AS jsonb), :dt)"
                                 ),
                                 {
                                     "pid": pred_row[0],
-                                    "tf": json.dumps(top_facteurs),
+                                    "tf": json.dumps(clean_top_facteurs),
                                     "dt": date_prediction,
                                 },
                             )
