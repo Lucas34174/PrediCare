@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { UiRole } from '@/api/types'
+import { LayoutDashboard} from 'lucide-react';
 
 export interface MenuEntry {
   label: string
@@ -37,6 +38,11 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
     { label: 'Dossiers à examiner', path: '/gestionnaire/dossiers', icon: ClipboardCheck },
+    {
+    path: '/dashboardi',
+    label: 'Tableau de bord',
+    icon: LayoutDashboard,
+  },
   ],
   professionnel_sante: [
     { label: 'Mon activité', path: '/app', icon: Activity },
@@ -51,6 +57,11 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
     { label: 'Supervision', path: '/admin', icon: Gauge },
     { label: 'Configuration', path: '/admin/config', icon: Settings },
     { label: 'Modèles ML', path: '/admin/models', icon: Cpu },
+    {
+    path: '/dashboardi',
+    label: 'Tableau de bord',
+    icon: LayoutDashboard,
+  },
   ],
 }
 
@@ -60,3 +71,19 @@ export const rolePaths: Record<UiRole, string> = {
   assure: '/assure',
   admin: '/admin',
 }
+
+
+export const navigationItems = [
+  {
+    label: 'Tableau de bord',
+    path: '/dashboard',
+    icon: LayoutDashboard,
+    roles: ['gestionnaire', 'administrateur'],
+  },
+  {
+    label: 'Assistant',
+    path: '/assistant',
+    icon: MessageSquare,
+    roles: ['assure', 'gestionnaire', 'administrateur'],
+  },
+];
