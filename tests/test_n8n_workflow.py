@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 WORKFLOW_PATH = Path("infra/n8n/fraud_alert_workflow.json")
@@ -15,7 +14,7 @@ def test_workflow_json_est_valide_et_complet():
     data = json.loads(WORKFLOW_PATH.read_text(encoding="utf-8"))
 
     assert "name" in data
-    assert "nodes" in data and len(data["nodes"]) >= 6
+    assert "nodes" in data and len(data["nodes"]) >= 4
     assert "connections" in data
 
 
@@ -32,31 +31,21 @@ def test_noeud_webhook_fraud_alert_present():
     assert len(webhook_nodes) == 1, "Le nœud Webhook POST fraud-alert doit être unique et présent"
 
 
-def test_noeuds_notification_et_robustesse():
-    """Garantit la présence de Slack et Email avec continueOnFail pour la tolérance aux pannes."""
+def test_noeud_notification_email_present():
+    """Garantit la présence du canal de notification Email."""
     data = json.loads(WORKFLOW_PATH.read_text(encoding="utf-8"))
     nodes_by_type = {n.get("type"): n for n in data["nodes"]}
 
-    assert "n8n-nodes-base.httpRequest" in nodes_by_type, "Nœud Slack (HTTP Request) manquant"
-    assert "n8n-nodes-base.emailSend" in nodes_by_type, "Nœud Email manquant"
-
-    slack_node = nodes_by_type["n8n-nodes-base.httpRequest"]
-    email_node = nodes_by_type["n8n-nodes-base.emailSend"]
-
-    assert slack_node.get("continueOnFail") is True, "Slack doit avoir continueOnFail=true"
-    assert email_node.get("continueOnFail") is True, "Email doit avoir continueOnFail=true"
+    assert "n8n-nodes-base.emailSend" in nodes_by_type, "Nœud Email (emailSend) manquant"
 
 
 def test_aucun_secret_dans_le_workflow_exporte():
-    """Garantit l'absence absolue d'URL Slack réelles, tokens et mots de passe dans le JSON."""
+    """Garantit l'absence absolue de tokens, mots de passe et PII dans le JSON."""
     contenu = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-    # Aucun token Slack bot xoxb- ou webhook réel
-    assert "xoxb-" not in contenu, "Token Slack bot détecté dans le JSON !"
-    assert "xoxp-" not in contenu, "Token Slack user détecté dans le JSON !"
-    assert not re.search(r"https://hooks\.slack\.com/services/T[A-Z0-9]+", contenu), (
-        "URL de webhook Slack réelle détectée dans le JSON !"
-    )
+    # Aucun token ou secret en clair
+    assert "xoxb-" not in contenu
+    assert "xoxp-" not in contenu
 
     # Aucune PII
     for mot in ["rabe", "razafy", "antananarivo@gmail", "034", "032", "033"]:

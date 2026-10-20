@@ -84,6 +84,8 @@ services:
       EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
       EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
       RAG_CORPUS_DIR: ${RAG_CORPUS_DIR:-/data/raw}
+      DASHBOARD_BASE_URL: ${DASHBOARD_BASE_URL:-http://localhost:3000}
+
     volumes:
       - ./data/raw:/data/raw:ro
       - ./models:/app/models:ro
@@ -119,6 +121,10 @@ services:
       DB_POSTGRESDB_PORT: "5432"
       DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
       DB_POSTGRESDB_USER: ${POSTGRES_USER:-predicare}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      SMTP_FROM: ${SMTP_FROM}
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
       DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
       N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY manquant dans .env}"
       GENERIC_TIMEZONE: ${TZ:-Indian/Antananarivo}
