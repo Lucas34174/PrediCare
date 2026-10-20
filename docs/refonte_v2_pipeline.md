@@ -267,7 +267,8 @@ reconstruits.
 | Manifeste labels | `data/raw/labels/weak_labels_manifest.json` |
 | Dataset v2 | `data/processed/dataset_fraude_v2.csv` |
 | Manifeste dataset | `data/processed/dataset_fraude_v2_manifest.json` |
-| EDA | `reports/eda_fraude/rapport_eda_fraude.md` |
+| EDA (dataset d'entraînement) | `reports/eda_fraude_v2/rapport_eda_fraude.md` |
+| EDA (diagnostic 28 features) | `reports/eda_fraude/rapport_eda_fraude.md` |
 | Alertes PB-09 | `reports/ml/pb09/alertes_prescription.csv` |
 | Évaluation PB-09 | `reports/ml/pb09/evaluation_pb09.json` |
 | Modèle v2 | `models/v2.0.0-weak/model.joblib` |

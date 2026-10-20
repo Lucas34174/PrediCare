@@ -288,12 +288,19 @@ PYTHONPATH=src python -m predicare.ml.registry rollback v1.1.0
 Le rollback vers `v1.1.0` exige de restaurer son magasin de variables :
 
 ```bash
+# 1. Basculer le pointeur de production
+PYTHONPATH=src python -m predicare.ml.registry rollback v1.1.0
+
+# 2. Utiliser le magasin v1.1.0 (107 features) pour le service
 PREDICARE_DATASET_CM=data/raw/dataset_cm.csv \
-  PYTHONPATH=src python -m predicare.ml.service
+  PYTHONPATH=src python -c \
+  "from predicare.ml.service import predire_facture; print(predire_facture('FAC-00027743', top_k=3))"
 ```
 
 Le magasin par défaut est `data/processed/dataset_cm_v2.csv` (v2). Le magasin
-v1.1.0 reste `data/raw/dataset_cm.csv`.
+v1.1.0 reste `data/raw/dataset_cm.csv`. Sans la variable
+`PREDICARE_DATASET_CM`, le service utiliserait le magasin v2 avec le modèle
+v1.1.0, ce qui provoquerait une incompatibilité de features.
 
 ## 10. Monitoring en production
 
