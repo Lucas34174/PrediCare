@@ -39,14 +39,26 @@ GRAVITE_PRESCRIPTION: dict[str, int] = {
 # Cohérence clinique diagnostic → familles attendues (référentiel EDA, paramétrable).
 ATTENDU_DIAGNOSTIC: dict[str, set[str] | None] = {
     "Infection respiratoire aiguë": {
-        "ANTIBIOTIQUE", "ANTALGIQUE", "AINS", "RESPIRATOIRE", "CORTICOIDE",
-        "ANTIINFECTIEUX", "LAB", "IMG",
+        "ANTIBIOTIQUE",
+        "ANTALGIQUE",
+        "AINS",
+        "RESPIRATOIRE",
+        "CORTICOIDE",
+        "ANTIINFECTIEUX",
+        "LAB",
+        "IMG",
     },
     "Hypertension artérielle": {"ANTIHYPERTENSEUR", "HYPOLIPEMIANT", "LAB", "IMG"},
     "Paludisme simple": {"ANTIPALUDEEN", "ANTALGIQUE", "AINS", "LAB", "IMG"},
     "Gastro-entérite": {
-        "REHYDRATATION", "ANTIBIOTIQUE", "ANTIINFECTIEUX", "ANTALGIQUE", "AINS",
-        "GASTRO", "LAB", "IMG",
+        "REHYDRATATION",
+        "ANTIBIOTIQUE",
+        "ANTIINFECTIEUX",
+        "ANTALGIQUE",
+        "AINS",
+        "GASTRO",
+        "LAB",
+        "IMG",
     },
     "Infection urinaire": {"ANTIBIOTIQUE", "ANTIINFECTIEUX", "ANTALGIQUE", "LAB", "IMG"},
     "Diabète de type 2": {"ANTIDIABETIQUE", "LAB", "IMG"},
@@ -59,7 +71,13 @@ ATTENDU_DIAGNOSTIC: dict[str, set[str] | None] = {
     "Gastrite": {"GASTRO", "ANTIBIOTIQUE", "ANTALGIQUE", "LAB", "IMG"},
     "Dermatose": {"ANTIHISTAMINIQUE", "CORTICOIDE", "ANTIBIOTIQUE", "LAB", "IMG"},
     "Suivi de grossesse": {
-        "SUPPLEMENTATION", "VITAMINE", "LAB", "IMG", "CONS", "ANTIBIOTIQUE", "ANTALGIQUE",
+        "SUPPLEMENTATION",
+        "VITAMINE",
+        "LAB",
+        "IMG",
+        "CONS",
+        "ANTIBIOTIQUE",
+        "ANTALGIQUE",
     },
     "Trouble de la réfraction": {"OPT", "LAB", "IMG"},
     "Insuffisance rénale chronique": {"DIALYSE", "ANTIHYPERTENSEUR", "LAB", "IMG"},
@@ -72,7 +90,14 @@ SPECIALITES_PAR_ORDONNANCE: dict[str, set[str]] = {
     "KINE": {"RHUMATOLOGIE", "TRAUMATO-ORTHOPEDIE", "NEUROLOGIE", "PEDIATRIE", "CABINET_KINE"},
 }
 
-COLONNES_ALERTES = ["facture_id", "ordonnance_id", "code_fraude", "gravite", "montant_en_jeu", "explication"]
+COLONNES_ALERTES = [
+    "facture_id",
+    "ordonnance_id",
+    "code_fraude",
+    "gravite",
+    "montant_en_jeu",
+    "explication",
+]
 
 
 def charger_tables(source_dir: Path | str | None = None) -> dict[str, pd.DataFrame]:
@@ -125,9 +150,7 @@ def _enrichir_lignes(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         on="ordonnance_id",
         how="left",
     )
-    lignes = lignes.merge(
-        med, left_on="code", right_on="code_medicament", how="left"
-    )
+    lignes = lignes.merge(med, left_on="code", right_on="code_medicament", how="left")
     lignes["famille"] = np.where(
         lignes["classe"].notna(),
         lignes["classe"],
@@ -178,7 +201,9 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
                 doublon,
                 "DOUBLON_PRESCRIPTION",
                 (
-                    "Code " + doublon["code"].astype(str) + " represcrit "
+                    "Code "
+                    + doublon["code"].astype(str)
+                    + " represcrit "
                     + doublon["gap"].astype(int).astype(str)
                     + " j apres une prescription du meme assure"
                 ).tolist(),
@@ -195,8 +220,13 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
                 inad,
                 "INADEQUATION_DIAGNOSTIC",
                 (
-                    "Code " + inad["code"].astype(str) + " (" + inad["famille"].astype(str)
-                    + ") peu coherent avec le diagnostic '" + inad["diagnostic"].astype(str) + "'"
+                    "Code "
+                    + inad["code"].astype(str)
+                    + " ("
+                    + inad["famille"].astype(str)
+                    + ") peu coherent avec le diagnostic '"
+                    + inad["diagnostic"].astype(str)
+                    + "'"
                 ).tolist(),
             )
         )
@@ -215,7 +245,9 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
                 inc,
                 "PRESCRIPTEUR_INCOMPATIBLE",
                 (
-                    "Ordonnance " + inc["type_ordonnance"].astype(str) + " emise par specialite "
+                    "Ordonnance "
+                    + inc["type_ordonnance"].astype(str)
+                    + " emise par specialite "
                     + inc["specialite"].astype(str)
                 ).tolist(),
             )
@@ -230,7 +262,11 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     ].copy()
     if len(radie):
         alertes.append(
-            pack(radie, "PRESCRIPTEUR_RADIE", "Prescription emise par un prescripteur hors convention")
+            pack(
+                radie,
+                "PRESCRIPTEUR_RADIE",
+                "Prescription emise par un prescripteur hors convention",
+            )
         )
 
     # P5 — ordonnance antidatée (avant l'adhésion).
@@ -246,7 +282,11 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     surcharge = lignes[(lignes["chronique"] == 0) & (lignes["quantite_num"] >= 4)].copy()
     if len(surcharge):
         alertes.append(
-            pack(surcharge, "SURCHARGE_QUANTITE", "Quantite prescrite anormalement elevee pour un traitement aigu")
+            pack(
+                surcharge,
+                "SURCHARGE_QUANTITE",
+                "Quantite prescrite anormalement elevee pour un traitement aigu",
+            )
         )
 
     # P7 — ordonnance sans ligne.
@@ -260,7 +300,9 @@ def _alertes_ordonnance(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         alertes.append(bloc)
 
     if not alertes:
-        return pd.DataFrame(columns=["ordonnance_id", "code_concerne", "code_fraude", "gravite", "explication"])
+        return pd.DataFrame(
+            columns=["ordonnance_id", "code_concerne", "code_fraude", "gravite", "explication"]
+        )
     return pd.concat(alertes, ignore_index=True)
 
 
@@ -296,10 +338,13 @@ def _alertes_facture(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
                         "gravite": GRAVITE_PRESCRIPTION["SURCONSOMMATION"],
                         "montant_en_jeu": bloc["montant_total"],
                         "explication": (
-                            "Ordonnance " + bloc["ordonnance_id"].astype(str)
-                            + " facturee par " + bloc["nb_prestataires"].astype(int).astype(str)
+                            "Ordonnance "
+                            + bloc["ordonnance_id"].astype(str)
+                            + " facturee par "
+                            + bloc["nb_prestataires"].astype(int).astype(str)
                             + " prestataires (montant cumule "
-                            + bloc["montant"].round(0).astype(int).astype(str) + " MGA)"
+                            + bloc["montant"].round(0).astype(int).astype(str)
+                            + " MGA)"
                         ),
                     }
                 )
@@ -313,9 +358,7 @@ def _alertes_facture(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         )
         if len(lignes_ordo):
             # Ne conserver que les factures dont l'ordonnance est connue.
-            lignes_ordo = lignes_ordo[
-                lignes_ordo["ordonnance_id"].isin(codes_prescrits)
-            ].copy()
+            lignes_ordo = lignes_ordo[lignes_ordo["ordonnance_id"].isin(codes_prescrits)].copy()
             lignes_ordo["non_prescrite"] = [
                 code not in codes_prescrits.get(ordo_id, set())
                 for ordo_id, code in zip(lignes_ordo["ordonnance_id"], lignes_ordo["code"])

@@ -41,10 +41,10 @@ def _charger_villes(source_dir: Path | str | None = None) -> pd.DataFrame:
     dossier = Path(source_dir) if source_dir else SOURCE_DIR
     assures = pd.read_csv(dossier / "assures.csv", low_memory=False)[["assure_id", "ville"]]
     assures = assures.rename(columns={"assure_id": "meta_assure_id", "ville": "ville_assure"})
-    prest = pd.read_csv(dossier / "prestataires.csv", low_memory=False)[
-        ["prestataire_id", "ville"]
-    ]
-    prest = prest.rename(columns={"prestataire_id": "meta_prestataire_id", "ville": "ville_prestataire"})
+    prest = pd.read_csv(dossier / "prestataires.csv", low_memory=False)[["prestataire_id", "ville"]]
+    prest = prest.rename(
+        columns={"prestataire_id": "meta_prestataire_id", "ville": "ville_prestataire"}
+    )
     return assures, prest
 
 
@@ -63,16 +63,14 @@ def preparer_table(
             v2 = REPORTS_DIR / "v2" / "scores_test.csv"
             v11 = REPORTS_DIR / "v11" / "scores_test.csv"
             chemin = (
-                v2
-                if v2.is_file()
-                else v11
-                if v11.is_file()
-                else DATA_RAW / "scores_test_cm.csv"
+                v2 if v2.is_file() else v11 if v11.is_file() else DATA_RAW / "scores_test_cm.csv"
             )
         scores = pd.read_csv(chemin)
 
     test = dataset[dataset["split"] == "test"].copy()
-    test = test.merge(scores[["facture_id", "probabilite", "score_risque", "alerte"]], on="facture_id", how="left")
+    test = test.merge(
+        scores[["facture_id", "probabilite", "score_risque", "alerte"]], on="facture_id", how="left"
+    )
     test["alerte"] = test["alerte"].fillna(0).astype(int)
 
     if source_dir is not False:
@@ -84,7 +82,9 @@ def preparer_table(
             test["ville_assure"] = np.nan
             test["ville_prestataire"] = np.nan
 
-    test["tranche_age"] = pd.cut(test["age_au_soin"], bins=TRANCHES_AGE, labels=LABELS_AGE, right=False)
+    test["tranche_age"] = pd.cut(
+        test["age_au_soin"], bins=TRANCHES_AGE, labels=LABELS_AGE, right=False
+    )
     return test
 
 
@@ -179,8 +179,7 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
         "",
         f"Seuil d'alerte appliqué : **{seuil:.2f}** (score de risque normalisé).",
         "",
-        "Écart de rappel maximal toléré entre groupes : "
-        f"**{SEUIL_ECART_TPR:.0%}**.",
+        f"Écart de rappel maximal toléré entre groupes : **{SEUIL_ECART_TPR:.0%}**.",
         "",
         "## Synthèse",
         "",
@@ -188,8 +187,12 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
         "|---|---:|---:|---:|---:|---|",
     ]
     for nom, info in resume["dimensions"].items():
-        ecart_tpr = f"{info['ecart_tpr_max_min']:.3f}" if info["ecart_tpr_max_min"] is not None else "n/a"
-        ecart_fpr = f"{info['ecart_fpr_max_min']:.3f}" if info["ecart_fpr_max_min"] is not None else "n/a"
+        ecart_tpr = (
+            f"{info['ecart_tpr_max_min']:.3f}" if info["ecart_tpr_max_min"] is not None else "n/a"
+        )
+        ecart_fpr = (
+            f"{info['ecart_fpr_max_min']:.3f}" if info["ecart_fpr_max_min"] is not None else "n/a"
+        )
         alerte = "⚠️ " + " ; ".join(info["alerte_equite"]) if info["alerte_equite"] else "✅"
         lignes.append(
             f"| {nom} | {info['nb_groupes']} | {info['nb_groupes_faibles']} | {ecart_tpr} | {ecart_fpr} | {alerte} |"
@@ -212,17 +215,23 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
         ]
         for _, r in table.sort_values("n", ascending=False).iterrows():
             marque = " *(effectif faible)*" if r["effectif_faible"] else ""
-            tpr = f"{r['tpr']:.3f} [{r['tpr_ic_bas']:.2f}–{r['tpr_ic_haut']:.2f}]" if r["tpr"] == r["tpr"] else "n/a"
-            fpr = f"{r['fpr']:.3f} [{r['fpr_ic_bas']:.2f}–{r['fpr_ic_haut']:.2f}]" if r["fpr"] == r["fpr"] else "n/a"
+            tpr = (
+                f"{r['tpr']:.3f} [{r['tpr_ic_bas']:.2f}–{r['tpr_ic_haut']:.2f}]"
+                if r["tpr"] == r["tpr"]
+                else "n/a"
+            )
+            fpr = (
+                f"{r['fpr']:.3f} [{r['fpr_ic_bas']:.2f}–{r['fpr_ic_haut']:.2f}]"
+                if r["fpr"] == r["fpr"]
+                else "n/a"
+            )
             lignes.append(
                 f"| {r['modalite']}{marque} | {r['n']} | {r['positifs']} | {r['alertes']} | "
                 f"{r['taux_alerte']:.1%} | {tpr} | {fpr} | {r['precision']:.3f} |"
             )
         lignes.append("")
 
-    positifs_test = (
-        int(next(iter(resultats.values()))["positifs"].sum()) if resultats else 0
-    )
+    positifs_test = int(next(iter(resultats.values()))["positifs"].sum()) if resultats else 0
     lignes += [
         "## Limites",
         "",

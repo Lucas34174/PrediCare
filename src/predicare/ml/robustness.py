@@ -188,14 +188,28 @@ def construire_lot_test(
             "facture_id": "INV-MONTANT-NEGATIF",
             "facture": copie(
                 montant_total=1000,
-                lignes=[{"code": sorted(referentiels["codes"])[0], "quantite": -1, "prix_unitaire": 1000, "montant": -1000}],
+                lignes=[
+                    {
+                        "code": sorted(referentiels["codes"])[0],
+                        "quantite": -1,
+                        "prix_unitaire": 1000,
+                        "montant": -1000,
+                    }
+                ],
             ),
             "attendu": ["MONTANT_NEGATIF"],
         },
         {
             "facture_id": "INV-CODE-INCONNU",
             "facture": copie(
-                lignes=[{"code": "ACT-INCONNU-999", "quantite": 1, "prix_unitaire": 1000, "montant": 1000}],
+                lignes=[
+                    {
+                        "code": "ACT-INCONNU-999",
+                        "quantite": 1,
+                        "prix_unitaire": 1000,
+                        "montant": 1000,
+                    }
+                ],
                 montant_total=1000,
             ),
             "attendu": ["CODE_ACTE_INCONNU"],
@@ -219,7 +233,14 @@ def construire_lot_test(
             "facture_id": "INV-TOTAL-INCOHERENT",
             "facture": copie(
                 montant_total=9999,
-                lignes=[{"code": sorted(referentiels["codes"])[0], "quantite": 1, "prix_unitaire": 1000, "montant": 1000}],
+                lignes=[
+                    {
+                        "code": sorted(referentiels["codes"])[0],
+                        "quantite": 1,
+                        "prix_unitaire": 1000,
+                        "montant": 1000,
+                    }
+                ],
             ),
             "attendu": ["TOTAL_INCOHERENT"],
         },
@@ -247,9 +268,7 @@ def construire_lot_test(
 
     # Catégorie de chaque cas invalide (le cas « champ manquant » est un cas incomplet).
     for cas in invalides:
-        cas["categorie"] = (
-            "incomplet" if cas["facture_id"] == "INV-CHAMP-MANQUANT" else "invalide"
-        )
+        cas["categorie"] = "incomplet" if cas["facture_id"] == "INV-CHAMP-MANQUANT" else "invalide"
 
     return {
         "date_reference": "2026-10-19",
@@ -266,7 +285,11 @@ def construire_lot_test(
 
 def sauvegarder_lot_test(lot: dict, chemin: Path | str | None = None) -> Path:
     """Écrit le lot au format JSON (fixture pytest)."""
-    chemin = Path(chemin) if chemin else Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "factures_test_set.json"
+    chemin = (
+        Path(chemin)
+        if chemin
+        else Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "factures_test_set.json"
+    )
     chemin.parent.mkdir(parents=True, exist_ok=True)
     chemin.write_text(json.dumps(lot, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     return chemin

@@ -36,9 +36,11 @@ def test_reference_et_derive():
     derive = calculer_derive(reference, dataset, split="test")
     assert set(derive.columns) >= {"variable", "type", "psi", "ks", "statut", "tendance"}
     assert derive["psi"].notna().all()
-    assert derive["statut"].isin(
-        {"ok", "vigilance", "alerte", "tendance_structurelle", "indetermine"}
-    ).all()
+    assert (
+        derive["statut"]
+        .isin({"ok", "vigilance", "alerte", "tendance_structurelle", "indetermine"})
+        .all()
+    )
 
     resume = synthese_derive(derive)
     assert resume["nb_variables"] == len(derive)

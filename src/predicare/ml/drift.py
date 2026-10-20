@@ -58,7 +58,6 @@ def _variables(dataset: pd.DataFrame) -> tuple[list[str], list[str]]:
     return numeriques, categorielles
 
 
-
 def _bins_numeriques(serie: pd.Series, n: int = 10) -> list[float]:
     valeurs = pd.to_numeric(serie, errors="coerce").dropna()
     if valeurs.nunique() <= 1:
@@ -158,13 +157,22 @@ def calculer_derive(
                 proportions = []
             psi = _psi(ref.get("proportions", []), proportions.tolist())
             ks = (
-                float(ks_2samp(serie, pd.to_numeric(dataset.loc[dataset["split"] == "train", nom], errors="coerce").dropna()).statistic)
+                float(
+                    ks_2samp(
+                        serie,
+                        pd.to_numeric(
+                            dataset.loc[dataset["split"] == "train", nom], errors="coerce"
+                        ).dropna(),
+                    ).statistic
+                )
                 if len(serie) > 1
                 else float("nan")
             )
         else:
             serie = current[nom].astype(str)
-            proportions = serie.value_counts(normalize=True).reindex(ref["modalites"], fill_value=0.0)
+            proportions = serie.value_counts(normalize=True).reindex(
+                ref["modalites"], fill_value=0.0
+            )
             psi = _psi(ref.get("proportions", []), proportions.to_numpy().tolist())
             ks = float("nan")
 
@@ -179,7 +187,11 @@ def calculer_derive(
                 "manquants_reference": ref.get("manquants"),
             }
         )
-    return pd.DataFrame(lignes).sort_values(["statut", "psi"], ascending=[True, False]).reset_index(drop=True)
+    return (
+        pd.DataFrame(lignes)
+        .sort_values(["statut", "psi"], ascending=[True, False])
+        .reset_index(drop=True)
+    )
 
 
 def synthese_derive(derive: pd.DataFrame) -> dict:

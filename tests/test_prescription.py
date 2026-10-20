@@ -22,9 +22,24 @@ def _tables(statut_p2: str = "ACTIF") -> dict[str, pd.DataFrame]:
     return {
         "factures": pd.DataFrame(
             [
-                {"facture_id": "F1", "ordonnance_id": "O1", "prestataire_id": "P1", "montant_total": 10_000},
-                {"facture_id": "F2", "ordonnance_id": "O1", "prestataire_id": "P2", "montant_total": 20_000},
-                {"facture_id": "F3", "ordonnance_id": "O2", "prestataire_id": "P1", "montant_total": 5_000},
+                {
+                    "facture_id": "F1",
+                    "ordonnance_id": "O1",
+                    "prestataire_id": "P1",
+                    "montant_total": 10_000,
+                },
+                {
+                    "facture_id": "F2",
+                    "ordonnance_id": "O1",
+                    "prestataire_id": "P2",
+                    "montant_total": 20_000,
+                },
+                {
+                    "facture_id": "F3",
+                    "ordonnance_id": "O2",
+                    "prestataire_id": "P1",
+                    "montant_total": 5_000,
+                },
             ]
         ),
         "lignes_facture": pd.DataFrame(
@@ -70,8 +85,18 @@ def _tables(statut_p2: str = "ACTIF") -> dict[str, pd.DataFrame]:
         ),
         "prestataires": pd.DataFrame(
             [
-                {"prestataire_id": "P1", "specialite": "GENERALISTE", "date_fin_convention": None, "statut": "ACTIF"},
-                {"prestataire_id": "P2", "specialite": "GENERALISTE", "date_fin_convention": None, "statut": statut_p2},
+                {
+                    "prestataire_id": "P1",
+                    "specialite": "GENERALISTE",
+                    "date_fin_convention": None,
+                    "statut": "ACTIF",
+                },
+                {
+                    "prestataire_id": "P2",
+                    "specialite": "GENERALISTE",
+                    "date_fin_convention": None,
+                    "statut": statut_p2,
+                },
             ]
         ),
         "referentiel_medicaments": pd.DataFrame(
@@ -168,6 +193,8 @@ def test_referentiel_diagnostic_couvre_les_diagnostics_du_jeu():
     assert diagnostics_attendus.issubset(set(ATTENDU_DIAGNOSTIC))
 
 
-@pytest.mark.parametrize("code", ["SURCONSOMMATION", "LIGNES_NON_PRESCRITES", "INADEQUATION_DIAGNOSTIC"])
+@pytest.mark.parametrize(
+    "code", ["SURCONSOMMATION", "LIGNES_NON_PRESCRITES", "INADEQUATION_DIAGNOSTIC"]
+)
 def test_gravites_definies(code):
     assert GRAVITE_PRESCRIPTION[code] in (1, 2, 3)

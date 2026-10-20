@@ -52,7 +52,9 @@ def test_audit_par_dimension():
     resultats = auditer(dataset, scores, source_dir=False)
     assert {"sexe", "tranche_age", "formule"}.issubset(resultats)
     table = resultats["sexe"]
-    assert {"groupe", "modalite", "n", "positifs", "taux_alerte", "tpr", "fpr"} <= set(table.columns)
+    assert {"groupe", "modalite", "n", "positifs", "taux_alerte", "tpr", "fpr"} <= set(
+        table.columns
+    )
     assert table["n"].sum() > 0
 
 

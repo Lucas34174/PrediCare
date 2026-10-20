@@ -51,7 +51,12 @@ def test_facture_valide_acceptee(lot):
     referentiels = charger_referentiels(SOURCE_DIR)
     base = dict(lot["invalides"][0]["facture"])
     base["lignes"] = [
-        {"code": sorted(referentiels["codes"])[0], "quantite": 1, "prix_unitaire": 1000, "montant": 1000}
+        {
+            "code": sorted(referentiels["codes"])[0],
+            "quantite": 1,
+            "prix_unitaire": 1000,
+            "montant": 1000,
+        }
     ]
     base["montant_total"] = 1000
     base["date_soin"] = "2026-06-01"

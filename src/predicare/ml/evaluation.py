@@ -286,8 +286,6 @@ def compute_metrics_by_fraud_type(
     return results
 
 
-
-
 # ---------------------------------------------------------------------------
 # Métriques d'évaluation et de calibration v2 / modèle B
 # ---------------------------------------------------------------------------
@@ -338,7 +336,9 @@ def metriques_comparaison(y: Any, p: Any) -> dict[str, Any]:
     ordre = np.argsort(-p_arr)
     for budget in (0.03, 0.05):
         k = max(1, int(round(budget * len(y_arr))))
-        out[f"recall_top{int(budget * 100)}pct"] = float(y_arr[ordre[:k]].sum() / max(y_arr.sum(), 1))
+        out[f"recall_top{int(budget * 100)}pct"] = float(
+            y_arr[ordre[:k]].sum() / max(y_arr.sum(), 1)
+        )
     return out
 
 

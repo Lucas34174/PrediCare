@@ -32,7 +32,9 @@ def _resolve(path: Path, fallback_name: str | None = None) -> Path:
         candidate = REFERENCE_DIR / fallback_name
         if candidate.is_file():
             return candidate
-    raise FileNotFoundError(f"Fichier introuvable : {path} (repli : {REFERENCE_DIR / (fallback_name or '')})")
+    raise FileNotFoundError(
+        f"Fichier introuvable : {path} (repli : {REFERENCE_DIR / (fallback_name or '')})"
+    )
 
 
 def construire_dataset_cm(
@@ -49,8 +51,8 @@ def construire_dataset_cm(
     Le split chronologique existant (``split``) est conservé.
     """
     dataset_path = Path(dataset_path) if dataset_path else _resolve(DATASET_ML)
-    labels_path = Path(labels_path) if labels_path else _resolve(
-        LABELS_SECONDAIRES, "labels_secondaires.csv"
+    labels_path = (
+        Path(labels_path) if labels_path else _resolve(LABELS_SECONDAIRES, "labels_secondaires.csv")
     )
     output_path = Path(output_path) if output_path else DATASET_CM
 
@@ -67,7 +69,9 @@ def construire_dataset_cm(
         for c in ("facture_id", "statut", "motif_rejet", "cible_controle_medical")
         if c in labels.columns
     ]
-    fusion = dataset.merge(labels[colonnes_labels], on="facture_id", how="left", validate="one_to_one")
+    fusion = dataset.merge(
+        labels[colonnes_labels], on="facture_id", how="left", validate="one_to_one"
+    )
 
     if "cible_controle_medical" not in fusion:
         raise ValueError("Colonne 'cible_controle_medical' absente des labels.")
@@ -95,7 +99,9 @@ def valider_dataset_cm(df: pd.DataFrame) -> pd.DataFrame:
             {"test": nom, "statut": "OK" if bool(condition) else "ECHEC", "detail": detail}
         )
 
-    verifier("Cible binaire sans valeur manquante", df[TARGET].isin([0, 1]).all(), "cible_cm ∈ {0,1}")
+    verifier(
+        "Cible binaire sans valeur manquante", df[TARGET].isin([0, 1]).all(), "cible_cm ∈ {0,1}"
+    )
     verifier("Identifiants uniques", df["facture_id"].is_unique, f"{len(df)} lignes")
     verifier(
         "Partition stricte des splits",
