@@ -90,10 +90,13 @@ def _persister_facture_db(
         engine = _db_engine()
         with engine.begin() as conn:
             # 1. Vérification / récupération du contrat_id pour cet assuré
-            contrat_id = conn.execute(
-                text("SELECT contrat_id FROM assures WHERE assure_id = :aid"),
-                {"aid": body.assure_id},
-            ).scalar() or "CTR-2025-001"
+            contrat_id = (
+                conn.execute(
+                    text("SELECT contrat_id FROM assures WHERE assure_id = :aid"),
+                    {"aid": body.assure_id},
+                ).scalar()
+                or "CTR-2025-001"
+            )
 
             # 2. Insertion facture
             conn.execute(
@@ -144,7 +147,9 @@ def _persister_facture_db(
                         "facture_id": facture_id,
                         "num_ligne": ligne.num_ligne,
                         "code": ligne.code,
-                        "type_ligne": ligne.type_ligne.value if hasattr(ligne.type_ligne, "value") else str(ligne.type_ligne),
+                        "type_ligne": ligne.type_ligne.value
+                        if hasattr(ligne.type_ligne, "value")
+                        else str(ligne.type_ligne),
                         "libelle": ligne.code,
                         "quantite": ligne.quantite,
                         "prix_unitaire": ligne.prix_unitaire,
@@ -255,7 +260,9 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
             top_facteurs = [
                 ShapFactor(
                     feature=f.get("feature", ""),
-                    valeur=float(f.get("valeur", 0.0)) if isinstance(f.get("valeur"), (int, float)) else 0.0,
+                    valeur=float(f.get("valeur", 0.0))
+                    if isinstance(f.get("valeur"), (int, float))
+                    else 0.0,
                     impact_shap=float(f.get("impact_shap", 0.0)),
                     description=f.get("description", ""),
                 )
@@ -271,7 +278,9 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
                 facture_id=facture_id,
                 prediction=PredictionInfo(
                     score_fraude=float(row["score_fraude"]),
-                    seuil_applique=float(row["seuil_applique"]) if row["seuil_applique"] is not None else fraud_score_threshold(),
+                    seuil_applique=float(row["seuil_applique"])
+                    if row["seuil_applique"] is not None
+                    else fraud_score_threshold(),
                     est_anomalie=bool(row["est_anomalie"]),
                     version_modele=str(row["version_modele"] or "inconnue"),
                     date_prediction=row["date_prediction"],
@@ -284,7 +293,6 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
     except Exception as exc:
         logger.warning("Erreur lors de la lecture DB de la prédiction %s : %s", facture_id, exc)
         return None
-
 
 
 @router.get("", response_model=ClaimsListResponse)
@@ -339,6 +347,7 @@ def get_claim(
             detail="Accès refusé : vous n'êtes pas le titulaire de cette facture.",
         )
     return claim
+
 
 @router.post("", response_model=ClaimCreateResponse, status_code=201)
 def create_claim(
@@ -465,6 +474,7 @@ def _prediction_repli(facture_id: str) -> PredictionResponse:
             recommandation="Modèle indisponible : contrôle manuel requis.",
         ),
     )
+
 
 @router.get(
     "/{facture_id}/prediction",

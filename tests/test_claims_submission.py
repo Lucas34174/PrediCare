@@ -103,6 +103,7 @@ def test_rejet_ligne_calcul_incoherent():
     resp = client.post("/claims", json=payload)
     assert resp.status_code == 422
 
+
 def test_soumission_facture_declenche_inference_reelle():
     """Vérifie que POST /claims calcule un score réel et applique le seuil configuré."""
     payload = _facture_valide()
