@@ -178,7 +178,6 @@ def register_model_version(
     return model_path, metadata_path
 
 
-
 if __name__ == "__main__":  # pragma: no cover
     import sys
 

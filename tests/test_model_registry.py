@@ -151,6 +151,8 @@ def test_register_model_version_standby(tmp_path):
     v11 = [m for m in parsed.available_models if m.version_id == "v1.1.0-xgb"][0]
     assert v11.statut == "STANDBY"
     assert v11.recall_test == 0.4286
+
+
 def test_unit_vs_batch_inference_parity():
     """Vérifie que l'inférence unitaire (1 facture) est strictement identique à l'inférence batch."""
     clf = XGBClassifier(n_estimators=10, max_depth=3, random_state=42)
