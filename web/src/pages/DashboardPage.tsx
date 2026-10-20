@@ -1,4 +1,4 @@
-// web/src/pages/DashboardPage.tsx
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, BadgeCheck, CircleAlert, FileText, WalletCards } from 'lucide-react'
 import { request } from '@/api/request'
@@ -10,10 +10,11 @@ const formatMGA = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 
 export function DashboardPage() {
   const { user } = useAuth()
+  const [periode, setPeriode] = useState<'7d' | '30d' | 'all'>('30d')
   
   const { data: apiKpis } = useQuery({ 
-    queryKey: ['kpis'], 
-    queryFn: () => request<any>('/dashboard/kpis'),
+    queryKey: ['kpis', periode], 
+    queryFn: () => request<any>(`/dashboard/kpis?periode=${periode}`),
   })
   
   const { data: latestClaimData } = useQuery({
@@ -48,7 +49,7 @@ export function DashboardPage() {
 
   const factors = normalizeFactors(prediction?.explanation?.top_factors)
 
-  // On extrait les bonnes valeurs du contrat
+  // Indicateurs extraits dynamiquement de la base PostgreSQL
   const kpis = apiKpis ? {
     received: apiKpis.kpis?.total_factures_traitees ?? 0,
     to_review: apiKpis.kpis?.dossiers_en_attente_arbitrage ?? 0,
@@ -56,10 +57,19 @@ export function DashboardPage() {
     amount: apiKpis.kpis?.montant_total_demande ?? 0,
   } : null
 
+  const periodNote = periode === '7d' ? 'sur 7 jours' : periode === '30d' ? 'sur 30 jours' : 'tout l’historique'
+  const periodTagLabel = periode === '7d' ? '7 derniers jours' : periode === '30d' ? '30 derniers jours' : 'Tout l’historique'
+
+  // Date et heure actuelles calculées dynamiquement sans codage en dur
+  const now = new Date()
+  const todayStr = now.toISOString().slice(0, 10)
+  const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const lastUpdateStr = `${todayStr} · ${timeStr}`
+
   const cards = [
-    { label: 'Dossiers reçus', value: kpis ? kpis.received : '—', note: 'sur la période', icon: FileText },
-    { label: 'À examiner', value: kpis ? kpis.to_review : '—', note: 'vérification recommandée', icon: CircleAlert },
-    { label: 'Dossiers traités', value: kpis ? kpis.processed : '—', note: 'sur la période', icon: BadgeCheck },
+    { label: 'Dossiers reçus', value: kpis ? formatMGA.format(kpis.received) : '—', note: periodNote, icon: FileText },
+    { label: 'À examiner', value: kpis ? formatMGA.format(kpis.to_review) : '—', note: 'vérification recommandée', icon: CircleAlert },
+    { label: 'Dossiers traités', value: kpis ? formatMGA.format(kpis.processed) : '—', note: periodNote, icon: BadgeCheck },
     {
       label: 'Remboursements',
       value: kpis ? `${formatMGA.format(kpis.amount)} MGA` : '—',
@@ -72,11 +82,36 @@ export function DashboardPage() {
     <div className="dashboard-page">
       <header className="page-heading">
         <div>
-          <p className="eyebrow">2026-10-14 <span>·</span> ANTANANARIVO</p>
+          <p className="eyebrow">{todayStr} <span>·</span> ANTANANARIVO</p>
           <h1>{roleTitles[user.role]}</h1>
           <p className="page-subtitle">Bonjour {user.display_name.split(' ')[0]}, voici le point sur votre espace.</p>
         </div>
-        <div className="live-indicator"><span /> Données de démonstration</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div className="live-indicator"><span /> Données en temps réel (PostgreSQL)</div>
+          <div className="period-selector" role="group" aria-label="Filtrer par période">
+            <button
+              type="button"
+              className={`period-btn ${periode === '7d' ? 'active' : ''}`}
+              onClick={() => setPeriode('7d')}
+            >
+              7 jours
+            </button>
+            <button
+              type="button"
+              className={`period-btn ${periode === '30d' ? 'active' : ''}`}
+              onClick={() => setPeriode('30d')}
+            >
+              30 jours
+            </button>
+            <button
+              type="button"
+              className={`period-btn ${periode === 'all' ? 'active' : ''}`}
+              onClick={() => setPeriode('all')}
+            >
+              Tout
+            </button>
+          </div>
+        </div>
       </header>
 
       <section className="metric-grid" aria-label="Indicateurs clés">
@@ -88,22 +123,21 @@ export function DashboardPage() {
           </article>
         ))}
       </section>
-      
-      {/* Le reste de ton composant avec les graphiques (activity-visual, etc.) */}
+
       <section className="dashboard-lower">
         <article className="overview-panel">
           <div className="panel-heading">
             <div><span className="section-kicker">VOTRE ACTIVITÉ</span><h2>Un aperçu, en un regard</h2></div>
-            <span className="period-tag">Ce mois-ci</span>
+            <span className="period-tag">{periodTagLabel}</span>
           </div>
           <div className="activity-visual" aria-label="Résumé de l’activité">
             <div className="activity-orbit orbit-one" />
             <div className="activity-orbit orbit-two" />
-            <div className="activity-core"><span>TPA</span><strong>{kpis?.processed ?? '—'}</strong><small>dossiers suivis</small></div>
+            <div className="activity-core"><span>TPA</span><strong>{kpis ? formatMGA.format(kpis.processed) : '—'}</strong><small>dossiers suivis</small></div>
             <div className="activity-note note-left"><span className="note-dot green" /> Traitement fluide</div>
-            <div className="activity-note note-right"><span className="note-dot amber" /> {kpis?.to_review ?? '—'} à revoir</div>
+            <div className="activity-note note-right"><span className="note-dot amber" /> {kpis ? formatMGA.format(kpis.to_review) : '—'} à revoir</div>
           </div>
-          <div className="panel-footer"><span>Dernière mise à jour</span><strong>2026-10-14 · 09:42</strong></div>
+          <div className="panel-footer"><span>Dernière mise à jour</span><strong>{lastUpdateStr}</strong></div>
         </article>
 
         <article className="signal-panel">

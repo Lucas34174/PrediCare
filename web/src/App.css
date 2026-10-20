@@ -150,6 +150,10 @@ button:disabled { cursor: progress; }
 .section-kicker { display: block; margin-bottom: 7px; color: var(--ink-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.15px; }
 .panel-heading h2 { margin: 0; color: var(--ink); font-size: 15px; font-weight: 610; letter-spacing: -.35px; }
 .period-tag { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
+.period-selector { display: inline-flex; align-items: center; gap: 3px; background: color-mix(in srgb, var(--surface-soft, #f1f5f9) 80%, var(--surface)); padding: 3px; border-radius: 8px; border: 1px solid var(--line); }
+.period-btn { border: none; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 540; color: var(--ink-muted); cursor: pointer; transition: all .15s ease; }
+.period-btn:hover { color: var(--ink); }
+.period-btn.active { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
 .activity-visual { position: relative; display: grid; min-height: 227px; place-items: center; margin: 1px 0 0; overflow: hidden; }
 .activity-visual::before { position: absolute; inset: 0; background-image: linear-gradient(to right, color-mix(in srgb, var(--line) 54%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--line) 54%, transparent) 1px, transparent 1px); background-size: 38px 38px; mask-image: radial-gradient(ellipse, #000 3%, transparent 74%); content: ''; }
 .activity-orbit { position: absolute; width: 185px; height: 185px; border: 1px solid color-mix(in srgb, var(--green) 16%, var(--line)); border-radius: 50%; }
