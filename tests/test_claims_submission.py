@@ -102,3 +102,18 @@ def test_rejet_ligne_calcul_incoherent():
     payload["lignes"][0]["montant_total"] = 12345  # 1 * 30000 != 12345
     resp = client.post("/claims", json=payload)
     assert resp.status_code == 422
+
+
+def test_soumission_facture_declenche_inference_reelle():
+    """Vérifie que POST /claims calcule un score réel et applique le seuil configuré."""
+    payload = _facture_valide()
+    resp = client.post("/claims", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+
+    assert data["facture_id"]
+    assert data["statut"] == "EN_COURS"
+    assert data["score_fraude"] is not None
+    assert 0.0 <= data["score_fraude"] <= 1.0
+    assert data["seuil_applique"] == 0.30
+    assert data["est_anomalie"] == bool(data["score_fraude"] >= 0.30)

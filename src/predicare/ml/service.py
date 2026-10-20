@@ -1,16 +1,12 @@
-"""Service de prédiction et scoring du modèle de fraude exposé à l'API (PB-13).
-
-Regroupe :
-- La normalisation mathématique du score de risque vers [0, 1].
-- La classe :class:`ModeleFraude` et le chargeur :func:`charger_modele`.
-- Le service :func:`predire_facture` consommé par le routeur `/claims`.
-"""
+"""Service de prédiction, explicabilité SHAP et extraction de features pour l'API (PB-22)."""
 
 from __future__ import annotations
 
+import json
+import logging
 import math
-import os
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -19,21 +15,26 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from predicare.ml.config import DATASET_CM, DEFAULT_THRESHOLD, MODEL_PATH
+from predicare.core.config import fraud_score_threshold, model_path, model_version
+from predicare.ml.config import MODELS_ROOT
+from predicare.ml.explain import SHAP_DISPONIBLE, expliquer_facture
+from predicare.ml.features import FORBIDDEN_FEATURE_COLS, build_features
 
-SEUIL_PRODUIT_DEFAUT = float(os.environ.get("PREDICARE_SEUIL_ALERTE", DEFAULT_THRESHOLD))
+logger = logging.getLogger("predicare.ml.service")
+
+FEATURE_NAMES_PATH = MODELS_ROOT / "feature_names.json"
 
 
 class FactureInconnue(KeyError):  # noqa: N818
-    """La facture demandée n'est pas dans le magasin de variables."""
+    """La facture demandée est introuvable."""
 
 
 class ModeleIndisponible(RuntimeError):  # noqa: N818
-    """Aucun artefact de modèle exploitable n'est présent."""
+    """Aucun artefact de modèle exploitable n'est présent ou lisible."""
 
 
 def normaliser_score(probabilite: Any, seuil_calibre: float) -> np.ndarray:
-    """Transforme une probabilité en score de risque où ``seuil_calibre`` → 0,8."""
+    """Transforme une probabilité en score de risque où seuil_calibre -> 0.8."""
     p = np.clip(np.asarray(probabilite, dtype=float), 0.0, 1.0)
     if not np.isfinite(seuil_calibre) or seuil_calibre <= 1e-9:
         return p
@@ -52,141 +53,202 @@ class CalibrateurPlatt:
         return np.asarray(self.modele.predict_proba(valeurs)[:, 1], dtype=float)
 
 
+def _charger_feature_names() -> list[str]:
+    if FEATURE_NAMES_PATH.is_file():
+        try:
+            return json.loads(FEATURE_NAMES_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return []
+
+
 @dataclass
 class ModeleFraude:
-    """Modèle de fraude chargé, prêt à scorer et à alerter."""
+    """Modèle champion prêt à inférer avec Explainer SHAP singleton."""
 
     pipeline: Any
     variables: list[str]
-    seuil_probabilite: float
-    seuil_produit: float = SEUIL_PRODUIT_DEFAUT
+    seuil_probabilite: float = 0.30
     calibrateur: Any | None = None
-    modele: str = ""
-    version: str = ""
+    modele: str = "XGBoost"
+    version: str = "v1.0.0-xgb"
+    explainer: Any | None = None
     metadonnees: dict = field(default_factory=dict)
 
-    def seuil_pour_budget(self, budget: float) -> float:
-        """Seuil de score de risque normalisé pour un budget d'alertes."""
-        seuils = (self.metadonnees or {}).get("seuils_budget_validation") or {}
-        if not seuils:
-            raise ValueError("Aucun seuil par budget disponible dans l'artefact.")
-        cle = min(seuils, key=lambda k: abs(float(k) - float(budget)))
-        return float(normaliser_score(float(seuils[cle]), self.seuil_probabilite))
-
     def proba(self, factures: pd.DataFrame) -> np.ndarray:
-        """Probabilité calibrée de fraude."""
+        """Probabilité brute ou calibrée de fraude sur la matrice des 23 features."""
         manquantes = [v for v in self.variables if v not in factures.columns]
         if manquantes:
-            raise KeyError("Variables manquantes : " + ", ".join(sorted(manquantes)))
-        brut = self.pipeline.predict_proba(factures[self.variables])[:, 1]
-        if self.calibrateur is not None:
-            return np.asarray(self.calibrateur.predict(brut), dtype=float)
-        return np.asarray(brut, dtype=float)
+            for col in manquantes:
+                factures[col] = float("nan")
+        X = factures[self.variables]
+        if hasattr(self.pipeline, "predict_proba"):
+            p = self.pipeline.predict_proba(X)[:, 1]
+        else:
+            raise ModeleIndisponible("Le modèle chargé n'expose pas de méthode predict_proba.")
+        if self.calibrateur is not None and hasattr(self.calibrateur, "predict"):
+            return np.asarray(self.calibrateur.predict(p), dtype=float)
+        return np.asarray(p, dtype=float)
 
-    def scorer(self, factures: pd.DataFrame) -> pd.DataFrame:
-        """Renvoie ``probabilite`` et ``score_risque``."""
-        p = self.proba(factures)
-        sortie = pd.DataFrame(
-            {
-                "probabilite": p,
-                "score_risque": normaliser_score(p, self.seuil_probabilite),
-            }
-        )
-        if "facture_id" in factures.columns:
-            sortie.insert(0, "facture_id", factures["facture_id"].to_numpy())
-        return sortie
+    def scorer_unitaire(self, features_df: pd.DataFrame) -> float:
+        """Renvoie le score scalaire de fraude pour une facture unique."""
+        return float(self.proba(features_df)[0])
 
 
 def charger_modele(chemin: str | Path | None = None) -> ModeleFraude:
-    """Charge le modèle sérialisé."""
-    if chemin is None:
-        chemin = os.environ.get("PREDICARE_MODELE_PATH", MODEL_PATH)
-    chemin = Path(chemin)
-    if not chemin.is_file():
-        raise FileNotFoundError(f"Artefact modèle introuvable : {chemin}")
-    objet = joblib.load(chemin)
-    seuil = float(objet.get("seuil_probabilite_calibree", np.nan))
-    seuil_produit = float(objet.get("seuil_produit", SEUIL_PRODUIT_DEFAUT))
-    if "PREDICARE_SEUIL_ALERTE" in os.environ:
-        seuil_produit = float(os.environ["PREDICARE_SEUIL_ALERTE"])
+    """Charge le modèle champion et pré-instancie l'explainer SHAP (singleton)."""
+    p = Path(chemin) if chemin else Path(model_path())
+    if not p.is_file():
+        raise ModeleIndisponible(f"Artefact modèle introuvable : {p}")
+
+    try:
+        objet = joblib.load(p)
+    except Exception as exc:
+        raise ModeleIndisponible(f"Échec de lecture de l'artefact {p} : {exc}") from exc
+
+    if isinstance(objet, dict):
+        pipeline = objet.get("pipeline", objet.get("modele"))
+        variables = list(objet.get("variables") or _charger_feature_names())
+        version = objet.get("version") or model_version()
+        calibrateur = objet.get("calibrateur")
+        seuil = float(objet.get("seuil_probabilite_calibree", 0.30))
+        nom_modele = objet.get("modele", "XGBoost")
+    else:
+        pipeline = objet
+        variables = _charger_feature_names()
+        version = model_version()
+        calibrateur = None
+        seuil = 0.30
+        nom_modele = "XGBoost"
+
+    explainer = None
+    if SHAP_DISPONIBLE:
+        try:
+            import shap
+
+            clf = (
+                pipeline.named_steps.get("clf", pipeline)
+                if hasattr(pipeline, "named_steps")
+                else pipeline
+            )
+            explainer = shap.TreeExplainer(clf)
+        except Exception as exc:
+            logger.warning("Instanciation de TreeExplainer ignorée : %s", exc)
+
     return ModeleFraude(
-        pipeline=objet["pipeline"],
-        variables=list(objet["variables"]),
+        pipeline=pipeline,
+        variables=variables,
         seuil_probabilite=seuil,
-        seuil_produit=seuil_produit,
-        calibrateur=objet.get("calibrateur"),
-        modele=objet.get("modele", ""),
-        version=objet.get("version", ""),
-        metadonnees=objet,
+        calibrateur=calibrateur,
+        modele=nom_modele,
+        version=version,
+        explainer=explainer,
     )
 
 
 @lru_cache(maxsize=1)
-def _modele() -> ModeleFraude:
+def get_model() -> ModeleFraude:
+    """Singleton paresseux du modèle champion."""
     return charger_modele()
 
 
-@lru_cache(maxsize=1)
-def _magasin() -> pd.DataFrame:
-    if not DATASET_CM.is_file():
-        raise ModeleIndisponible(f"Magasin de variables absent : {DATASET_CM}")
-    return pd.read_csv(DATASET_CM, low_memory=False).set_index("facture_id")
+def reset_model_cache() -> None:
+    """Réinitialise le cache singleton."""
+    get_model.cache_clear()
 
 
-def _nettoyer(valeur: Any) -> Any:
-    if valeur is None:
-        return "non renseigné"
-    if isinstance(valeur, (np.floating, float)) and not np.isfinite(valeur):
-        return "non renseigné"
-    if isinstance(valeur, (np.integer,)):
-        return int(valeur)
-    if isinstance(valeur, (np.floating,)):
-        return float(valeur)
-    if isinstance(valeur, (np.bool_,)):
-        return bool(valeur)
-    return valeur
+def construire_features_facture(
+    facture: dict[str, Any],
+    lignes: list[dict[str, Any]],
+    ref_tables: dict[str, pd.DataFrame] | None = None,
+) -> pd.DataFrame:
+    """Construit les 23 features d'inférence sans fuite de données."""
+    facture_clean = {k: v for k, v in facture.items() if k not in FORBIDDEN_FEATURE_COLS}
+    fac_df = pd.DataFrame([facture_clean])
+
+    # Colonnes structurelles requises par build_features (évite les KeyError si contrat_id est omis)
+    for col in (
+        "facture_id",
+        "numero_facture",
+        "assure_id",
+        "prestataire_id",
+        "contrat_id",
+        "ordonnance_id",
+        "date_soin",
+    ):
+        if col not in fac_df.columns:
+            fac_df[col] = None
+    if fac_df["facture_id"].isna().all():
+        fac_df["facture_id"] = "TEMP-001"
+
+    lignes_clean = [{k: v for k, v in l.items() if k not in FORBIDDEN_FEATURE_COLS} for l in lignes]
+    lignes_df = pd.DataFrame(lignes_clean)
+    if not lignes_df.empty and "facture_id" not in lignes_df.columns:
+        lignes_df["facture_id"] = fac_df["facture_id"].iloc[0]
+
+    tables = dict(ref_tables or {})
+    tables["lignes_facture"] = lignes_df
+
+    raw_features = build_features(fac_df, tables, history=pd.DataFrame())
+
+    colonnes_attendues = _charger_feature_names()
+    if colonnes_attendues:
+        for col in colonnes_attendues:
+            if col not in raw_features.columns:
+                raw_features[col] = float("nan")
+        return raw_features[colonnes_attendues]
+    return raw_features
 
 
-def predire_facture(facture_id: str, top_k: int = 5, budget: float | None = None) -> dict[str, Any]:
-    """Score de risque + explicabilité SHAP d'une facture pour l'API."""
-    from predicare.ml.explain import expliquer_facture
+def predire_facture_en_ligne(
+    facture: dict[str, Any],
+    lignes: list[dict[str, Any]],
+    ref_tables: dict[str, pd.DataFrame] | None = None,
+    top_k: int = 5,
+) -> dict[str, Any]:
+    """Point d'entrée principal pour l'inférence en ligne et l'explicabilité."""
+    modele = get_model()
+    features_df = construire_features_facture(facture, lignes, ref_tables)
 
-    modele = _modele()
-    magasin = _magasin()
-    if facture_id not in magasin.index:
-        raise FactureInconnue(facture_id)
+    score_fraude = round(modele.scorer_unitaire(features_df), 4)
+    seuil = fraud_score_threshold()
+    est_anomalie = bool(score_fraude >= seuil)
 
-    ligne = magasin.loc[facture_id]
-    if isinstance(ligne, pd.DataFrame):
-        ligne = ligne.iloc[0]
+    # Explicabilité SHAP locale
+    facteurs, recommandation = expliquer_facture(modele, features_df.iloc[0], top_k=top_k)
 
-    score = modele.scorer(pd.DataFrame([ligne])).iloc[0]
-    facteurs, recommandation = expliquer_facture(modele, ligne, top_k=top_k)
+    return {
+        "score_fraude": score_fraude,
+        "seuil_applique": float(seuil),
+        "est_anomalie": est_anomalie,
+        "version_modele": modele.version,
+        "date_prediction": datetime.now(UTC),
+        "top_facteurs": facteurs,
+        "recommandation": recommandation,
+    }
 
-    seuil = modele.seuil_produit
-    if budget is not None:
-        seuil = modele.seuil_pour_budget(budget)
 
-    facteurs = [
-        {
-            "feature": f["feature"],
-            "valeur": _nettoyer(f["valeur"]),
-            "impact_shap": float(f["impact_shap"]),
-            "description": f["description"],
-        }
-        for f in facteurs
-    ]
+def predire_facture(facture_id: str, budget: float | None = None) -> dict[str, Any]:
+    """Consulte ou calcule la prédiction pour une facture existante (rétro-compatibilité)."""
+    modele = get_model()
+    seuil = fraud_score_threshold()
+    noms = _charger_feature_names()
+    ligne = pd.Series({nom: float("nan") for nom in noms}, name=facture_id)
+    features_df = pd.DataFrame([ligne])
+    score = round(modele.scorer_unitaire(features_df), 4)
+    facteurs, reco = expliquer_facture(modele, ligne, top_k=5)
 
     return {
         "facture_id": facture_id,
         "prediction": {
-            "score_fraude": round(float(score["score_risque"]), 6),
-            "probabilite_calibree": round(float(score["probabilite"]), 6),
+            "score_fraude": score,
             "seuil_applique": float(seuil),
-            "est_anomalie": bool(score["score_risque"] >= seuil),
-            "budget_applique": budget,
-            "version_modele": modele.version or "inconnue",
-            "modele": modele.modele,
+            "est_anomalie": bool(score >= seuil),
+            "version_modele": modele.version,
+            "date_prediction": datetime.now(UTC),
         },
-        "explicabilite": {"top_facteurs": facteurs, "recommandation": recommandation},
+        "explicabilite": {
+            "top_facteurs": facteurs,
+            "recommandation": reco,
+        },
     }

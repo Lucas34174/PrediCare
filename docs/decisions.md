@@ -163,6 +163,26 @@ L'analyse détaillée des 14 types de fraude (CDC §6) avec intervalles de Wilso
 
 L'analyse systématique des 5 faux négatifs (FN) du modèle champion `v1.0.0-xgb` sur le jeu de test scellé (91 factures, 7 fraudes) a révélé 99 000 MGA de perte financière manquée, concentrée sur `DOUBLON` (4 cas, 63 000 MGA) et `PRESTATAIRE_RADIE` (1 cas, 36 000 MGA). L'analyse SHAP démontre que les factures en doublon sont unitairement parfaitement conformes au barème, et que leur non-détection initiale découlait de l'élimination des variables d'antériorité par `_drop_high_nan` sur l'échantillon de 500 lignes. L'optimisation du seuil opérationnel à **0.25** (validé sur la CV OOF avec Recall $\ge 85 \%$ atteignant 90.0 % en CV) permet d'intercepter la fraude en doublon limitrophe `FAC-00083354` sans générer le moindre faux positif supplémentaire (FP stables à 4). Sur le test inviolé, le rappel global progresse de 28.57 % à **42.86 %** (+14.3 pts), la précision de 33.33 % à **42.86 %** (+9.5 pts), le F1-score de 0.3077 à **0.4286**, et 20 000 MGA sont récupérés, sans aucune régression sur `ACTE_FICTIF` (100 %) ni `SURFACTURATION` (100 %). La parité mathématique stricte entre inférence batch et inférence unitaire est vérifiée ($\max \Delta = 0.00 < 10^{-6}$). La nouvelle version est enregistrée en tant que **`v1.1.0-xgb`** dans `models/models_metadata.json` avec le statut `STANDBY`, maintenant `v1.0.0-xgb` actif par défaut conformément au principe de non-activation sans accord explicite et garantissant la réversibilité complète pour `GET /admin/models`.
 
+### Intégration du modèle de fraude, SHAP et stockage des prédictions:
+
+L'intégration du modèle de détection de fraude et de son explicabilité locale au sein de la plateforme backend (CDC §2, Module 4, Flux 1) concrétise le passage des scores simulés à l'inférence temps réel en production :
+
+1. **Inférence unitaire et singleton optimisé** :
+   - Le modèle champion **`v1.0.0-xgb`** et son explicateur SHAP (`shap.TreeExplainer`) sont chargés sous forme de singleton mis en cache (`get_model()`) dans `src/predicare/ml/service.py`, évitant la réinstanciation coûteuse de l'arbre à chaque requête.
+   - L'extraction en ligne (`construire_features_facture`) transpose unitairement les données de la facture et de ses lignes selon les 23 variables attendues (`models/feature_names.json`), avec typage propre des libellés dans `FEATURE_LABELS` (`src/predicare/ml/config.py`).
+   - L'étanchéité stricte contre la fuite de données (Data Leakage) est garantie par l'exclusion systématique des colonnes interdites (`FORBIDDEN_FEATURE_COLS` : `statut`, `motif_rejet`, `montant_pris_en_charge`, `date_traitement`).
+
+2. **Seuil opérationnel et traçabilité** :
+   - Le seuil d'alerte par défaut est aligné sur **`0.30`** (`DEFAULT_FRAUD_THRESHOLD` dans `src/predicare/core/config.py`), issu de l'optimisation Out-Of-Fold garantissant un rappel $\ge 80\%$.
+   - Chaque prédiction trace la version exacte du modèle (`v1.0.0-xgb`), le seuil appliqué au moment du calcul, l'horodatage UTC et le flag booléen `est_anomalie`.
+
+3. **Persistance transactionnelle atomique et schéma relationnel** :
+   - La migration Alembic `20261020_b22_predictions_alignement.py` normalise la table `predictions` en renommant la colonne `est_alerte` en `est_anomalie`, alignant le schéma physique sur le contrat d'interface.
+   - L'endpoint `POST /claims` enregistre dans une unique transaction PostgreSQL atomique (`_persister_facture_db`) : la facture, ses lignes de prestations, l'évaluation dans `predictions` et les top facteurs SHAP sérialisés en JSONB dans `explications_shap`. Un registre en mémoire (`_PERSISTED_PREDICTIONS`) assure le repli gracieux sans base active.
+
+4. **Endpoint `GET /claims/{id}/prediction` et contrôle RBAC** :
+   - L'accès à l'évaluation et aux explications SHAP est réservé aux rôles `gestionnaire` et `administrateur` (`403 Forbidden` pour `assure` et `professionnel_sante`).
+   - Les cas d'erreur 404 sont désormais distincts et explicites : rejet `404 Facture {id} introuvable.` si le dossier n'existe pas, et `404 Aucune prédiction disponible pour la facture {id}.` si la facture a été enregistrée sans prédiction exploitable.
 ## PB-19 — Chargement automatique et chiffrement PII
 
 - Un service Docker `init` one-shot applique `alembic upgrade head`, puis charge

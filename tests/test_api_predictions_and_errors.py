@@ -3,6 +3,9 @@
 from fastapi.testclient import TestClient
 
 from predicare.api.main import app
+from predicare.api.routers.claims import _SUBMITTED_CLAIMS
+from predicare.api.schemas import ClaimDetail, StatutFacture
+from predicare.core.security import create_access_token
 
 client = TestClient(app)
 
@@ -42,6 +45,110 @@ def test_prediction_not_found_404():
     resp = client.get(f"/claims/{_UNKNOWN_CLAIM}/prediction")
     assert resp.status_code == 404
     assert "introuvable" in resp.json()["detail"]
+
+
+def test_prediction_rbac_permissions():
+    """Vérifie que seuls gestionnaire et administrateur peuvent consulter la prédiction (PB-22)."""
+    token_assure = create_access_token({"sub": "assure1", "role": "assure"})
+    token_pro = create_access_token({"sub": "pro1", "role": "professionnel_sante"})
+    token_gest = create_access_token({"sub": "gest1", "role": "gestionnaire"})
+    token_admin = create_access_token({"sub": "admin1", "role": "administrateur"})
+
+    # 1. Assuré et Professionnel de santé -> 403 Forbidden
+    resp_assure = client.get(
+        f"/claims/{_EXISTING_CLAIM}/prediction",
+        headers={"Authorization": f"Bearer {token_assure}"},
+    )
+    assert resp_assure.status_code == 403
+
+    resp_pro = client.get(
+        f"/claims/{_EXISTING_CLAIM}/prediction",
+        headers={"Authorization": f"Bearer {token_pro}"},
+    )
+    assert resp_pro.status_code == 403
+
+    # 2. Gestionnaire et Administrateur -> 200 OK
+    resp_gest = client.get(
+        f"/claims/{_EXISTING_CLAIM}/prediction",
+        headers={"Authorization": f"Bearer {token_gest}"},
+    )
+    assert resp_gest.status_code == 200
+
+    resp_admin = client.get(
+        f"/claims/{_EXISTING_CLAIM}/prediction",
+        headers={"Authorization": f"Bearer {token_admin}"},
+    )
+    assert resp_admin.status_code == 200
+
+
+def test_prediction_persisted_from_submission():
+    """Vérifie la relecture de la prédiction persistée lors d'une soumission réelle (PB-22)."""
+    payload = {
+        "numero_facture": "F-2026-PERSIST-01",
+        "assure_id": "ASS-00421",
+        "prestataire_id": "PR-0015",
+        "date_soin": "2026-10-14",
+        "date_emission": "2026-10-15",
+        "montant_total": 45000,
+        "part_assure": 9000,
+        "lignes": [
+            {
+                "num_ligne": 1,
+                "code": "ACT-CS-01",
+                "type_ligne": "ACTE",
+                "quantite": 1,
+                "prix_unitaire": 30000,
+                "montant_total": 30000,
+            },
+            {
+                "num_ligne": 2,
+                "code": "MED-CIP-0045",
+                "type_ligne": "MEDICAMENT",
+                "quantite": 2,
+                "prix_unitaire": 7500,
+                "montant_total": 15000,
+            },
+        ],
+    }
+    resp_post = client.post("/claims", json=payload)
+    assert resp_post.status_code == 201
+    facture_id = resp_post.json()["facture_id"]
+    score_soumis = resp_post.json()["score_fraude"]
+
+    # Relecture via GET /claims/{id}/prediction
+    resp_pred = client.get(f"/claims/{facture_id}/prediction")
+    assert resp_pred.status_code == 200
+    data = resp_pred.json()
+
+    assert data["facture_id"] == facture_id
+    assert data["prediction"]["score_fraude"] == score_soumis
+    assert data["prediction"]["version_modele"] == "v1.0.0-xgb"
+    assert len(data["explicabilite"]["top_facteurs"]) > 0
+
+
+def test_prediction_distinct_404_no_prediction_available():
+    """Vérifie la distinction entre facture inconnue et facture sans prédiction (PB-22)."""
+    # Facture enregistrée sans prédiction associée
+    claim_sans_pred = "FAC-00099991"
+    _SUBMITTED_CLAIMS[claim_sans_pred] = ClaimDetail(
+        facture_id=claim_sans_pred,
+        numero_facture="F-SANS-PRED",
+        assure_id="ASS-00421",
+        prestataire_id="PR-0015",
+        nom_etablissement="Clinique",
+        ordonnance_id=None,
+        date_soin="2026-10-14",
+        date_emission="2026-10-15",
+        montant_total=10000,
+        part_assure=2000,
+        montant_demande=8000,
+        statut=StatutFacture.EN_COURS,
+        lignes=[],
+    )
+
+    resp = client.get(f"/claims/{claim_sans_pred}/prediction")
+    assert resp.status_code == 404
+    assert "Aucune prédiction disponible" in resp.json()["detail"]
 
 
 # 2. Tests des Décisions Gestionnaire (Cycle de vie)

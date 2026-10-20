@@ -161,7 +161,7 @@ PARAMS_LIGHTGBM_V11 = {
 }
 
 # --------------------------------------------------------------------------- #
-# Libellés métier pour l'explicabilité (PB-13)
+# Libellés métier pour l'explicabilité
 # --------------------------------------------------------------------------- #
 FEATURE_LABELS: dict[str, str] = {
     "montant_total": "Montant total de la facture",
@@ -271,6 +271,35 @@ FEATURE_LABELS.update(
         "niveau_tarif": "Niveau tarifaire du prestataire",
         "ecart_tarif_conventionne": "Écart au tarif conventionné",
         "jour_fermeture_etablissement": "Acte un jour de fermeture de l'établissement",
+    }
+)
+
+# Libellés des 23 features du modèle champion
+FEATURE_LABELS.update(
+    {
+        "f_ecart_tarif_max_moy": "Écart moyen au tarif maximal",
+        "f_ratio_tarif_ref_max": "Ratio au tarif de référence maximal",
+        "f_ecart_grille_prest_moy": "Écart moyen à la grille du prestataire",
+        "f_nb_lignes_hors_tarif_max": "Nombre de lignes hors tarif maximal",
+        "f_ratio_med_prix_ref_max": "Ratio prix médicament / référence max",
+        "f_qte_fac_vs_prescrite_max": "Quantité facturée vs prescrite max",
+        "f_nb_lignes_qte_excessive": "Nombre de lignes à quantité excessive",
+        "f_part_lignes_hors_ordonnance": "Part des lignes non prescrites",
+        "f_med_hors_ordo_cher": "Médicament cher hors ordonnance",
+        "f_ordonnance_absente_requise": "Ordonnance requise mais absente",
+        "f_ordonnance_autre_assure": "Ordonnance d'un autre assuré",
+        "f_delai_soin_prescription_j": "Délai soin vs prescription (jours)",
+        "f_ordonnance_expiree": "Ordonnance expirée",
+        "f_soin_jour_ferme": "Soin un jour de fermeture",
+        "f_age_au_soin": "Âge au moment du soin",
+        "f_age_hors_bornes_ref": "Âge hors bornes du référentiel",
+        "f_sexe_incompatible_ref": "Sexe incompatible avec l'acte",
+        "f_prestataire_non_conventionne": "Prestataire non conventionné",
+        "f_soin_apres_fin_convention": "Soin après fin de convention",
+        "f_soin_avant_adhesion": "Soin avant adhésion",
+        "f_soin_apres_radiation": "Soin après radiation",
+        "f_soin_hors_periode_contrat": "Soin hors période de contrat",
+        "f_type_prest_vs_cat_acte": "Type de prestataire vs catégorie d'acte",
     }
 )
 

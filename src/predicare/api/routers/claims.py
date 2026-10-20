@@ -1,12 +1,17 @@
 """Router factures – /claims."""
 
+import json
+import logging
 from datetime import UTC, date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import text
 
-from predicare.api.deps import get_optional_user
+from predicare.api.deps import _db_engine, get_optional_user
 from predicare.api.schemas import Role, UserInfo
+from predicare.core.config import fraud_score_threshold
+from predicare.ml.service import ModeleIndisponible, predire_facture_en_ligne
 
 from ..schemas import (
     ClaimCreateRequest,
@@ -66,6 +71,152 @@ _MOCK_CLAIM = ClaimDetail(
 _KNOWN_CLAIM_IDS = {"FAC-00005637", "FAC-00084700"}
 _SUBMITTED_CLAIMS: dict[str, ClaimDetail] = {}
 
+_PERSISTED_PREDICTIONS: dict[str, dict] = {}
+logger = logging.getLogger("predicare.api.claims")
+
+
+def _persister_facture_db(
+    facture_id: str,
+    body: ClaimCreateRequest,
+    score_fraude: float | None,
+    est_anomalie: bool,
+    seuil_applique: float,
+    version_modele: str,
+    top_facteurs: list[dict],
+    date_prediction: datetime,
+) -> bool:
+    """Insère la facture, ses lignes, la prédiction et le SHAP dans une seule transaction atomique."""
+    try:
+        engine = _db_engine()
+        with engine.begin() as conn:
+            # 1. Vérification / récupération du contrat_id pour cet assuré
+            contrat_id = (
+                conn.execute(
+                    text("SELECT contrat_id FROM assures WHERE assure_id = :aid"),
+                    {"aid": body.assure_id},
+                ).scalar()
+                or "CTR-2025-001"
+            )
+
+            # 2. Insertion facture
+            conn.execute(
+                text(
+                    "INSERT INTO factures ("
+                    "facture_id, numero_facture, prestataire_id, assure_id, contrat_id, "
+                    "ordonnance_id, type_facture, date_soin, heure_soin, date_facture, "
+                    "date_reception, canal_reception, mode_reglement, nb_lignes, "
+                    "montant_total, montant_eligible, montant_pris_en_charge, reste_a_charge, statut"
+                    ") VALUES ("
+                    ":facture_id, :numero_facture, :prestataire_id, :assure_id, :contrat_id, "
+                    ":ordonnance_id, 'CONSULTATION', :date_soin, '08:00:00', :date_facture, "
+                    "CURRENT_DATE, 'TELETRANSMISSION', 'VIREMENT', :nb_lignes, "
+                    ":montant_total, :montant_eligible, 0, :reste_a_charge, 'EN_COURS'"
+                    ") ON CONFLICT (facture_id) DO NOTHING"
+                ),
+                {
+                    "facture_id": facture_id,
+                    "numero_facture": body.numero_facture,
+                    "prestataire_id": body.prestataire_id,
+                    "assure_id": body.assure_id,
+                    "contrat_id": contrat_id,
+                    "ordonnance_id": body.ordonnance_id,
+                    "date_soin": body.date_soin,
+                    "date_facture": body.date_emission,
+                    "nb_lignes": len(body.lignes),
+                    "montant_total": body.montant_total,
+                    "montant_eligible": body.montant_total - body.part_assure,
+                    "reste_a_charge": body.part_assure,
+                },
+            )
+
+            # 3. Insertion lignes_facture
+            for idx, ligne in enumerate(body.lignes, start=1):
+                ligne_id = f"{facture_id}-L{idx:02d}"
+                conn.execute(
+                    text(
+                        "INSERT INTO lignes_facture ("
+                        "ligne_id, facture_id, num_ligne, code, type_ligne, libelle, "
+                        "quantite, prix_unitaire, montant_total"
+                        ") VALUES ("
+                        ":ligne_id, :facture_id, :num_ligne, :code, :type_ligne, :libelle, "
+                        ":quantite, :prix_unitaire, :montant_total"
+                        ") ON CONFLICT (ligne_id) DO NOTHING"
+                    ),
+                    {
+                        "ligne_id": ligne_id,
+                        "facture_id": facture_id,
+                        "num_ligne": ligne.num_ligne,
+                        "code": ligne.code,
+                        "type_ligne": ligne.type_ligne.value
+                        if hasattr(ligne.type_ligne, "value")
+                        else str(ligne.type_ligne),
+                        "libelle": ligne.code,
+                        "quantite": ligne.quantite,
+                        "prix_unitaire": ligne.prix_unitaire,
+                        "montant_total": ligne.montant_total,
+                    },
+                )
+
+            # 4. Insertion prediction
+            if score_fraude is not None:
+                pred_id = conn.execute(
+                    text(
+                        "INSERT INTO predictions ("
+                        "facture_id, score_fraude, est_anomalie, seuil_applique, version_modele, date_prediction"
+                        ") VALUES ("
+                        ":facture_id, :score_fraude, :est_anomalie, :seuil_applique, :version_modele, :date_prediction"
+                        ") RETURNING id"
+                    ),
+                    {
+                        "facture_id": facture_id,
+                        "score_fraude": score_fraude,
+                        "est_anomalie": est_anomalie,
+                        "seuil_applique": seuil_applique,
+                        "version_modele": version_modele,
+                        "date_prediction": date_prediction,
+                    },
+                ).scalar()
+
+                # 5. Insertion explications_shap (JSONB)
+                if pred_id and top_facteurs:
+                    conn.execute(
+                        text(
+                            "INSERT INTO explications_shap ("
+                            "prediction_id, top_features, date_generation"
+                            ") VALUES ("
+                            ":prediction_id, :top_features, :date_generation"
+                            ") ON CONFLICT (prediction_id) DO NOTHING"
+                        ),
+                        {
+                            "prediction_id": pred_id,
+                            "top_features": json.dumps(top_facteurs),
+                            "date_generation": date_prediction,
+                        },
+                    )
+        return True
+    except Exception as exc:
+        logger.warning("Base indisponible pour l'enregistrement (repli mémoire actif) : %s", exc)
+        return False
+
+
+def _facture_existe(facture_id: str) -> bool:
+    """Vérifie si la facture existe en mémoire ou en base PostgreSQL."""
+    if facture_id in _SUBMITTED_CLAIMS or facture_id in _KNOWN_CLAIM_IDS:
+        return True
+    try:
+        engine = _db_engine()
+        if engine is not None:
+            with engine.connect() as conn:
+                res = conn.execute(
+                    text("SELECT 1 FROM factures WHERE id = :id LIMIT 1"),
+                    {"id": facture_id},
+                ).first()
+                if res is not None:
+                    return True
+    except Exception:
+        pass
+    return False
+
 
 def _get_or_404(facture_id: str) -> ClaimDetail:
     """Retourne la facture soumise ou mock, ou lève un 404 si l'id est inconnu."""
@@ -74,6 +225,74 @@ def _get_or_404(facture_id: str) -> ClaimDetail:
     if facture_id not in _KNOWN_CLAIM_IDS:
         raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
     return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
+
+
+def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
+    """Tente de lire la dernière prédiction et son SHAP depuis PostgreSQL."""
+    try:
+        engine = _db_engine()
+        if engine is None:
+            return None
+        with engine.connect() as conn:
+            query = text(
+                "SELECT p.id, p.score_fraude, p.est_anomalie, p.seuil_applique, "
+                "p.version_modele, p.date_prediction, s.top_features "
+                "FROM predictions p "
+                "LEFT JOIN explications_shap s ON s.prediction_id = p.id "
+                "WHERE p.facture_id = :facture_id "
+                "ORDER BY p.date_prediction DESC LIMIT 1"
+            )
+            row = conn.execute(query, {"facture_id": facture_id}).mappings().first()
+            if not row or row["score_fraude"] is None:
+                return None
+
+            top_features_raw = row["top_features"]
+            if isinstance(top_features_raw, str):
+                try:
+                    top_facteurs_data = json.loads(top_features_raw)
+                except Exception:
+                    top_facteurs_data = []
+            elif isinstance(top_features_raw, list):
+                top_facteurs_data = top_features_raw
+            else:
+                top_facteurs_data = []
+
+            top_facteurs = [
+                ShapFactor(
+                    feature=f.get("feature", ""),
+                    valeur=float(f.get("valeur", 0.0))
+                    if isinstance(f.get("valeur"), (int, float))
+                    else 0.0,
+                    impact_shap=float(f.get("impact_shap", 0.0)),
+                    description=f.get("description", ""),
+                )
+                for f in top_facteurs_data
+            ]
+            recommandation = (
+                "Contrôle requis : anomalie détectée."
+                if row["est_anomalie"]
+                else "Facture conforme : aucun risque significatif détecté."
+            )
+
+            return PredictionResponse(
+                facture_id=facture_id,
+                prediction=PredictionInfo(
+                    score_fraude=float(row["score_fraude"]),
+                    seuil_applique=float(row["seuil_applique"])
+                    if row["seuil_applique"] is not None
+                    else fraud_score_threshold(),
+                    est_anomalie=bool(row["est_anomalie"]),
+                    version_modele=str(row["version_modele"] or "inconnue"),
+                    date_prediction=row["date_prediction"],
+                ),
+                explicabilite=ExplicabiliteInfo(
+                    top_facteurs=top_facteurs,
+                    recommandation=recommandation,
+                ),
+            )
+    except Exception as exc:
+        logger.warning("Erreur lors de la lecture DB de la prédiction %s : %s", facture_id, exc)
+        return None
 
 
 @router.get("", response_model=ClaimsListResponse)
@@ -131,9 +350,43 @@ def get_claim(
 
 
 @router.post("", response_model=ClaimCreateResponse, status_code=201)
-def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
-    """Télétransmission d'une nouvelle facture et persistance pour relecture."""
-    facture_id = "FAC-00084700"
+def create_claim(
+    body: ClaimCreateRequest,
+    current_user: Annotated[UserInfo, Depends(get_optional_user)] = None,
+) -> ClaimCreateResponse:
+    """Télétransmission d'une nouvelle facture, inférence ML réelle et persistance atomique."""
+    facture_id = f"FAC-{len(_SUBMITTED_CLAIMS) + 84700:08d}"
+
+    # Inférence réelle par le modèle champion
+    try:
+        inference = predire_facture_en_ligne(
+            body.model_dump(),
+            [ligne.model_dump() for ligne in body.lignes],
+        )
+        score_fraude = inference["score_fraude"]
+        seuil_applique = inference["seuil_applique"]
+        est_anomalie = inference["est_anomalie"]
+        version_modele = inference["version_modele"]
+        top_facteurs = inference["top_facteurs"]
+        recommandation = inference["recommandation"]
+        date_prediction = inference["date_prediction"]
+        message = (
+            "Facture enregistrée. Alerte d'anomalie transmise au gestionnaire."
+            if est_anomalie
+            else "Facture enregistrée avec succès."
+        )
+    except ModeleIndisponible as exc:
+        logger.error("Modèle indisponible lors de la soumission de %s : %s", facture_id, exc)
+        score_fraude = None
+        seuil_applique = fraud_score_threshold()
+        est_anomalie = False
+        version_modele = "indisponible"
+        top_facteurs = []
+        recommandation = "Modèle indisponible : contrôle manuel requis."
+        date_prediction = datetime.now(UTC)
+        message = "Facture enregistrée. Analyse de fraude en attente (modèle indisponible)."
+
+    # Enregistrement en mémoire pour relecture immédiate
     _SUBMITTED_CLAIMS[facture_id] = ClaimDetail(
         facture_id=facture_id,
         numero_facture=body.numero_facture,
@@ -149,13 +402,40 @@ def create_claim(body: ClaimCreateRequest) -> ClaimCreateResponse:
         statut=StatutFacture.EN_COURS,
         lignes=body.lignes,
     )
+
+    _PERSISTED_PREDICTIONS[facture_id] = {
+        "prediction": {
+            "score_fraude": score_fraude,
+            "seuil_applique": seuil_applique,
+            "est_anomalie": est_anomalie,
+            "version_modele": version_modele,
+            "date_prediction": date_prediction,
+        },
+        "explicabilite": {
+            "top_facteurs": top_facteurs,
+            "recommandation": recommandation,
+        },
+    }
+
+    # Persistance en base PostgreSQL si disponible
+    _persister_facture_db(
+        facture_id=facture_id,
+        body=body,
+        score_fraude=score_fraude,
+        est_anomalie=est_anomalie,
+        seuil_applique=seuil_applique,
+        version_modele=version_modele,
+        top_facteurs=top_facteurs,
+        date_prediction=date_prediction,
+    )
+
     return ClaimCreateResponse(
         facture_id=facture_id,
         statut=StatutFacture.EN_COURS,
-        score_fraude=0.88,
-        est_anomalie=True,
-        seuil_applique=0.80,
-        message="Facture enregistrée. Alerte d'anomalie transmise au gestionnaire.",
+        score_fraude=score_fraude,
+        est_anomalie=est_anomalie,
+        seuil_applique=seuil_applique,
+        message=message,
     )
 
 
@@ -199,41 +479,101 @@ def _prediction_repli(facture_id: str) -> PredictionResponse:
 @router.get(
     "/{facture_id}/prediction",
     response_model=PredictionResponse,
-    responses={404: {"description": "Facture inexistante."}},
+    responses={
+        401: {"description": "Token manquant ou expiré."},
+        403: {"description": "Accès réservé aux gestionnaires et administrateurs."},
+        404: {"description": "Facture inexistante ou aucune prédiction disponible."},
+    },
 )
 def get_prediction(
     facture_id: str,
+    current_user: Annotated[UserInfo, Depends(get_optional_user)],
     budget: Annotated[float | None, Query(gt=0, lt=1, description="Part cible contrôlée")] = None,
 ) -> PredictionResponse:
-    """Score de fraude réel et explicabilité SHAP (modèle en production avec repli)."""
-    _get_or_404(facture_id)
-    resultat = _predire(facture_id, budget=budget)
-    if resultat is None:
-        return _prediction_repli(facture_id)
-
-    top_facteurs = [
-        ShapFactor(
-            feature=f["feature"],
-            valeur=f["valeur"] if isinstance(f["valeur"], (int, float)) else 0.0,
-            impact_shap=float(f["impact_shap"]),
-            description=f["description"],
+    """Score de fraude réel et explicabilité SHAP (réservé aux gestionnaires et administrateurs)."""
+    # 1. Contrôle RBAC
+    if current_user.role not in {Role.GESTIONNAIRE, Role.ADMINISTRATEUR}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Accès refusé pour le rôle '{current_user.role}'. Réservé aux gestionnaires et administrateurs.",
         )
-        for f in resultat["explicabilite"]["top_facteurs"]
-    ]
 
-    return PredictionResponse(
-        facture_id=facture_id,
-        prediction=PredictionInfo(
-            score_fraude=resultat["prediction"]["score_fraude"],
-            seuil_applique=resultat["prediction"]["seuil_applique"],
-            est_anomalie=resultat["prediction"]["est_anomalie"],
-            version_modele=resultat["prediction"]["version_modele"],
-            date_prediction=datetime.now(UTC),
-        ),
-        explicabilite=ExplicabiliteInfo(
-            top_facteurs=top_facteurs,
-            recommandation=resultat["explicabilite"]["recommandation"],
-        ),
+    # 2. Vérification d'existence de la facture
+    if not _facture_existe(facture_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Facture {facture_id} introuvable.",
+        )
+
+    # 3. Lecture en base PostgreSQL si disponible
+    pred_db = _lire_prediction_db(facture_id)
+    if pred_db is not None:
+        return pred_db
+
+    # 4. Lecture dans le cache mémoire de soumission
+    if facture_id in _PERSISTED_PREDICTIONS:
+        persisted = _PERSISTED_PREDICTIONS[facture_id]
+        pred_data = persisted.get("prediction", {})
+        if pred_data.get("score_fraude") is not None:
+            expl_data = persisted.get("explicabilite", {})
+            top_facteurs = [
+                ShapFactor(
+                    feature=f["feature"],
+                    valeur=f["valeur"] if isinstance(f["valeur"], (int, float, str)) else 0.0,
+                    impact_shap=float(f["impact_shap"]),
+                    description=f["description"],
+                )
+                for f in expl_data.get("top_facteurs", [])
+            ]
+            return PredictionResponse(
+                facture_id=facture_id,
+                prediction=PredictionInfo(
+                    score_fraude=float(pred_data["score_fraude"]),
+                    seuil_applique=float(pred_data["seuil_applique"]),
+                    est_anomalie=bool(pred_data["est_anomalie"]),
+                    version_modele=str(pred_data["version_modele"]),
+                    date_prediction=pred_data["date_prediction"],
+                ),
+                explicabilite=ExplicabiliteInfo(
+                    top_facteurs=top_facteurs,
+                    recommandation=str(expl_data.get("recommandation", "")),
+                ),
+            )
+
+    # 5. Si facture de référence connue (ex: FAC-00005637), calcul dynamique
+    if facture_id in _KNOWN_CLAIM_IDS:
+        resultat = _predire(facture_id, budget=budget)
+        if resultat is None:
+            return _prediction_repli(facture_id)
+
+        top_facteurs = [
+            ShapFactor(
+                feature=f["feature"],
+                valeur=f["valeur"] if isinstance(f["valeur"], (int, float, str)) else 0.0,
+                impact_shap=float(f["impact_shap"]),
+                description=f["description"],
+            )
+            for f in resultat["explicabilite"]["top_facteurs"]
+        ]
+        return PredictionResponse(
+            facture_id=facture_id,
+            prediction=PredictionInfo(
+                score_fraude=resultat["prediction"]["score_fraude"],
+                seuil_applique=resultat["prediction"]["seuil_applique"],
+                est_anomalie=resultat["prediction"]["est_anomalie"],
+                version_modele=resultat["prediction"]["version_modele"],
+                date_prediction=datetime.now(UTC),
+            ),
+            explicabilite=ExplicabiliteInfo(
+                top_facteurs=top_facteurs,
+                recommandation=resultat["explicabilite"]["recommandation"],
+            ),
+        )
+
+    # 6. La facture existe mais aucune prédiction n'est disponible
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Aucune prédiction disponible pour la facture {facture_id}.",
     )
 
 
