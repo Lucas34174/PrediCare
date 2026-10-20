@@ -93,6 +93,8 @@ services:
       - ./tests:/app/tests
       - ./docs:/app/docs
       - ./src:/app/src
+      - ./scripts:/app/scripts:ro
+      - ./infra:/app/infra:ro
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
