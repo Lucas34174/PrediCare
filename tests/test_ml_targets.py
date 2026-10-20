@@ -4,14 +4,22 @@ from __future__ import annotations
 
 import pytest
 
-from predicare.ml.config import META_COLUMNS, TARGET
+from predicare.ml.config import DATA_RAW, META_COLUMNS, TARGET
 
 
 def _charger():
+    """Tests de la cible proxy historique : charger explicitement dataset_cm.csv.
+
+    La production v2 utilise ``data/processed/dataset_cm_v2.csv`` (labels
+    faibles) ; ces tests valident le schéma de l'ancienne cible proxy.
+    """
     from predicare.ml.targets import charger_dataset_cm
 
+    chemin = DATA_RAW / "dataset_cm.csv"
+    if not chemin.is_file():
+        pytest.skip(f"{chemin} absent (cible proxy historique)")
     try:
-        return charger_dataset_cm()
+        return charger_dataset_cm(chemin)
     except FileNotFoundError as exc:  # données sources absentes du conteneur de test
         pytest.skip(str(exc))
 

@@ -1,0 +1,250 @@
+{
+  "global": {
+    "n": 84593,
+    "positifs": 7347,
+    "prevalence": 0.08685115789722554,
+    "alertes": 6449,
+    "tp": 2838,
+    "fp": 3611,
+    "fn": 4509,
+    "tn": 73635,
+    "precision": 0.44006822763219106,
+    "recall": 0.3862801143323806,
+    "f1": 0.41142360104378084,
+    "lift": 5.066924129588939,
+    "part_alertee": 0.07623562233281714,
+    "montant_total": 2975057050.0,
+    "montant_alerte": 201467850.0,
+    "part_montant_alerte": 0.06771898710312127,
+    "montant_positifs": 855311300.0
+  },
+  "par_code": [
+    {
+      "code_fraude": "DOUBLON_PRESCRIPTION",
+      "n_factures_alertees": 3938,
+      "precision": 0.08811579481970544,
+      "recall_global": 0.047230161970872465,
+      "lift": 1.014560967903,
+      "montant_total": 87329850.0,
+      "couverture_type_correspondant": 0.034482758620689655
+    },
+    {
+      "code_fraude": "SURCONSOMMATION",
+      "n_factures_alertees": 1468,
+      "precision": 1.0,
+      "recall_global": 0.19980944603239417,
+      "lift": 11.513951272628283,
+      "montant_total": 60100050.0,
+      "couverture_type_correspondant": 1.0
+    },
+    {
+      "code_fraude": "LIGNES_NON_PRESCRITES",
+      "n_factures_alertees": 1276,
+      "precision": 1.0,
+      "recall_global": 0.17367633047502382,
+      "lift": 11.513951272628283,
+      "montant_total": 68119350.0,
+      "couverture_type_correspondant": 1.0
+    },
+    {
+      "code_fraude": "ORDONNANCE_ANTIDATEE",
+      "n_factures_alertees": 113,
+      "precision": 1.0,
+      "recall_global": 0.015380427385327345,
+      "lift": 11.513951272628283,
+      "montant_total": 3724400.0,
+      "couverture_type_correspondant": NaN
+    },
+    {
+      "code_fraude": "PRESCRIPTEUR_INCOMPATIBLE",
+      "n_factures_alertees": 21,
+      "precision": 0.047619047619047616,
+      "recall_global": 0.00013610997686130393,
+      "lift": 0.5482833939346802,
+      "montant_total": 4672500.0,
+      "couverture_type_correspondant": NaN
+    },
+    {
+      "code_fraude": "PRESCRIPTEUR_RADIE",
+      "n_factures_alertees": 2,
+      "precision": 1.0,
+      "recall_global": 0.00027221995372260786,
+      "lift": 11.513951272628283,
+      "montant_total": 63000.0,
+      "couverture_type_correspondant": NaN
+    }
+  ],
+  "couverture_types": [
+    {
+      "type_fraude": "SURFACTURATION",
+      "n_positifs": 1644,
+      "n_alertes": 57,
+      "couverture": 0.03467153284671533,
+      "montant_total": 587636450.0,
+      "montant_alerte": 1581050.0
+    },
+    {
+      "type_fraude": "SURCONSOMMATION",
+      "n_positifs": 1123,
+      "n_alertes": 1123,
+      "couverture": 1.0,
+      "montant_total": 39534550.0,
+      "montant_alerte": 39534550.0
+    },
+    {
+      "type_fraude": "DOUBLON",
+      "n_positifs": 957,
+      "n_alertes": 42,
+      "couverture": 0.0438871473354232,
+      "montant_total": 28581800.0,
+      "montant_alerte": 727600.0
+    },
+    {
+      "type_fraude": "LIGNES_NON_PRESCRITES",
+      "n_positifs": 570,
+      "n_alertes": 570,
+      "couverture": 1.0,
+      "montant_total": 29696550.0,
+      "montant_alerte": 29696550.0
+    },
+    {
+      "type_fraude": "QUANTITE_EXCESSIVE",
+      "n_positifs": 564,
+      "n_alertes": 65,
+      "couverture": 0.11524822695035461,
+      "montant_total": 32841750.0,
+      "montant_alerte": 4370900.0
+    },
+    {
+      "type_fraude": "SUBSTITUTION_PRODUIT",
+      "n_positifs": 531,
+      "n_alertes": 531,
+      "couverture": 1.0,
+      "montant_total": 24810600.0,
+      "montant_alerte": 24810600.0
+    },
+    {
+      "type_fraude": "ORDONNANCE_EXPIREE",
+      "n_positifs": 499,
+      "n_alertes": 53,
+      "couverture": 0.1062124248496994,
+      "montant_total": 9681200.0,
+      "montant_alerte": 794100.0
+    },
+    {
+      "type_fraude": "INCOHERENCE_PROFIL",
+      "n_positifs": 379,
+      "n_alertes": 46,
+      "couverture": 0.12137203166226913,
+      "montant_total": 53180000.0,
+      "montant_alerte": 1551000.0
+    },
+    {
+      "type_fraude": "SOINS_JOUR_FERME",
+      "n_positifs": 346,
+      "n_alertes": 77,
+      "couverture": 0.22254335260115607,
+      "montant_total": 10505800.0,
+      "montant_alerte": 3003800.0
+    },
+    {
+      "type_fraude": "ACTE_FICTIF",
+      "n_positifs": 214,
+      "n_alertes": 175,
+      "couverture": 0.8177570093457944,
+      "montant_total": 16384700.0,
+      "montant_alerte": 13612200.0
+    },
+    {
+      "type_fraude": "HORS_COUVERTURE",
+      "n_positifs": 180,
+      "n_alertes": 91,
+      "couverture": 0.5055555555555555,
+      "montant_total": 4395400.0,
+      "montant_alerte": 2150500.0
+    },
+    {
+      "type_fraude": "PRESTATAIRE_RADIE",
+      "n_positifs": 159,
+      "n_alertes": 8,
+      "couverture": 0.050314465408805034,
+      "montant_total": 3559500.0,
+      "montant_alerte": 178800.0
+    },
+    {
+      "type_fraude": "CONTROLE_MEDICAL",
+      "n_positifs": 111,
+      "n_alertes": 0,
+      "couverture": 0.0,
+      "montant_total": 8050500.0,
+      "montant_alerte": 0.0
+    },
+    {
+      "type_fraude": "UPCODING",
+      "n_positifs": 36,
+      "n_alertes": 0,
+      "couverture": 0.0,
+      "montant_total": 1716000.0,
+      "montant_alerte": 0.0
+    },
+    {
+      "type_fraude": "FRACTIONNEMENT",
+      "n_positifs": 34,
+      "n_alertes": 0,
+      "couverture": 0.0,
+      "montant_total": 4736500.0,
+      "montant_alerte": 0.0
+    }
+  ],
+  "comparaison_modele_test": [
+    {
+      "approche": "PB-09 (toutes alertes)",
+      "n": 10453,
+      "positifs": 893,
+      "prevalence": 0.08543002008992634,
+      "alertes": 710,
+      "tp": 298,
+      "fp": 412,
+      "fn": 595,
+      "tn": 9148,
+      "precision": 0.4197183098591549,
+      "recall": 0.3337066069428891,
+      "f1": 0.37180286961946346,
+      "lift": 4.913007270949324,
+      "part_alertee": 0.0679230842820243
+    },
+    {
+      "approche": "Modèle v2 (top 710)",
+      "n": 10453,
+      "positifs": 893,
+      "prevalence": 0.08543002008992634,
+      "alertes": 710,
+      "tp": 577,
+      "fp": 133,
+      "fn": 316,
+      "tn": 9427,
+      "precision": 0.8126760563380282,
+      "recall": 0.6461366181410975,
+      "f1": 0.7199001871490954,
+      "lift": 9.512769111871679,
+      "part_alertee": 0.0679230842820243
+    },
+    {
+      "approche": "Modèle v2 (seuil produit)",
+      "n": 10453,
+      "positifs": 893,
+      "prevalence": 0.08543002008992634,
+      "alertes": 1660,
+      "tp": 697,
+      "fp": 963,
+      "fn": 196,
+      "tn": 8597,
+      "precision": 0.4198795180722892,
+      "recall": 0.780515117581187,
+      "f1": 0.5460242851547199,
+      "lift": 4.914894291612137,
+      "part_alertee": 0.15880608437769062
+    }
+  ],
+  "avertissement": "Les règles PB-09 ont servi à construire une partie des labels faibles : la précision de SURCONSOMMATION et LIGNES_NON_PRESCRITES est circulaire. La comparaison au modèle à budget égal reste informative."
+}

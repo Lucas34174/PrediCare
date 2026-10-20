@@ -11,6 +11,7 @@ sont signalés et leurs intervalles de confiance fournis (Wilson).
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -57,8 +58,18 @@ def preparer_table(
 
     dataset = dataset if dataset is not None else charger_dataset_cm()
     if scores is None:
-        v11 = REPORTS_DIR / "v11" / "scores_test.csv"
-        scores = pd.read_csv(v11 if v11.is_file() else DATA_RAW / "scores_test_cm.csv")
+        chemin = Path(os.environ.get("PREDICARE_SCORES_TEST", ""))
+        if not chemin.is_file():
+            v2 = REPORTS_DIR / "v2" / "scores_test.csv"
+            v11 = REPORTS_DIR / "v11" / "scores_test.csv"
+            chemin = (
+                v2
+                if v2.is_file()
+                else v11
+                if v11.is_file()
+                else DATA_RAW / "scores_test_cm.csv"
+            )
+        scores = pd.read_csv(chemin)
 
     test = dataset[dataset["split"] == "test"].copy()
     test = test.merge(scores[["facture_id", "probabilite", "score_risque", "alerte"]], on="facture_id", how="left")
@@ -162,9 +173,9 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
     lignes = [
         "# Audit d'équité du modèle PrediCare (cible B)",
         "",
-        "> Cible : `cible_controle_medical` (proxy de suspicion d'abus). "
-        "Aucun label de fraude confirmée n'existe : cet audit porte sur les "
-        "**alertes du modèle**, pas sur une vérité terrain de fraude.",
+        "> Cible : `est_fraude` (label faible reconstruit, 14 types de fraude). "
+        "Ce n'est pas une vérité terrain : cet audit porte sur les "
+        "**alertes du modèle**, pas sur une fraude confirmée.",
         "",
         f"Seuil d'alerte appliqué : **{seuil:.2f}** (score de risque normalisé).",
         "",
@@ -209,11 +220,14 @@ def rapport_markdown(resume: dict, resultats: dict[str, pd.DataFrame], seuil: fl
             )
         lignes.append("")
 
+    positifs_test = (
+        int(next(iter(resultats.values()))["positifs"].sum()) if resultats else 0
+    )
     lignes += [
         "## Limites",
         "",
-        "- Cible = proxy administratif (contrôle médical), pas de la fraude confirmée.",
-        "- Test : 128 positifs au total → les sous-groupes restent petits.",
+        "- Cible = label faible reconstruit par règles, pas de la fraude confirmée.",
+        f"- Test : {positifs_test} positifs faibles → les sous-groupes restent petits.",
         "- Données synthétiques : les écarts observés peuvent refléter le générateur.",
         "- La ville est jointe hors du jeu d'apprentissage (dimension d'audit, pas variable du modèle).",
         "",

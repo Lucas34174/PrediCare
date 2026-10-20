@@ -114,8 +114,23 @@ class ModeleFraude:
 
 
 def charger_modele(chemin: str | Path | None = None) -> ModeleFraude:
-    """Recharge un modèle depuis ``models/v1/model.joblib``."""
-    chemin = Path(chemin) if chemin else MODEL_PATH
+    """Charge un modèle.
+
+    Sans argument, charge la version **en production** du registre (v2.0.0-weak
+    par défaut), avec repli sur ``models/v1.0.0/model.joblib``. Un chemin
+    explicite ou ``PREDICARE_MODELE_PATH`` permet de cibler un artefact pour
+    les audits et les tests de non-régression sans modifier la production.
+    """
+    if chemin is None:
+        chemin = os.environ.get("PREDICARE_MODELE_PATH")
+        if chemin is None:
+            try:
+                from predicare.ml.registry import charger_production
+
+                return charger_production()
+            except Exception:
+                chemin = MODEL_PATH
+    chemin = Path(chemin)
     objet = joblib.load(chemin)
     seuil = float(objet.get("seuil_probabilite_calibree", np.nan))
     seuil_produit = float(objet.get("seuil_produit", SEUIL_PRODUIT_DEFAUT))

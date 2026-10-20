@@ -64,6 +64,8 @@ models/*
 !models/v1.0.0/**
 !models/v1.1.0/
 !models/v1.1.0/**
+!models/v2.0.0-weak/
+!models/v2.0.0-weak/**
 web/.agents
 web/@
 # Interface Web / Node (si applicable dans /web)

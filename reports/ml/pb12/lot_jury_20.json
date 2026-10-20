@@ -1,0 +1,633 @@
+{
+  "version_modele": "v2.0.0-weak",
+  "avertissement": "Les labels sont des labels faibles reconstruits par règles, pas des fraudes confirmées. Le lot sert à montrer le comportement du modèle et son explicabilité, pas à valider la vérité terrain.",
+  "nb_factures": 20,
+  "composition": {
+    "positifs_haute": 5,
+    "positifs_moyenne": 5,
+    "negatifs": 10,
+    "alertes": 15
+  },
+  "factures": [
+    {
+      "facture_id": "FAC-00027743",
+      "label_faible": 1,
+      "confiance_label": "haute",
+      "type_fraude_faible": "QUANTITE_EXCESSIVE",
+      "candidat": 1,
+      "probabilite_calibree": 0.978364,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 5.033423068173201,
+          "impact_shap": 2.558882,
+          "description": "Ratio au montant moyen historique du prestataire = 5.03"
+        },
+        {
+          "feature": "quantite_max_ligne",
+          "valeur": 5.0,
+          "impact_shap": 2.004785,
+          "description": "Quantité maximale sur une ligne = 5.00"
+        },
+        {
+          "feature": "type_ordonnance",
+          "valeur": "MEDICAMENTS",
+          "impact_shap": 1.109856,
+          "description": "Type d'ordonnance = MEDICAMENTS"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00082612",
+      "label_faible": 1,
+      "confiance_label": "haute",
+      "type_fraude_faible": "SOINS_JOUR_FERME",
+      "candidat": 1,
+      "probabilite_calibree": 0.978349,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 4.97303187142468,
+          "impact_shap": 2.215992,
+          "description": "Ratio au montant moyen historique du prestataire = 4.97"
+        },
+        {
+          "feature": "soin_hors_horaires",
+          "valeur": 1.0,
+          "impact_shap": 1.057254,
+          "description": "Soin hors horaires d'ouverture = 1"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 67200.0,
+          "impact_shap": 0.870643,
+          "description": "Montant total de la facture = 67200.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00071257",
+      "label_faible": 1,
+      "confiance_label": "haute",
+      "type_fraude_faible": "LIGNES_NON_PRESCRITES",
+      "candidat": 1,
+      "probabilite_calibree": 0.978259,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "nb_lignes",
+          "valeur": 4.0,
+          "impact_shap": 2.600666,
+          "description": "Nombre de lignes de la facture = 4"
+        },
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 1.8503377859665289,
+          "impact_shap": 0.98581,
+          "description": "Ratio au montant moyen historique du prestataire = 1.85"
+        },
+        {
+          "feature": "nb_codes_distincts",
+          "valeur": 4.0,
+          "impact_shap": 0.961618,
+          "description": "Nombre de codes distincts = 4"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00034124",
+      "label_faible": 1,
+      "confiance_label": "haute",
+      "type_fraude_faible": "SUBSTITUTION_PRODUIT",
+      "candidat": 1,
+      "probabilite_calibree": 0.978216,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 5.005722203689923,
+          "impact_shap": 2.11303,
+          "description": "Ratio au montant moyen historique du prestataire = 5.01"
+        },
+        {
+          "feature": "nb_lignes",
+          "valeur": 5.0,
+          "impact_shap": 1.899998,
+          "description": "Nombre de lignes de la facture = 5"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 73200.0,
+          "impact_shap": 1.044808,
+          "description": "Montant total de la facture = 73200.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00084705",
+      "label_faible": 1,
+      "confiance_label": "haute",
+      "type_fraude_faible": "PRESTATAIRE_RADIE",
+      "candidat": 1,
+      "probabilite_calibree": 0.977904,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 3.5587188612099645,
+          "impact_shap": 1.963123,
+          "description": "Ratio au montant moyen historique du prestataire = 3.56"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 3.0,
+          "impact_shap": 1.834545,
+          "description": "Nombre de lignes de l'ordonnance = 3.00"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 80000.0,
+          "impact_shap": 1.026038,
+          "description": "Montant total de la facture = 80000.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00082615",
+      "label_faible": 1,
+      "confiance_label": "moyenne",
+      "type_fraude_faible": "SURCONSOMMATION",
+      "candidat": 1,
+      "probabilite_calibree": 0.978095,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 4.244092550049229,
+          "impact_shap": 2.369963,
+          "description": "Ratio au montant moyen historique du prestataire = 4.24"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 69200.0,
+          "impact_shap": 1.10465,
+          "description": "Montant total de la facture = 69200.00"
+        },
+        {
+          "feature": "soin_hors_horaires",
+          "valeur": 1.0,
+          "impact_shap": 1.059335,
+          "description": "Soin hors horaires d'ouverture = 1"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00026744",
+      "label_faible": 1,
+      "confiance_label": "moyenne",
+      "type_fraude_faible": "DOUBLON",
+      "candidat": 1,
+      "probabilite_calibree": 0.207517,
+      "score_fraude": 0.999286,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "montant_total",
+          "valeur": 53900.0,
+          "impact_shap": 1.114389,
+          "description": "Montant total de la facture = 53900.00"
+        },
+        {
+          "feature": "type_facture",
+          "valeur": "LABORATOIRE",
+          "impact_shap": 0.613721,
+          "description": "Type de facture = LABORATOIRE"
+        },
+        {
+          "feature": "log_montant_total",
+          "valeur": 10.89490430960068,
+          "impact_shap": 0.327223,
+          "description": "Montant total (échelle logarithmique) = 10.89"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00082425",
+      "label_faible": 1,
+      "confiance_label": "moyenne",
+      "type_fraude_faible": "SURCONSOMMATION",
+      "candidat": 1,
+      "probabilite_calibree": 0.978147,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 4.463220675944334,
+          "impact_shap": 2.237188,
+          "description": "Ratio au montant moyen historique du prestataire = 4.46"
+        },
+        {
+          "feature": "soin_hors_horaires",
+          "valeur": 1.0,
+          "impact_shap": 1.058803,
+          "description": "Soin hors horaires d'ouverture = 1"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 69500.0,
+          "impact_shap": 0.905266,
+          "description": "Montant total de la facture = 69500.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00082422",
+      "label_faible": 1,
+      "confiance_label": "moyenne",
+      "type_fraude_faible": "SURCONSOMMATION",
+      "candidat": 1,
+      "probabilite_calibree": 0.97663,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 4.667199321680147,
+          "impact_shap": 2.426912,
+          "description": "Ratio au montant moyen historique du prestataire = 4.67"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 65800.0,
+          "impact_shap": 1.131595,
+          "description": "Montant total de la facture = 65800.00"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 3.0,
+          "impact_shap": 0.605844,
+          "description": "Nombre de lignes de l'ordonnance = 3.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00082184",
+      "label_faible": 1,
+      "confiance_label": "moyenne",
+      "type_fraude_faible": "SURCONSOMMATION",
+      "candidat": 1,
+      "probabilite_calibree": 0.976694,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 6.222025764081839,
+          "impact_shap": 2.289824,
+          "description": "Ratio au montant moyen historique du prestataire = 6.22"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 78200.0,
+          "impact_shap": 0.927597,
+          "description": "Montant total de la facture = 78200.00"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 3.0,
+          "impact_shap": 0.597145,
+          "description": "Nombre de lignes de l'ordonnance = 3.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00055892",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.017304,
+      "score_fraude": 0.453417,
+      "est_anomalie": false,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 0.9975763451284536,
+          "impact_shap": -0.458235,
+          "description": "Ratio au montant moyen historique du prestataire = 1.00"
+        },
+        {
+          "feature": "type_facture",
+          "valeur": "CONSULTATION",
+          "impact_shap": -0.440217,
+          "description": "Type de facture = CONSULTATION"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 0.0,
+          "impact_shap": -0.405972,
+          "description": "Nombre de lignes de l'ordonnance = 0.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00006161",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.017304,
+      "score_fraude": 0.453418,
+      "est_anomalie": false,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 0.9973016729627632,
+          "impact_shap": -0.471372,
+          "description": "Ratio au montant moyen historique du prestataire = 1.00"
+        },
+        {
+          "feature": "type_facture",
+          "valeur": "CONSULTATION",
+          "impact_shap": -0.43571,
+          "description": "Type de facture = CONSULTATION"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 0.0,
+          "impact_shap": -0.412937,
+          "description": "Nombre de lignes de l'ordonnance = 0.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00059741",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.017331,
+      "score_fraude": 0.453933,
+      "est_anomalie": false,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 0.0,
+          "impact_shap": -0.512286,
+          "description": "Nombre de lignes de l'ordonnance = 0.00"
+        },
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 0.5377896980950416,
+          "impact_shap": -0.490044,
+          "description": "Ratio au montant moyen historique du prestataire = 0.54"
+        },
+        {
+          "feature": "specialite_prestataire",
+          "valeur": "PNEUMOLOGIE",
+          "impact_shap": -0.48946,
+          "description": "Spécialité du prestataire = PNEUMOLOGIE"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00070082",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.017364,
+      "score_fraude": 0.45456,
+      "est_anomalie": false,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 0.5359106815530744,
+          "impact_shap": -0.488343,
+          "description": "Ratio au montant moyen historique du prestataire = 0.54"
+        },
+        {
+          "feature": "nb_lignes_ordonnance",
+          "valeur": 0.0,
+          "impact_shap": -0.482152,
+          "description": "Nombre de lignes de l'ordonnance = 0.00"
+        },
+        {
+          "feature": "specialite_prestataire",
+          "valeur": "PNEUMOLOGIE",
+          "impact_shap": -0.473253,
+          "description": "Spécialité du prestataire = PNEUMOLOGIE"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00031493",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.017408,
+      "score_fraude": 0.455399,
+      "est_anomalie": false,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 0.5463953974222994,
+          "impact_shap": -0.479366,
+          "description": "Ratio au montant moyen historique du prestataire = 0.55"
+        },
+        {
+          "feature": "specialite_prestataire",
+          "valeur": "PNEUMOLOGIE",
+          "impact_shap": -0.473937,
+          "description": "Spécialité du prestataire = PNEUMOLOGIE"
+        },
+        {
+          "feature": "type_facture",
+          "valeur": "CONSULTATION",
+          "impact_shap": -0.445185,
+          "description": "Type de facture = CONSULTATION"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00007762",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.963897,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "nb_lignes",
+          "valeur": 4.0,
+          "impact_shap": 1.661119,
+          "description": "Nombre de lignes de la facture = 4"
+        },
+        {
+          "feature": "ratio_montant_moy_hist_prest",
+          "valeur": 17.69555510452608,
+          "impact_shap": 1.645616,
+          "description": "Ratio au montant moyen historique du prestataire = 17.70"
+        },
+        {
+          "feature": "montant_total",
+          "valeur": 1321000.0,
+          "impact_shap": 0.947549,
+          "description": "Montant total de la facture = 1321000.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083283",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.953194,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "delai_facture_reception_j",
+          "valeur": 42,
+          "impact_shap": 3.246289,
+          "description": "Délai entre la facture et la réception (jours) = 42"
+        },
+        {
+          "feature": "delai_soin_reception_j",
+          "valeur": 42,
+          "impact_shap": 0.756572,
+          "description": "Délai entre le soin et la réception (jours) = 42"
+        },
+        {
+          "feature": "nb_lignes_medicament",
+          "valeur": 2,
+          "impact_shap": 0.381239,
+          "description": "Nombre de lignes de médicaments = 2"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083167",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.950833,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "delai_facture_reception_j",
+          "valeur": 56.0,
+          "impact_shap": 3.409129,
+          "description": "Délai entre la facture et la réception (jours) = 56"
+        },
+        {
+          "feature": "delai_soin_reception_j",
+          "valeur": 59.0,
+          "impact_shap": 0.836659,
+          "description": "Délai entre le soin et la réception (jours) = 59"
+        },
+        {
+          "feature": "jours_depuis_derniere_facture",
+          "valeur": 41.0,
+          "impact_shap": 0.429876,
+          "description": "Jours depuis la dernière facture = 41.00"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083518",
+      "label_faible": 0,
+      "confiance_label": "aucune",
+      "type_fraude_faible": "AUCUN",
+      "candidat": 0,
+      "probabilite_calibree": 0.949738,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "delai_facture_reception_j",
+          "valeur": 56,
+          "impact_shap": 2.668669,
+          "description": "Délai entre la facture et la réception (jours) = 56"
+        },
+        {
+          "feature": "jour_semaine_soin",
+          "valeur": 6,
+          "impact_shap": 1.282421,
+          "description": "Jour de la semaine du soin = 6"
+        },
+        {
+          "feature": "delai_soin_reception_j",
+          "valeur": 57,
+          "impact_shap": 0.577186,
+          "description": "Délai entre le soin et la réception (jours) = 57"
+        }
+      ]
+    },
+    {
+      "facture_id": "FAC-00083360",
+      "label_faible": 0,
+      "confiance_label": "faible",
+      "type_fraude_faible": "SURFACTURATION",
+      "candidat": 1,
+      "probabilite_calibree": 0.948434,
+      "score_fraude": 1.0,
+      "est_anomalie": true,
+      "version_modele": "v2.0.0-weak",
+      "top_facteurs": [
+        {
+          "feature": "delai_facture_reception_j",
+          "valeur": 53,
+          "impact_shap": 3.337686,
+          "description": "Délai entre la facture et la réception (jours) = 53"
+        },
+        {
+          "feature": "delai_soin_reception_j",
+          "valeur": 53,
+          "impact_shap": 0.761562,
+          "description": "Délai entre le soin et la réception (jours) = 53"
+        },
+        {
+          "feature": "nb_lignes_medicament",
+          "valeur": 2,
+          "impact_shap": 0.407677,
+          "description": "Nombre de lignes de médicaments = 2"
+        }
+      ]
+    }
+  ]
+}

@@ -40,7 +40,16 @@ SOURCE_DIR = Path(
 DATASET_ML = DATA_RAW / "dataset_ml.csv"
 LABELS_SECONDAIRES = DATA_RAW / "labels_secondaires.csv"
 ALERTES_FACTURES = DATA_RAW / "alertes_factures.csv"
-DATASET_CM = DATA_RAW / "dataset_cm.csv"
+# Magasin de variables de production. La v2 (labels faibles) est utilisée par
+# défaut lorsqu'elle est présente ; pour reproduire la v1.1.0 (proxy), passer
+# ``PREDICARE_DATASET_CM=data/raw/dataset_cm.csv``.
+_DATASET_CM_V2 = PROJECT_ROOT / "data" / "processed" / "dataset_cm_v2.csv"
+DATASET_CM = Path(
+    os.environ.get(
+        "PREDICARE_DATASET_CM",
+        str(_DATASET_CM_V2 if _DATASET_CM_V2.is_file() else DATA_RAW / "dataset_cm.csv"),
+    )
+)
 SCORES_TEST = DATA_RAW / "scores_test_cm.csv"
 MODEL_PATH = MODELS_DIR / "model.joblib"
 METADATA_PATH = MODELS_DIR / "metadata.json"
@@ -74,6 +83,13 @@ META_COLUMNS = (
     "montant_eligible",
     "montant_pris_en_charge",
     "reste_a_charge",
+    "score_regles_metier",
+    "type_fraude",
+    "confiance",
+    "candidat",
+    "precision_attendue",
+    "tier",
+    "poids_echantillon",
 )
 
 # Colonnes de fuite explicites (connues après la décision ou identifiants).

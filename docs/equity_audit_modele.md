@@ -1,6 +1,6 @@
 # Audit d'équité du modèle PrediCare (cible B)
 
-> Cible : `cible_controle_medical` (proxy de suspicion d'abus). Aucun label de fraude confirmée n'existe : cet audit porte sur les **alertes du modèle**, pas sur une vérité terrain de fraude.
+> Cible : `est_fraude` (label faible reconstruit, 14 types de fraude). Ce n'est pas une vérité terrain : cet audit porte sur les **alertes du modèle**, pas sur une fraude confirmée.
 
 Seuil d'alerte appliqué : **0.80** (score de risque normalisé).
 
@@ -10,11 +10,11 @@ Seuil d'alerte appliqué : **0.80** (score de risque normalisé).
 
 | Dimension | Groupes | Groupes à faible effectif | Écart TPR | Écart FPR | Alerte |
 |---|---:|---:|---:|---:|---|
-| sexe | 2 | 0 | 0.085 | 0.002 | ✅ |
-| tranche_age | 4 | 0 | 0.198 | 0.016 | ⚠️ écart de rappel 0.198 > 0.1 |
-| formule | 3 | 0 | 0.274 | 0.013 | ⚠️ écart de rappel 0.274 > 0.1 |
-| ville_assure | 7 | 2 | 0.242 | 0.033 | ⚠️ écart de rappel 0.242 > 0.1 |
-| ville_prestataire | 7 | 2 | 0.161 | 0.073 | ⚠️ écart de rappel 0.161 > 0.1 |
+| sexe | 2 | 0 | 0.000 | 0.004 | ✅ |
+| tranche_age | 4 | 0 | 0.091 | 0.035 | ✅ |
+| formule | 3 | 0 | 0.079 | 0.018 | ✅ |
+| ville_assure | 7 | 0 | 0.106 | 0.056 | ⚠️ écart de rappel 0.106 > 0.1 |
+| ville_prestataire | 7 | 1 | 0.137 | 0.072 | ⚠️ écart de rappel 0.137 > 0.1 |
 
 ## Détail par dimension
 
@@ -24,54 +24,54 @@ Un effectif de moins de 5 positifs rend le rappel instable : ces groupes sont ma
 
 | Groupe | n | Positifs | Alertes | Taux d'alerte | Rappel (IC95) | FPR (IC95) | Précision |
 |---|---:|---:|---:|---:|---|---|---:|
-| F | 5202 | 63 | 361 | 6.9% | 0.746 [0.63–0.84] | 0.061 [0.05–0.07] | 0.130 |
-| M | 5126 | 65 | 371 | 7.2% | 0.831 [0.72–0.90] | 0.063 [0.06–0.07] | 0.146 |
+| F | 5280 | 465 | 839 | 15.9% | 0.781 [0.74–0.82] | 0.099 [0.09–0.11] | 0.433 |
+| M | 5173 | 428 | 821 | 15.9% | 0.780 [0.74–0.82] | 0.103 [0.09–0.11] | 0.407 |
 
 ### tranche_age
 
 | Groupe | n | Positifs | Alertes | Taux d'alerte | Rappel (IC95) | FPR (IC95) | Précision |
 |---|---:|---:|---:|---:|---|---|---:|
-| <25 | 4153 | 51 | 322 | 7.8% | 0.725 [0.59–0.83] | 0.069 [0.06–0.08] | 0.115 |
-| 45-60 | 2939 | 37 | 186 | 6.3% | 0.838 [0.69–0.92] | 0.053 [0.05–0.06] | 0.167 |
-| 25-45 | 2075 | 27 | 148 | 7.1% | 0.778 [0.59–0.89] | 0.062 [0.05–0.07] | 0.142 |
-| 60+ | 1161 | 13 | 76 | 6.5% | 0.923 [0.67–0.99] | 0.056 [0.04–0.07] | 0.158 |
+| <25 | 4197 | 399 | 753 | 17.9% | 0.812 [0.77–0.85] | 0.113 [0.10–0.12] | 0.430 |
+| 45-60 | 2972 | 205 | 400 | 13.5% | 0.737 [0.67–0.79] | 0.090 [0.08–0.10] | 0.378 |
+| 25-45 | 2109 | 208 | 355 | 16.8% | 0.745 [0.68–0.80] | 0.105 [0.09–0.12] | 0.437 |
+| 60+ | 1175 | 81 | 152 | 12.9% | 0.827 [0.73–0.89] | 0.078 [0.06–0.10] | 0.441 |
 
 ### formule
 
 | Groupe | n | Positifs | Alertes | Taux d'alerte | Rappel (IC95) | FPR (IC95) | Précision |
 |---|---:|---:|---:|---:|---|---|---:|
-| ESSENTIEL | 5728 | 76 | 442 | 7.7% | 0.803 [0.70–0.88] | 0.067 [0.06–0.07] | 0.138 |
-| PREMIUM | 2378 | 24 | 152 | 6.4% | 0.917 [0.74–0.98] | 0.055 [0.05–0.07] | 0.145 |
-| CONFORT | 2222 | 28 | 138 | 6.2% | 0.643 [0.46–0.79] | 0.055 [0.05–0.07] | 0.130 |
+| ESSENTIEL | 5805 | 515 | 950 | 16.4% | 0.812 [0.78–0.84] | 0.101 [0.09–0.11] | 0.440 |
+| PREMIUM | 2400 | 183 | 339 | 14.1% | 0.732 [0.66–0.79] | 0.092 [0.08–0.11] | 0.395 |
+| CONFORT | 2248 | 195 | 371 | 16.5% | 0.744 [0.68–0.80] | 0.110 [0.10–0.12] | 0.391 |
 
 ### ville_assure
 
 | Groupe | n | Positifs | Alertes | Taux d'alerte | Rappel (IC95) | FPR (IC95) | Précision |
 |---|---:|---:|---:|---:|---|---|---:|
-| Antananarivo | 7355 | 84 | 521 | 7.1% | 0.810 [0.71–0.88] | 0.062 [0.06–0.07] | 0.131 |
-| Toamasina | 862 | 14 | 69 | 8.0% | 0.714 [0.45–0.88] | 0.070 [0.05–0.09] | 0.145 |
-| Antsirabe | 681 | 7 | 35 | 5.1% | 0.714 [0.36–0.92] | 0.045 [0.03–0.06] | 0.143 |
-| Mahajanga | 490 | 6 | 32 | 6.5% | 0.667 [0.30–0.90] | 0.058 [0.04–0.08] | 0.125 |
-| Fianarantsoa | 437 | 11 | 43 | 9.8% | 0.909 [0.62–0.98] | 0.077 [0.06–0.11] | 0.233 |
-| Toliara *(effectif faible)* | 356 | 3 | 22 | 6.2% | 0.667 [0.21–0.94] | 0.057 [0.04–0.09] | 0.091 |
-| Antsiranana *(effectif faible)* | 147 | 3 | 10 | 6.8% | 0.667 [0.21–0.94] | 0.056 [0.03–0.11] | 0.200 |
+| Antananarivo | 7449 | 630 | 1168 | 15.7% | 0.778 [0.74–0.81] | 0.099 [0.09–0.11] | 0.420 |
+| Toamasina | 868 | 92 | 145 | 16.7% | 0.815 [0.72–0.88] | 0.090 [0.07–0.11] | 0.517 |
+| Antsirabe | 691 | 46 | 124 | 17.9% | 0.717 [0.57–0.83] | 0.141 [0.12–0.17] | 0.266 |
+| Mahajanga | 499 | 44 | 79 | 15.8% | 0.773 [0.63–0.87] | 0.099 [0.07–0.13] | 0.430 |
+| Fianarantsoa | 439 | 44 | 73 | 16.6% | 0.795 [0.65–0.89] | 0.096 [0.07–0.13] | 0.479 |
+| Toliara | 359 | 20 | 45 | 12.5% | 0.800 [0.58–0.92] | 0.086 [0.06–0.12] | 0.356 |
+| Antsiranana | 148 | 17 | 26 | 17.6% | 0.824 [0.59–0.94] | 0.092 [0.05–0.15] | 0.538 |
 
 ### ville_prestataire
 
 | Groupe | n | Positifs | Alertes | Taux d'alerte | Rappel (IC95) | FPR (IC95) | Précision |
 |---|---:|---:|---:|---:|---|---|---:|
-| Antananarivo | 7652 | 87 | 539 | 7.0% | 0.828 [0.73–0.89] | 0.062 [0.06–0.07] | 0.134 |
-| Toamasina | 771 | 13 | 64 | 8.3% | 0.692 [0.42–0.87] | 0.073 [0.06–0.09] | 0.141 |
-| Antsirabe | 673 | 6 | 27 | 4.0% | 0.667 [0.30–0.90] | 0.034 [0.02–0.05] | 0.148 |
-| Mahajanga | 492 | 5 | 40 | 8.1% | 0.800 [0.38–0.96] | 0.074 [0.05–0.10] | 0.100 |
-| Fianarantsoa | 366 | 12 | 47 | 12.8% | 0.750 [0.47–0.91] | 0.107 [0.08–0.14] | 0.191 |
-| Toliara *(effectif faible)* | 318 | 4 | 15 | 4.7% | 0.750 [0.30–0.95] | 0.038 [0.02–0.07] | 0.200 |
-| Antsiranana *(effectif faible)* | 56 | 1 | 0 | 0.0% | 0.000 [0.00–0.79] | 0.000 [0.00–0.07] | 0.000 |
+| Antananarivo | 7747 | 661 | 1217 | 15.7% | 0.787 [0.75–0.82] | 0.098 [0.09–0.11] | 0.427 |
+| Toamasina | 774 | 80 | 122 | 15.8% | 0.688 [0.58–0.78] | 0.097 [0.08–0.12] | 0.451 |
+| Antsirabe | 682 | 40 | 129 | 18.9% | 0.825 [0.68–0.91] | 0.150 [0.12–0.18] | 0.256 |
+| Mahajanga | 504 | 39 | 81 | 16.1% | 0.795 [0.64–0.89] | 0.108 [0.08–0.14] | 0.383 |
+| Fianarantsoa | 370 | 48 | 69 | 18.6% | 0.812 [0.68–0.90] | 0.093 [0.07–0.13] | 0.565 |
+| Toliara | 320 | 23 | 40 | 12.5% | 0.739 [0.54–0.87] | 0.077 [0.05–0.11] | 0.425 |
+| Antsiranana *(effectif faible)* | 56 | 2 | 2 | 3.6% | 1.000 [0.34–1.00] | 0.000 [0.00–0.07] | 1.000 |
 
 ## Limites
 
-- Cible = proxy administratif (contrôle médical), pas de la fraude confirmée.
-- Test : 128 positifs au total → les sous-groupes restent petits.
+- Cible = label faible reconstruit par règles, pas de la fraude confirmée.
+- Test : 893 positifs faibles → les sous-groupes restent petits.
 - Données synthétiques : les écarts observés peuvent refléter le générateur.
 - La ville est jointe hors du jeu d'apprentissage (dimension d'audit, pas variable du modèle).
 

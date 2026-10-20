@@ -12,6 +12,7 @@ réellement orientés contrôle médical. Ce module :
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -54,7 +55,11 @@ def analyser(
     """Analyse descriptive des faux négatifs du modèle B sur le test."""
     dataset = dataset if dataset is not None else charger_dataset_cm()
     if scores is None:
-        scores = pd.read_csv(DATA_RAW / "scores_test_cm.csv")
+        chemin = Path(os.environ.get("PREDICARE_SCORES_TEST", ""))
+        if not chemin.is_file():
+            v2 = REPORTS_DIR / "v2" / "scores_test.csv"
+            chemin = v2 if v2.is_file() else DATA_RAW / "scores_test_cm.csv"
+        scores = pd.read_csv(chemin)
     alertes = alertes if alertes is not None else _charger_alertes()
 
     test = dataset[dataset["split"] == "test"].copy()
@@ -70,6 +75,15 @@ def analyser(
             scores["score_risque"] = normaliser_score(scores["probabilite"], max(seuil, 1e-6))
         colonnes_scores += ["probabilite", "score_risque"]
     test = test.merge(scores[colonnes_scores], on="facture_id")
+
+    # Compatibilité v2 : le dataset de production n'expose pas le nombre
+    # d'alertes métier détaillées, mais le score de règles agrégé.
+    if "score_regles_metier" not in test.columns:
+        test["score_regles_metier"] = 0.0
+    if "nb_alertes_metier" not in test.columns:
+        test["nb_alertes_metier"] = (
+            test["score_regles_metier"].fillna(0).gt(0).astype(int)
+        )
 
     pos = test[test[TARGET] == 1].copy()
     fn = pos[pos["alerte"] == 0].copy()

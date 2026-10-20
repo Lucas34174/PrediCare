@@ -3,44 +3,40 @@
     "sexe": {
       "nb_groupes": 2,
       "nb_groupes_faibles": 0,
-      "ecart_tpr_max_min": 0.08473748473748477,
-      "ecart_fpr_max_min": 0.0015344611270809022,
+      "ecart_tpr_max_min": 0.0002713295146216099,
+      "ecart_fpr_max_min": 0.0037766157085066393,
       "alerte_equite": []
     },
     "tranche_age": {
       "nb_groupes": 4,
       "nb_groupes_faibles": 0,
-      "ecart_tpr_max_min": 0.19758672699849178,
-      "ecart_fpr_max_min": 0.01606686288075844,
-      "alerte_equite": [
-        "écart de rappel 0.198 > 0.1"
-      ]
+      "ecart_tpr_max_min": 0.09057512797350198,
+      "ecart_fpr_max_min": 0.035257659905675365,
+      "alerte_equite": []
     },
     "formule": {
       "nb_groupes": 3,
       "nb_groupes_faibles": 0,
-      "ecart_tpr_max_min": 0.2738095238095237,
-      "ecart_fpr_max_min": 0.012715144758819165,
-      "alerte_equite": [
-        "écart de rappel 0.274 > 0.1"
-      ]
+      "ecart_tpr_max_min": 0.07941004827842324,
+      "ecart_fpr_max_min": 0.017615507499613867,
+      "alerte_equite": []
     },
     "ville_assure": {
       "nb_groupes": 7,
-      "nb_groupes_faibles": 2,
-      "ecart_tpr_max_min": 0.24242424242424243,
-      "ecart_fpr_max_min": 0.0329544029757178,
+      "nb_groupes_faibles": 0,
+      "ecart_tpr_max_min": 0.10613810741687979,
+      "ecart_fpr_max_min": 0.055539548603965164,
       "alerte_equite": [
-        "écart de rappel 0.242 > 0.1"
+        "écart de rappel 0.106 > 0.1"
       ]
     },
     "ville_prestataire": {
       "nb_groupes": 7,
-      "nb_groupes_faibles": 2,
-      "ecart_tpr_max_min": 0.16091954022988508,
-      "ecart_fpr_max_min": 0.07286187414767192,
+      "nb_groupes_faibles": 1,
+      "ecart_tpr_max_min": 0.13749999999999996,
+      "ecart_fpr_max_min": 0.07209163283929639,
       "alerte_equite": [
-        "écart de rappel 0.161 > 0.1"
+        "écart de rappel 0.137 > 0.1"
       ]
     }
   }

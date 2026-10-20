@@ -1,9 +1,9 @@
 {
-  "nb_variables": 100,
+  "nb_variables": 60,
   "nb_tendance_exclues": 14,
-  "nb_ok": 83,
-  "nb_vigilance": 2,
+  "nb_ok": 45,
+  "nb_vigilance": 0,
   "nb_alerte": 1,
-  "psi_max_hors_tendance": 0.36320372408059387,
+  "psi_max_hors_tendance": 0.36637709706786625,
   "verdict": "derive_significative"
 }

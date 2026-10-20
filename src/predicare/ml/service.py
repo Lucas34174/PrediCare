@@ -30,9 +30,13 @@ class ModeleIndisponible(RuntimeError):  # noqa: N818
 @lru_cache(maxsize=1)
 def _modele():
     """Charge le modèle de production (registre), avec repli sur l'artefact courant."""
+    import os
+
     from predicare.ml import registry
     from predicare.ml.scoring import charger_modele
 
+    if os.environ.get("PREDICARE_MODELE_PATH"):
+        return charger_modele()
     try:
         return registry.charger_production()
     except Exception:

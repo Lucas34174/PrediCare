@@ -29,6 +29,27 @@ make run   # http://localhost:8000/health
 | `docs/`              | Architecture, guides utilisateur et exploitation |
 | `tests/`             | Tests pytest                                     |
 
+## Modèle de fraude v2 (`v2.0.0-weak`)
+
+La refonte v2 reconstruit une cible de fraude à partir des 12 CSV métiers et
+du référentiel des 14 types de fraude. Les vrais labels n'étant plus
+disponibles, la cible est un **label faible** : elle ne doit pas être
+présentée comme une vérité terrain.
+
+- Modèle : XGBoost, 60 variables comportementales ;
+- Test : PR-AUC 0,754, ROC-AUC 0,903, rappel 0,781, précision 0,420 ;
+- Registre : `v2.0.0-weak` en production, `v1.1.0` archivée (rollback) ;
+- Documentation : [`docs/model_card_v2.md`](docs/model_card_v2.md),
+  [`docs/weak_labels.md`](docs/weak_labels.md),
+  [`docs/refonte_v2_pipeline.md`](docs/refonte_v2_pipeline.md).
+
+```bash
+# Reconstruire les labels, le dataset et le modèle
+PYTHONPATH=src python -m predicare.ml.weak_labels
+PYTHONPATH=src python -m predicare.ml.dataset_fraude
+PYTHONPATH=src python -m predicare.ml.training_v2
+```
+
 ## Architecture
 
 _À compléter (diagramme des 3 flux : pipeline ML, RAG, BI)._
