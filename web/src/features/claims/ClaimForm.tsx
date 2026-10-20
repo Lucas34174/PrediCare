@@ -1,8 +1,11 @@
 // web/src/features/claims/ClaimForm.tsx
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Plus, ReceiptText, ShieldCheck, Trash2 } from 'lucide-react'
 import { createClaim } from '@/api/claims'
+import { OrdonnancePreview } from './OrdonnancePreview'
+import { getAssureCoverage } from '@/api/assures'
+import { useQuery } from '@tanstack/react-query'
 import {
   type ClaimCreateRequest,
   type ClaimDraft,
@@ -30,6 +33,7 @@ import { UploadParser } from './UploadParser'
 import {
   applyFactureToDraft,
   applyOrdonnanceToDraft,
+  // ParsedOrdonnance,
   type ParsedDocument,
 } from '@/lib/pdfParser'
 
@@ -47,6 +51,7 @@ const blankLine = (): DraftLine => ({
   quantite: '1',
   prix_unitaire: '',
 })
+// const [ordonnanceParsed, setOrdonnanceParsed] = useState<ParsedOrdonnance | null>(null)
 
 function initialDraft(profile: ClaimFormProfile, providerId?: string): ClaimDraft {
   return {
@@ -103,6 +108,11 @@ export function ClaimForm({ profile, providerId }: ClaimFormProps) {
       ),
     [draft.lines],
   )
+  const { data: coverage } = useQuery({
+  queryKey: ['assure-coverage', draft.assure_id],
+  queryFn: () => getAssureCoverage(draft.assure_id),
+  enabled: draft.assure_id.length > 5,
+})
 
   function setField<K extends keyof Omit<ClaimDraft, 'lines'>>(
     field: K,
@@ -152,11 +162,15 @@ function getFormuleFromAssure(assureId: string): 'ESSENTIEL' | 'CONFORT' | 'PREM
 }
 
 // Taux de prise en charge selon la formule (simulé)
-const coverageRates = {
-  ESSENTIEL: 0.80, // 80% pris en charge, 20% part assuré
-  CONFORT: 0.70,   // 70% pris en charge, 30% part assuré
-  PREMIUM: 0.90,   // 90% pris en charge, 10% part assuré
-}
+const coverageRate = coverage?.taux_prise_en_charge ?? 0.80 // Fallback à 80%
+const autoPartAssure = Math.round(total * (1 - coverageRate))
+
+useEffect(() => {
+  setDraft((current) => ({
+    ...current,
+    part_assure: String(autoPartAssure),
+  }))
+}, [autoPartAssure, draft.assure_id])
 
   function handleFactureParsed(doc: ParsedDocument) {
   setFactureParsed(doc)
@@ -168,8 +182,8 @@ const coverageRates = {
 }
 
 function handleOrdonnanceParsed(doc: ParsedDocument) {
-  setOrdonnanceParsed(doc)
   if (doc.kind === 'ORDONNANCE') {
+    setOrdonnanceParsed(doc)
     setDraft((current) => applyOrdonnanceToDraft(doc, current))
     setSummary('')
     setFailed(false)
@@ -384,6 +398,9 @@ function clearOrdonnance() {
             />
           </div>
         </section>
+        {ordonnanceParsed?.kind === 'ORDONNANCE' && (
+          <OrdonnancePreview ordonnance={ordonnanceParsed} />
+        )}
         <section className="claim-section" aria-labelledby="claim-header-title">
           <div className="claim-section-heading">
             <span className="claim-section-index">02</span>
@@ -408,17 +425,17 @@ function clearOrdonnance() {
             {input('date_emission', 'Date d’émission')}
             {input('part_assure', 'Part de l’assuré (MGA)','Calculée automatiquement selon la formule.', true)}
             <div className="claim-field">
-            <label>Formule de l'assuré (auto)</label>
-            <input
-              value={getFormuleFromAssure(draft.assure_id)}
-              readOnly
-              disabled
-              style={{ background: 'var(--surface-soft)', color: 'var(--ink-muted)' }}
-            />
-            <small className="claim-hint">
-              Taux de prise en charge : {Math.round(coverageRates[getFormuleFromAssure(draft.assure_id)] * 100)}%
-            </small>
-          </div>
+              <label>Formule de l'assuré (auto)</label>
+              <input
+                value={coverage?.formule ?? '—'}
+                readOnly
+                disabled
+                style={{ background: 'var(--surface-soft)', color: 'var(--ink-muted)' }}
+              />
+              <small className="claim-hint">
+                Taux de prise en charge : {coverage ? Math.round(coverage.taux_prise_en_charge * 100) : '—'}%
+              </small>
+            </div>
             {isManager && input('date_reception', 'Date de réception')}
             {isManager && (
               <div className="claim-field">

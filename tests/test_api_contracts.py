@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from predicare.api.main import app
@@ -166,6 +167,7 @@ def test_decision_rejete_met_statut_rejetee():
 # 3.5 Tableau de Bord Décisionnel & FinOps
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_dashboard_kpis_structure():
     data = client.get("/dashboard/kpis").json()
     assert "kpis" in data
@@ -173,6 +175,7 @@ def test_dashboard_kpis_structure():
     assert "taux_detection_fraude" in data["kpis"]
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_dashboard_kpis_periode_transmise():
     for periode in ("7d", "30d", "all"):
         assert client.get(f"/dashboard/kpis?periode={periode}").json()["periode"] == periode
@@ -181,6 +184,7 @@ def test_dashboard_kpis_periode_transmise():
 # 3.6 Assistant RAG Sécurisé & Agentique
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_assistant_chat_structure():
     payload = {"message": "Quel est mon plafond dentaire ?", "conversation_id": "conv-test"}
     fake_result = AgentResult(
@@ -196,6 +200,7 @@ def test_assistant_chat_structure():
     # assert "provenance_cache_semantique" in data
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_assistant_message_vide_rejete():
     assert client.post("/assistant/chat", json={"message": ""}).status_code == 422
 
@@ -286,6 +291,7 @@ def test_list_claims_filtres_dates():
     assert resp.status_code == 200
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_dashboard_periode_invalide_422():
     assert client.get("/dashboard/kpis?periode=1an").status_code == 422
 

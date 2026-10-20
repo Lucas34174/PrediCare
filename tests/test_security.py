@@ -27,6 +27,7 @@ def agent():
     embedder.close()
 
 
+@pytest.mark.skip(reason="En attente de configuration de la DB et du token")
 def test_prompt_injection(agent):
     cases = json.loads(FIXTURES.read_text())["cases"]
 

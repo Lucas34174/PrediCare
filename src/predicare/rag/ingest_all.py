@@ -2,7 +2,9 @@
 
 import logging
 from pathlib import Path
+
 from sqlalchemy import create_engine
+
 from predicare.core.config import database_url
 from predicare.rag.config import RagConfig
 from predicare.rag.ingest import Ingestor
