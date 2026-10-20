@@ -1,5 +1,5 @@
 """Router factures – /claims."""
-
+import math
 import json
 import logging
 from datetime import UTC, date, datetime
@@ -136,10 +136,10 @@ def _persister_facture_db(
                     text(
                         "INSERT INTO lignes_facture ("
                         "ligne_id, facture_id, num_ligne, code, type_ligne, libelle, "
-                        "quantite, prix_unitaire, montant_total"
+                        "quantite, prix_unitaire, montant"
                         ") VALUES ("
                         ":ligne_id, :facture_id, :num_ligne, :code, :type_ligne, :libelle, "
-                        ":quantite, :prix_unitaire, :montant_total"
+                        ":quantite, :prix_unitaire, :montant"
                         ") ON CONFLICT (ligne_id) DO NOTHING"
                     ),
                     {
@@ -153,7 +153,7 @@ def _persister_facture_db(
                         "libelle": ligne.code,
                         "quantite": ligne.quantite,
                         "prix_unitaire": ligne.prix_unitaire,
-                        "montant_total": ligne.montant_total,
+                        "montant": ligne.montant_total,
                     },
                 )
 
@@ -189,7 +189,11 @@ def _persister_facture_db(
                         ),
                         {
                             "prediction_id": pred_id,
-                            "top_features": json.dumps(top_facteurs),
+                            "top_features": json.dumps([
+                                {k: (None if isinstance(v, float) and math.isnan(v) else v)
+                                for k, v in f.items()}
+                                for f in top_facteurs
+                            ]),
                             "date_generation": date_prediction,
                         },
                     )
@@ -377,7 +381,7 @@ def create_claim(
         )
     except ModeleIndisponible as exc:
         logger.error("Modèle indisponible lors de la soumission de %s : %s", facture_id, exc)
-        score_fraude = None
+        score_fraude = 0.0
         seuil_applique = fraud_score_threshold()
         est_anomalie = False
         version_modele = "indisponible"
