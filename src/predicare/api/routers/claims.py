@@ -1031,6 +1031,24 @@ def post_decision(
 
                 conn.execute(
                     text(
+                        "INSERT INTO journal_audit "
+                        "(type_action, utilisateur_id, role_utilisateur, ressource_type, ressource_id, details, ip_source, date_action) "
+                        "VALUES ('DECISION_FRAUDE', :gid, 'gestionnaire', 'facture', :fid, CAST(:details AS jsonb), '127.0.0.1', :dt)"
+                    ),
+                    {
+                        "gid": gestionnaire_id,
+                        "fid": facture_id,
+                        "details": json.dumps({
+                            "decision": body.decision.value,
+                            "motif": body.motif,
+                            "montant_final_accorde": body.montant_accorde,
+                        }),
+                        "dt": now,
+                    },
+                )
+
+                conn.execute(
+                    text(
                         "UPDATE factures "
                         "SET statut = :statut, montant_pris_en_charge = :montant "
                         "WHERE facture_id = :fid"
