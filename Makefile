@@ -1,4 +1,4 @@
-.PHONY: install lint format test run
+.PHONY: install lint format test run bootstrap db-status reload-data
 install:
 	pip install -r requirements-dev.txt
 lint:
@@ -9,8 +9,15 @@ test:
 	pytest --cov=predicare -m "not llm"
 run:
 	uvicorn predicare.api.main:app --reload
-migrate: ## migration de base de donnée
-	docker compose run --rm --build api alembic upgrade head
+migrate: ## migration de base de donnée (sans chargement)
+	docker compose run --rm --build init alembic upgrade head
+bootstrap: ## migrations + chargement idempotent des 12 CSV (PB-19)
+	docker compose up -d db
+	docker compose run --rm init
+db-status: ## état du chargement automatique
+	docker compose run --rm init python -m predicare.db.bootstrap --status
+reload-data: ## vide et recharge les tables métier (destructif)
+	docker compose run --rm -e FORCE_RELOAD=true init
 backup: ## Exécute la sauvegarde PostgreSQL
 	@bash scripts/backup.sh
 restore: ## Restaure la dernière sauvegarde ou un fichier spécifié

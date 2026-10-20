@@ -12,6 +12,19 @@ make test
 make run   # http://localhost:8000/health
 ```
 
+### Démarrage Docker avec chargement automatique
+
+```bash
+cp .env.example .env
+# Remplacer PII_ENCRYPTION_KEY (>= 32 caractères) et les autres secrets.
+docker compose up --build -d
+docker compose ps   # init doit être "exited (0)"
+```
+
+Le service `init` applique les migrations et charge les 12 CSV métier au
+premier démarrage. Les identités sont chiffrées dans `identites_pii`
+(`pgcrypto`). Voir [`docs/pb19_auto_load_pii.md`](docs/pb19_auto_load_pii.md).
+
 ## Structure
 
 | Dossier              | Rôle                                             |
