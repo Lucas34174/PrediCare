@@ -126,7 +126,10 @@ def _preprocesseur(numeriques: list[str], categorielles: list[str]) -> ColumnTra
                 "categorical",
                 Pipeline(
                     [
-                        ("imputer", SimpleImputer(strategy="most_frequent", keep_empty_features=True)),
+                        (
+                            "imputer",
+                            SimpleImputer(strategy="most_frequent", keep_empty_features=True),
+                        ),
                         ("onehot", OneHotEncoder(handle_unknown="ignore")),
                     ]
                 ),
@@ -238,9 +241,7 @@ def _evaluer_cv_groupee(
         raise ValueError("La CV exige au moins deux groupes et deux exemples positifs.")
 
     numeriques, categorielles = _types_features(dev, features)
-    splitter = StratifiedGroupKFold(
-        n_splits=folds_effectifs, shuffle=True, random_state=SEED
-    )
+    splitter = StratifiedGroupKFold(n_splits=folds_effectifs, shuffle=True, random_state=SEED)
     partitions = list(splitter.split(dev[features], y, groupes))
     resultats: list[dict[str, Any]] = []
     sorties_oof: list[dict[str, Any]] = []
@@ -252,7 +253,9 @@ def _evaluer_cv_groupee(
             groupes_train = set(groupes.iloc[indices_train])
             groupes_val = set(groupes.iloc[indices_val])
             if not groupes_train.isdisjoint(groupes_val):
-                raise AssertionError("Fuite détectée : un assuré est présent dans deux côtés du fold.")
+                raise AssertionError(
+                    "Fuite détectée : un assuré est présent dans deux côtés du fold."
+                )
 
             df_train = dev.iloc[indices_train]
             df_val = dev.iloc[indices_val]
@@ -267,15 +270,13 @@ def _evaluer_cv_groupee(
             if candidat["strategie"] == "smote":
                 from imblearn.over_sampling import SMOTE
 
-                x_train, y_train_fit = SMOTE(
-                    random_state=SEED, sampling_strategy=0.5
-                ).fit_resample(x_train, y_train)
+                x_train, y_train_fit = SMOTE(random_state=SEED, sampling_strategy=0.5).fit_resample(
+                    x_train, y_train
+                )
                 estimateur.fit(x_train, y_train_fit)
             else:
                 poids_fit = (
-                    poids_train
-                    if candidat["strategie"].startswith("poids_faibles")
-                    else None
+                    poids_train if candidat["strategie"].startswith("poids_faibles") else None
                 )
                 _ajuster(estimateur, x_train, y_train, poids_fit)
 
@@ -424,9 +425,7 @@ def entrainer_v2(
         dev, features, n_trials=n_trials, n_splits=n_splits
     )
     candidats = _candidats(params_xgboost)
-    resultats_cv, predictions_oof = _evaluer_cv_groupee(
-        dev, features, candidats, n_splits=n_splits
-    )
+    resultats_cv, predictions_oof = _evaluer_cv_groupee(dev, features, candidats, n_splits=n_splits)
     meilleur_index = max(
         range(len(resultats_cv)),
         key=lambda i: (
@@ -447,16 +446,10 @@ def entrainer_v2(
     if meilleur["strategie"] == "smote":
         from imblearn.over_sampling import SMOTE
 
-        x_fit, y_fit = SMOTE(random_state=SEED, sampling_strategy=0.5).fit_resample(
-            x_dev, y_dev
-        )
+        x_fit, y_fit = SMOTE(random_state=SEED, sampling_strategy=0.5).fit_resample(x_dev, y_dev)
         estimateur_final.fit(x_fit, y_fit)
     else:
-        poids_fit = (
-            poids_dev
-            if meilleur["strategie"].startswith("poids_faibles")
-            else None
-        )
+        poids_fit = poids_dev if meilleur["strategie"].startswith("poids_faibles") else None
         _ajuster(estimateur_final, x_dev, y_dev, poids_fit)
 
     probabilites_test_brutes = estimateur_final.predict_proba(x_test)[:, 1]
@@ -655,12 +648,15 @@ def entrainer_v2(
         "scores_test": scores,
     }
 
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Entraînement v2 sur labels faibles")
     parser.add_argument("--dataset", default=str(DATASET_V2))
     parser.add_argument("--modele", default=None)
     parser.add_argument("--rapports", default=None)
-    parser.add_argument("--trials", type=int, default=20, help="Nombre d'essais Optuna pour XGBoost")
+    parser.add_argument(
+        "--trials", type=int, default=20, help="Nombre d'essais Optuna pour XGBoost"
+    )
     parser.add_argument("--folds", type=int, default=5, help="Nombre de plis groupés")
     parser.add_argument("--sans-promotion", action="store_true")
     args = parser.parse_args(argv)
