@@ -105,6 +105,80 @@ def export_champion_model(
     return model_path, metadata_path
 
 
+def register_model_version(
+    version_id: str,
+    model: any,
+    recall_test: float,
+    precision_test: float,
+    f1_score: float,
+    model_type: str = "XGBoost",
+    make_active: bool = False,
+    models_dir: Path = MODELS_DIR,
+) -> tuple[Path, Path]:
+    """Enregistre une nouvelle version de modèle sans écraser les versions existantes.
+
+    Garantit la compatibilité ascendante avec GET /admin/models et la réversibilité (rollback).
+    """
+    models_dir.mkdir(parents=True, exist_ok=True)
+    today = datetime.now(UTC).date()
+
+    # 1. Sérialisation du fichier joblib versionné
+    model_path = models_dir / f"fraud_xgb_{version_id}.joblib"
+    joblib.dump(model, model_path)
+    logger.info("Version modèle sérialisée : %s", model_path)
+
+    if make_active:
+        joblib.dump(model, models_dir / "model_champion.joblib")
+        logger.info("Alias model_champion.joblib mis à jour vers %s", version_id)
+
+    # 2. Mise à jour de models_metadata.json
+    metadata_path = models_dir / "models_metadata.json"
+    if metadata_path.exists():
+        existing_raw = json.loads(metadata_path.read_text())
+        existing = AdminModelsResponse.model_validate(existing_raw)
+        active_ver = version_id if make_active else existing.active_version
+        available = list(existing.available_models)
+    else:
+        active_ver = version_id if make_active else "v1.0.0-xgb"
+        available = []
+
+    statut_new = "ACTIVE" if make_active else "STANDBY"
+
+    new_version_entry = ModelVersion(
+        version_id=version_id,
+        type=model_type,
+        recall_test=round(float(recall_test), 4),
+        precision_test=round(float(precision_test), 4),
+        f1_score=round(float(f1_score), 4),
+        date_entrainement=today,
+        statut=statut_new,
+    )
+
+    if make_active:
+        available = [
+            ModelVersion(**{**m.model_dump(), "statut": "STANDBY"})
+            for m in available
+            if m.version_id != version_id
+        ]
+    else:
+        available = [m for m in available if m.version_id != version_id]
+
+    available.append(new_version_entry)
+
+    updated_metadata = AdminModelsResponse(
+        active_version=active_ver,
+        available_models=available,
+    )
+
+    metadata_path.write_text(
+        json.dumps(updated_metadata.model_dump(mode="json"), indent=2, ensure_ascii=False)
+    )
+    logger.info("models_metadata.json mis à jour avec %s (statut=%s)", version_id, statut_new)
+
+    return model_path, metadata_path
+
+
+
 if __name__ == "__main__":  # pragma: no cover
     import sys
 
