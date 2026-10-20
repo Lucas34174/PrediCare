@@ -708,7 +708,7 @@ def create_claim(
         date_prediction=date_prediction,
     )
 
-        # Émission de l'alerte webhook vers n8n si anomalie détectée (PB-24)
+    # Émission de l'alerte webhook vers n8n si anomalie détectée (PB-24)
     if est_anomalie:
         try:
             from predicare.api.services.alertes import (
@@ -735,7 +735,6 @@ def create_claim(
             emettre_alerte_fraude(payload_alerte)
         except Exception as exc:
             logger.warning("Échec émission alerte n8n pour %s : %s", facture_id, exc)
-
 
     return ClaimCreateResponse(
         facture_id=facture_id,

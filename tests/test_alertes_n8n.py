@@ -83,6 +83,7 @@ def test_emettre_alerte_fraude_echec_injoignable_sans_crash():
         ok = emettre_alerte_fraude(payload, url="http://test-n8n:5678/webhook/fraud-alert")
         assert ok is False
 
+
 def test_soumission_facture_declenche_alerte_sur_anomalie():
     """Vérifie que POST /claims déclenche emettre_alerte_fraude si est_anomalie est True."""
     payload_claim = {
