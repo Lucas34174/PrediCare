@@ -40,7 +40,7 @@ La plateforme applique un contrôle d'accès strict par rôle. Chaque requête a
 
 ## 2. Schéma Entité-Relation (ERD)
 
-Le schéma physique PostgreSQL (géré par les migrations versionnées Alembic) comprend 18 tables articulées en 3 domaines :
+Le schéma physique PostgreSQL (géré par les migrations versionnées Alembic) comprend 21 tables articulées en 3 domaines :
 
 ```mermaid
 erDiagram
@@ -87,6 +87,14 @@ erDiagram
         string type_action
         string utilisateur_id
         timestamp date_action
+    }
+
+    INGEST_STATE {
+        string dataset_key PK
+        string dataset_checksum
+        string status
+        jsonb rows_loaded
+        timestamp finished_at
     }
 ```
 

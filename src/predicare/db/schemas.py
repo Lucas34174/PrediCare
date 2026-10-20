@@ -31,6 +31,41 @@ PII_COLUMNS: Final[list[str]] = [
     "numero_cin",
 ]
 
+# Correspondance entre les colonnes du CSV brut et les colonnes chiffrées de
+# la table ``identites_pii``. Le CSV reste la source de vérité pour le
+# nettoyage ; la base ne reçoit jamais ces valeurs en clair.
+PII_ENCRYPTED_COLUMNS: Final[dict[str, str]] = {
+    "nom": "nom_chiffre",
+    "prenoms": "prenoms_chiffre",
+    "date_naissance": "date_naissance_chiffre",
+    "telephone": "telephone_chiffre",
+    "email": "email_chiffre",
+    "adresse": "adresse_chiffre",
+    "numero_cin": "numero_cin_chiffre",
+}
+
+#: Colonnes du CSV PII qui ne sont pas recopiées dans ``identites_pii`` :
+#: le sexe et la ville sont déjà pseudonymisés dans ``assures``.
+PII_DROPPED_COLUMNS: Final[tuple[str, ...]] = ("sexe", "ville")
+
+#: Tables métier chargées automatiquement au premier démarrage. Les labels
+#: restent dans ``data/raw/labels`` pour l'entraînement et ne sont pas exposés
+#: à l'API de production.
+SOURCE_TABLES: Final[tuple[str, ...]] = (
+    "referentiel_actes",
+    "referentiel_medicaments",
+    "garanties",
+    "prestataires",
+    "grille_tarifaire",
+    "contrats",
+    "assures",
+    "identites_pii",
+    "ordonnances",
+    "ordonnance_lignes",
+    "factures",
+    "lignes_facture",
+)
+
 # ------------------------------------------------------------------------------
 # Clés primaires par table (pour détection de doublons et quarantaine)
 # ------------------------------------------------------------------------------
@@ -142,6 +177,8 @@ TABLE_SCHEMAS: Final[dict[str, list[str]]] = {
         "date_adhesion",
         "date_radiation",
     ],
+    # Contrat du CSV brut. La table PostgreSQL correspondante ne contient que
+    # les colonnes ``*_chiffre`` définies dans PII_ENCRYPTED_COLUMNS.
     "identites_pii": [
         "assure_id",
         "nom",

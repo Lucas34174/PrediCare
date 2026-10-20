@@ -87,3 +87,16 @@ OU
 - CNIL — AIPD
 - Loi malgache n° 2014-038
 - docs/eu_ai_act_classification.md
+
+## 9. Mesures PB-19 — chargement et chiffrement
+
+- Les PII sont chargées automatiquement dans `identites_pii` par le service
+  `init`, jamais dans les CSV de `data/processed/`.
+- Chiffrement `pgcrypto` AES-256 avec `PII_ENCRYPTION_KEY` ; test canari au
+  démarrage pour détecter une clé invalide.
+- La clé est stockée hors base (`.env` en développement, coffre-fort de secrets
+  en production) et doit être sauvegardée séparément des dumps.
+- Les logs du bootstrap ne contiennent que des noms de tables et des counts.
+- `ingest_state` trace le chargement sans conserver de donnée personnelle.
+- Limite connue : `utilisateurs.nom_complet` et `contrats.souscripteur_nom`
+  restent en clair ; leur traitement doit être arbitré avec le DPO.
