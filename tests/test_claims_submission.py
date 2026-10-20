@@ -3,8 +3,21 @@
 from fastapi.testclient import TestClient
 
 from predicare.api.main import app
+from predicare.core.security import create_access_token
 
-client = TestClient(app)
+# Token gestionnaire valide pour tous les tests de soumission (logique métier, pas auth)
+_GESTIONNAIRE_TOKEN = create_access_token(
+    {
+        "sub": "gestionnaire1",
+        "id": "USR-0012",
+        "role": "gestionnaire",
+        "nom_complet": "Aina Razafy",
+        "assure_id": None,
+        "prestataire_id": None,
+    }
+)
+
+client = TestClient(app, headers={"Authorization": f"Bearer {_GESTIONNAIRE_TOKEN}"})
 
 
 def _facture_valide() -> dict:

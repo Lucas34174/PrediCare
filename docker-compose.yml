@@ -46,7 +46,7 @@ services:
       AUTO_LOAD_DATA: ${AUTO_LOAD_DATA:-true}
       FORCE_RELOAD: ${FORCE_RELOAD:-false}
     volumes:
-      - ../CohorteAI_datagen/dataset:/data/source:ro
+      - ./data/raw:/data/source:ro
       - ./migrations:/app/migrations
       - ./src:/app/src
     command: ["python", "-m", "predicare.db.bootstrap"]
@@ -86,6 +86,7 @@ services:
       RAG_CORPUS_DIR: ${RAG_CORPUS_DIR:-/data/raw}
     volumes:
       - ./data/raw:/data/raw:ro
+      - ./models:/app/models:ro
       - ./migrations:/app/migrations
       - ./tests:/app/tests
       - ./docs:/app/docs

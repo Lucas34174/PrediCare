@@ -33,11 +33,11 @@ def test_formater_feature_retire_prefixe():
 
 
 def test_libelles_couvrent_les_variables_du_modele():
-    from predicare.ml.service import charger_modele
+    from predicare.ml.service import ModeleIndisponible, charger_modele
 
     try:
         modele = charger_modele()
-    except FileNotFoundError:
+    except (FileNotFoundError, ModeleIndisponible):
         pytest.skip("artefact modèle absent")
     manquants = [v for v in modele.variables if v not in FEATURE_LABELS]
     assert not manquants, f"libellés manquants : {manquants}"
@@ -45,14 +45,14 @@ def test_libelles_couvrent_les_variables_du_modele():
 
 def test_explications_conformes_au_contrat():
     from predicare.ml.explain import expliquer_facture
-    from predicare.ml.service import charger_modele
+    from predicare.ml.service import ModeleIndisponible, charger_modele
     from predicare.ml.targets import charger_dataset_cm
 
     pytest.importorskip("shap")
     try:
         modele = charger_modele()
         dataset = charger_dataset_cm()
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ModeleIndisponible) as exc:
         pytest.skip(str(exc))
 
     ligne = dataset[dataset["split"] == "test"].iloc[0]
@@ -67,14 +67,14 @@ def test_explications_conformes_au_contrat():
 
 
 def test_service_prediction_si_modele_disponible():
-    from predicare.ml.service import FactureInconnue, predire_facture
+    from predicare.ml.service import FactureInconnue, ModeleIndisponible, predire_facture
     from predicare.ml.targets import charger_dataset_cm
 
     try:
         dataset = charger_dataset_cm()
         facture_id = dataset.loc[dataset["split"] == "test", "facture_id"].iloc[0]
         resultat = predire_facture(facture_id)
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ModeleIndisponible) as exc:
         pytest.skip(str(exc))
 
     assert resultat["facture_id"] == facture_id

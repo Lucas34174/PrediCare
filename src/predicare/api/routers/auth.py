@@ -36,7 +36,7 @@ _MOCK_USERS: dict[str, UserInfo] = {
         identifier="pro1",
         role=Role.PROFESSIONNEL_SANTE,
         nom_complet="Dr. Solo Rakotondrabe",
-        prestataire_id="PR-0015",
+        prestataire_id="PRE-00148",
     ),
 }
 

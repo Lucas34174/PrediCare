@@ -2,6 +2,8 @@
 
 import json
 import logging
+import math
+import uuid
 from datetime import UTC, date, datetime
 from typing import Annotated
 
@@ -136,10 +138,10 @@ def _persister_facture_db(
                     text(
                         "INSERT INTO lignes_facture ("
                         "ligne_id, facture_id, num_ligne, code, type_ligne, libelle, "
-                        "quantite, prix_unitaire, montant_total"
+                        "quantite, prix_unitaire, montant"
                         ") VALUES ("
                         ":ligne_id, :facture_id, :num_ligne, :code, :type_ligne, :libelle, "
-                        ":quantite, :prix_unitaire, :montant_total"
+                        ":quantite, :prix_unitaire, :montant"
                         ") ON CONFLICT (ligne_id) DO NOTHING"
                     ),
                     {
@@ -153,7 +155,7 @@ def _persister_facture_db(
                         "libelle": ligne.code,
                         "quantite": ligne.quantite,
                         "prix_unitaire": ligne.prix_unitaire,
-                        "montant_total": ligne.montant_total,
+                        "montant": ligne.montant_total,
                     },
                 )
 
@@ -189,7 +191,15 @@ def _persister_facture_db(
                         ),
                         {
                             "prediction_id": pred_id,
-                            "top_features": json.dumps(top_facteurs),
+                            "top_features": json.dumps(
+                                [
+                                    {
+                                        k: (None if isinstance(v, float) and math.isnan(v) else v)
+                                        for k, v in f.items()
+                                    }
+                                    for f in top_facteurs
+                                ]
+                            ),
                             "date_generation": date_prediction,
                         },
                     )
@@ -208,7 +218,7 @@ def _facture_existe(facture_id: str) -> bool:
         if engine is not None:
             with engine.connect() as conn:
                 res = conn.execute(
-                    text("SELECT 1 FROM factures WHERE id = :id LIMIT 1"),
+                    text("SELECT 1 FROM factures WHERE facture_id = :id LIMIT 1"),
                     {"id": facture_id},
                 ).first()
                 if res is not None:
@@ -218,10 +228,84 @@ def _facture_existe(facture_id: str) -> bool:
     return False
 
 
+# NOUVELLE fonction — lit une facture + lignes depuis PostgreSQL
+def _get_claim_db(facture_id: str) -> ClaimDetail | None:
+    try:
+        engine = _db_engine()
+        if engine is None:
+            return None
+        with engine.connect() as conn:
+            row = (
+                conn.execute(
+                    text("""
+                SELECT f.facture_id, f.numero_facture, f.assure_id, f.prestataire_id,
+                       pr.nom AS nom_etablissement, f.ordonnance_id,
+                       f.date_soin, f.date_facture AS date_emission,
+                       f.montant_total, f.reste_a_charge AS part_assure,
+                       (f.montant_total - f.reste_a_charge) AS montant_demande,
+                       f.statut, f.motif_rejet, f.montant_pris_en_charge
+                FROM factures f
+                LEFT JOIN prestataires pr ON pr.prestataire_id = f.prestataire_id
+                WHERE f.facture_id = :fid
+            """),
+                    {"fid": facture_id},
+                )
+                .mappings()
+                .first()
+            )
+            if row is None:
+                return None
+            lignes = (
+                conn.execute(
+                    text("""
+                SELECT num_ligne, code, type_ligne, quantite, prix_unitaire,
+                       montant AS montant_total
+                FROM lignes_facture WHERE facture_id = :fid ORDER BY num_ligne
+            """),
+                    {"fid": facture_id},
+                )
+                .mappings()
+                .all()
+            )
+            return ClaimDetail(
+                facture_id=row["facture_id"],
+                numero_facture=row["numero_facture"],
+                assure_id=row["assure_id"],
+                prestataire_id=row["prestataire_id"],
+                nom_etablissement=row["nom_etablissement"],
+                ordonnance_id=row["ordonnance_id"],
+                date_soin=row["date_soin"],
+                date_emission=row["date_emission"],
+                montant_total=row["montant_total"],
+                part_assure=row["part_assure"],
+                montant_demande=row["montant_demande"],
+                statut=StatutFacture(row["statut"]),
+                motif_rejet=row["motif_rejet"],
+                montant_pris_en_charge=row["montant_pris_en_charge"],
+                lignes=[
+                    LigneFacture(
+                        num_ligne=l["num_ligne"],
+                        code=l["code"],
+                        type_ligne=TypeLigne(l["type_ligne"]),
+                        quantite=l["quantite"],
+                        prix_unitaire=l["prix_unitaire"],
+                        montant_total=l["montant_total"],
+                    )
+                    for l in lignes
+                ],
+            )
+    except Exception as exc:
+        logger.warning("DB indisponible pour get_claim(%s) : %s", facture_id, exc)
+        return None
+
+
+# _get_or_404 mise à jour (mémoire → DB → mock)
 def _get_or_404(facture_id: str) -> ClaimDetail:
-    """Retourne la facture soumise ou mock, ou lève un 404 si l'id est inconnu."""
     if facture_id in _SUBMITTED_CLAIMS:
         return _SUBMITTED_CLAIMS[facture_id]
+    claim_db = _get_claim_db(facture_id)
+    if claim_db is not None:
+        return claim_db
     if facture_id not in _KNOWN_CLAIM_IDS:
         raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
     return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
@@ -306,9 +390,156 @@ def list_claims(
     fraud_alert_only: bool = False,
 ) -> ClaimsListResponse:
     """Liste paginée des factures. Un assuré ne voit que ses propres dossiers."""
-    # Si c'est un assuré et que la facture mock ne lui appartient pas : liste vide
+
+    try:
+        engine = _db_engine()
+
+        if engine is not None:
+            with engine.connect() as conn:
+                conditions = []
+                params = {}
+
+                # Restriction d'accès pour les assurés
+                if current_user.role == Role.ASSURE:
+                    if not current_user.assure_id:
+                        return ClaimsListResponse(
+                            total=0,
+                            page=page,
+                            page_size=page_size,
+                            items=[],
+                        )
+
+                    conditions.append("f.assure_id = :assure_id")
+                    params["assure_id"] = current_user.assure_id
+
+                # Filtre par statut
+                if statut:
+                    conditions.append("f.statut = :statut")
+                    params["statut"] = statut.value
+
+                # Filtre par date de début
+                if date_debut:
+                    conditions.append("f.date_soin >= :date_debut")
+                    params["date_debut"] = date_debut
+
+                # Filtre par date de fin
+                if date_fin:
+                    conditions.append("f.date_soin <= :date_fin")
+                    params["date_fin"] = date_fin
+
+                # Filtre sur les alertes de fraude
+                if fraud_alert_only:
+                    conditions.append("p.est_anomalie = true")
+
+                where = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+                # Dernière prédiction de chaque facture
+                join = """
+                    LEFT JOIN LATERAL (
+                        SELECT score_fraude, est_anomalie
+                        FROM predictions
+                        WHERE facture_id = f.facture_id
+                        ORDER BY date_prediction DESC
+                        LIMIT 1
+                    ) p ON true
+                """
+
+                # Nombre total de résultats correspondant aux filtres
+                total = (
+                    conn.execute(
+                        text(
+                            f"""
+                        SELECT COUNT(*)
+                        FROM factures f
+                        {join}
+                        {where}
+                        """
+                        ),
+                        params,
+                    ).scalar()
+                    or 0
+                )
+
+                # Paramètres de pagination
+                params["lim"] = page_size
+                params["off"] = (page - 1) * page_size
+
+                # Récupération de la page demandée
+                rows = (
+                    conn.execute(
+                        text(
+                            f"""
+                        SELECT
+                            f.facture_id,
+                            f.numero_facture,
+                            f.assure_id,
+                            f.prestataire_id,
+                            f.date_soin,
+                            f.date_facture AS date_emission,
+                            f.montant_total,
+                            f.reste_a_charge AS part_assure,
+                            (
+                                f.montant_total - f.reste_a_charge
+                            ) AS montant_demande,
+                            f.statut,
+                            p.score_fraude,
+                            p.est_anomalie
+                        FROM factures f
+                        {join}
+                        {where}
+                        ORDER BY
+                            f.date_soin DESC,
+                            f.facture_id DESC
+                        LIMIT :lim OFFSET :off
+                        """
+                        ),
+                        params,
+                    )
+                    .mappings()
+                    .all()
+                )
+
+                return ClaimsListResponse(
+                    total=total,
+                    page=page,
+                    page_size=page_size,
+                    items=[
+                        ClaimSummary(
+                            facture_id=r["facture_id"],
+                            numero_facture=r["numero_facture"],
+                            assure_id=r["assure_id"],
+                            prestataire_id=r["prestataire_id"],
+                            date_soin=r["date_soin"],
+                            date_emission=r["date_emission"],
+                            montant_total=r["montant_total"],
+                            part_assure=r["part_assure"],
+                            montant_demande=r["montant_demande"],
+                            statut=StatutFacture(r["statut"]),
+                            score_fraude=(
+                                float(r["score_fraude"]) if r["score_fraude"] is not None else None
+                            ),
+                            est_anomalie=(
+                                bool(r["est_anomalie"]) if r["est_anomalie"] is not None else None
+                            ),
+                        )
+                        for r in rows
+                    ],
+                )
+
+    except Exception as exc:
+        logger.warning(
+            "DB indisponible pour list_claims (repli mock) : %s",
+            exc,
+        )
+
+    # Repli mock existant
     if current_user.role == Role.ASSURE and current_user.assure_id != _MOCK_CLAIM.assure_id:
-        return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+        return ClaimsListResponse(
+            total=0,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
 
     item = ClaimSummary(
         facture_id=_MOCK_CLAIM.facture_id,
@@ -324,7 +555,55 @@ def list_claims(
         score_fraude=0.87,
         est_anomalie=True,
     )
-    return ClaimsListResponse(total=1, page=page, page_size=page_size, items=[item])
+
+    # Application des filtres au mock
+    if statut is not None and item.statut != statut:
+        return ClaimsListResponse(
+            total=0,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
+
+    if date_debut is not None and item.date_soin < date_debut:
+        return ClaimsListResponse(
+            total=0,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
+
+    if date_fin is not None and item.date_soin > date_fin:
+        return ClaimsListResponse(
+            total=0,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
+
+    if fraud_alert_only and not item.est_anomalie:
+        return ClaimsListResponse(
+            total=0,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
+
+    # Pagination du mock
+    if page > 1:
+        return ClaimsListResponse(
+            total=1,
+            page=page,
+            page_size=page_size,
+            items=[],
+        )
+
+    return ClaimsListResponse(
+        total=1,
+        page=page,
+        page_size=page_size,
+        items=[item],
+    )
 
 
 @router.get(
@@ -355,7 +634,7 @@ def create_claim(
     current_user: Annotated[UserInfo, Depends(get_optional_user)] = None,
 ) -> ClaimCreateResponse:
     """Télétransmission d'une nouvelle facture, inférence ML réelle et persistance atomique."""
-    facture_id = f"FAC-{len(_SUBMITTED_CLAIMS) + 84700:08d}"
+    facture_id = f"FAC-N{uuid.uuid4().hex[:7].upper()}"
 
     # Inférence réelle par le modèle champion
     try:
@@ -377,7 +656,7 @@ def create_claim(
         )
     except ModeleIndisponible as exc:
         logger.error("Modèle indisponible lors de la soumission de %s : %s", facture_id, exc)
-        score_fraude = None
+        score_fraude = 0.0
         seuil_applique = fraud_score_threshold()
         est_anomalie = False
         version_modele = "indisponible"

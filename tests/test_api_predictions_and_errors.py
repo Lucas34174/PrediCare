@@ -7,7 +7,19 @@ from predicare.api.routers.claims import _SUBMITTED_CLAIMS
 from predicare.api.schemas import ClaimDetail, StatutFacture
 from predicare.core.security import create_access_token
 
-client = TestClient(app)
+# Token gestionnaire valide pour tous les tests de prédictions (logique métier, pas auth)
+_GESTIONNAIRE_TOKEN = create_access_token(
+    {
+        "sub": "gestionnaire1",
+        "id": "USR-0012",
+        "role": "gestionnaire",
+        "nom_complet": "Aina Razafy",
+        "assure_id": None,
+        "prestataire_id": None,
+    }
+)
+
+client = TestClient(app, headers={"Authorization": f"Bearer {_GESTIONNAIRE_TOKEN}"})
 
 _EXISTING_CLAIM = "FAC-00005637"
 _UNKNOWN_CLAIM = "FAC-99999999"
@@ -83,6 +95,15 @@ def test_prediction_rbac_permissions():
 
 def test_prediction_persisted_from_submission():
     """Vérifie la relecture de la prédiction persistée lors d'une soumission réelle (PB-22)."""
+    from pathlib import Path
+
+    import pytest
+
+    from predicare.core.config import model_path
+
+    if not Path(model_path()).is_file():
+        pytest.skip("Artefact modèle champion absent de cet environnement")
+
     payload = {
         "numero_facture": "F-2026-PERSIST-01",
         "assure_id": "ASS-00421",

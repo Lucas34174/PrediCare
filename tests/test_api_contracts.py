@@ -5,9 +5,24 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from predicare.api.main import app
+from predicare.core.security import create_access_token
 from predicare.rag.agent import AgentResult
 
-client = TestClient(app)
+# Token gestionnaire valide pour tous les tests de contrats (logique métier, pas auth)
+_GESTIONNAIRE_TOKEN = create_access_token(
+    {
+        "sub": "gestionnaire1",
+        "id": "USR-0012",
+        "role": "gestionnaire",
+        "nom_complet": "Aina Razafy",
+        "assure_id": None,
+        "prestataire_id": None,
+    }
+)
+
+client = TestClient(app, headers={"Authorization": f"Bearer {_GESTIONNAIRE_TOKEN}"})
+# Client non authentifié pour les tests de rejet sans token
+_unauth_client = TestClient(app)
 
 
 # 3.1 Supervision & Santé
@@ -56,7 +71,8 @@ def test_me_returns_user_info():
 
 
 def test_me_sans_token_rejete():
-    assert client.get("/auth/me").status_code == 401
+    # Utilise un client sans header d'auth pour vérifier le rejet
+    assert _unauth_client.get("/auth/me").status_code == 401
 
 
 def test_me_token_invalide_rejete():
