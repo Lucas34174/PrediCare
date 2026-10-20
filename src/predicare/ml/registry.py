@@ -8,10 +8,13 @@ Responsabilités :
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import joblib
 
@@ -27,6 +30,9 @@ from predicare.ml.baseline import (
     split_no_leakage,
 )
 from predicare.ml.tuning import train_tuned_model
+
+STATUTS = ("staging", "production", "archive")
+
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +182,118 @@ def register_model_version(
     logger.info("models_metadata.json mis à jour avec %s (statut=%s)", version_id, statut_new)
 
     return model_path, metadata_path
+
+
+def hacher_artefact(chemin: Path | str) -> str:
+    """Empreinte SHA-256 d'un artefact."""
+    digest = hashlib.sha256()
+    with open(chemin, "rb") as fichier:
+        for bloc in iter(lambda: fichier.read(1 << 20), b""):
+            digest.update(bloc)
+    return digest.hexdigest()
+
+
+def _charger_registre(chemin: Path | str | None = None) -> dict[str, Any]:
+    from predicare.ml.config import REGISTRY_PATH
+
+    p = Path(chemin) if chemin else REGISTRY_PATH
+    if not p.is_file():
+        return {"versions": [], "production": None, "historique_production": []}
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def _ecrire_registre(registre: dict[str, Any], chemin: Path | str | None = None) -> Path:
+    from predicare.ml.config import REGISTRY_PATH
+
+    p = Path(chemin) if chemin else REGISTRY_PATH
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(registre, indent=2, ensure_ascii=False), encoding="utf-8")
+    return p
+
+
+def lister_versions(chemin: Path | str | None = None) -> list[dict[str, Any]]:
+    """Liste les versions enregistrées."""
+    return list(reversed(_charger_registre(chemin)["versions"]))
+
+
+def version_production(chemin: Path | str | None = None) -> str | None:
+    """Version actuellement en production."""
+    return _charger_registre(chemin).get("production")
+
+
+def enregistrer_version(
+    version: str,
+    chemin_modele: Path | str,
+    metadonnees: dict[str, Any] | None = None,
+    statut: str = "staging",
+    promouvoir: bool = False,
+    chemin_registre: Path | str | None = None,
+) -> dict[str, Any]:
+    """Enregistre une version dans models/registry.json."""
+    from predicare.ml.config import MODELS_ROOT
+
+    if statut not in STATUTS:
+        raise ValueError(f"Statut invalide : {statut!r} (attendu : {STATUTS}).")
+    chemin_m = Path(chemin_modele)
+    if not chemin_m.is_file():
+        raise FileNotFoundError(f"Artefact introuvable : {chemin_m}")
+    destination = MODELS_ROOT / version / "model.joblib"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if chemin_m.resolve() != destination.resolve():
+        shutil.copy2(chemin_m, destination)
+    registre = _charger_registre(chemin_registre)
+    entree = {
+        "version": version,
+        "cree": datetime.now(UTC).isoformat(),
+        "artefact": str(destination.relative_to(MODELS_ROOT.parent)),
+        "sha256": hacher_artefact(destination),
+        "statut": statut,
+        "metadonnees": metadonnees or {},
+    }
+    registre["versions"] = [v for v in registre["versions"] if v["version"] != version]
+    registre["versions"].append(entree)
+    if promouvoir:
+        _basculer_production(registre, version)
+    _ecrire_registre(registre, chemin_registre)
+    return entree
+
+
+def _basculer_production(registre: dict[str, Any], version: str) -> None:
+    for entree in registre["versions"]:
+        if entree["version"] == version:
+            entree["statut"] = "production"
+        elif entree["statut"] == "production":
+            entree["statut"] = "archive"
+    if registre.get("production") != version:
+        registre.setdefault("historique_production", []).append(version)
+    registre["production"] = version
+
+
+def promouvoir(version: str, chemin_registre: Path | str | None = None) -> dict[str, Any]:
+    """Promeut une version en production."""
+    registre = _charger_registre(chemin_registre)
+    if version not in {v["version"] for v in registre["versions"]}:
+        raise KeyError(f"Version inconnue : {version}")
+    _basculer_production(registre, version)
+    _ecrire_registre(registre, chemin_registre)
+    return registre
+
+
+def rollback(
+    version: str | None = None, chemin_registre: Path | str | None = None
+) -> dict[str, Any]:
+    """Revient sur la version précédente en production."""
+    registre = _charger_registre(chemin_registre)
+    historique = registre.get("historique_production", [])
+    if version is None:
+        if len(historique) < 2:
+            raise ValueError("Aucune version antérieure en production : rollback impossible.")
+        version = historique[-2]
+    if version not in {v["version"] for v in registre["versions"]}:
+        raise KeyError(f"Version inconnue : {version}")
+    _basculer_production(registre, version)
+    _ecrire_registre(registre, chemin_registre)
+    return registre
 
 
 if __name__ == "__main__":  # pragma: no cover
