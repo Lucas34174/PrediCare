@@ -877,7 +877,94 @@ def get_prediction(
             ),
         )
 
-    # 6. La facture existe mais aucune prédiction n'est disponible
+    # 6. Si la facture existe en base, calcul dynamique par le modèle champion et persistance
+    try:
+        facture_db = _get_claim_db(facture_id)
+        if facture_db is not None:
+            inference = predire_facture_en_ligne(
+                {
+                    "facture_id": facture_db.facture_id,
+                    "numero_facture": facture_db.numero_facture,
+                    "assure_id": facture_db.assure_id,
+                    "prestataire_id": facture_db.prestataire_id,
+                    "ordonnance_id": facture_db.ordonnance_id,
+                    "date_soin": facture_db.date_soin,
+                    "date_emission": facture_db.date_emission,
+                    "montant_total": facture_db.montant_total,
+                    "part_assure": facture_db.part_assure,
+                },
+                [ligne.model_dump() for ligne in facture_db.lignes],
+            )
+            score_fraude = inference["score_fraude"]
+            seuil_applique = inference["seuil_applique"]
+            est_anomalie = inference["est_anomalie"]
+            version_modele = inference["version_modele"]
+            top_facteurs = inference["top_facteurs"]
+            date_prediction = inference["date_prediction"]
+            recommandation = inference["recommandation"]
+
+            try:
+                engine = _db_engine()
+                if engine is not None:
+                    with engine.begin() as conn:
+                        pred_row = conn.execute(
+                            text(
+                                "INSERT INTO predictions "
+                                "(facture_id, score_fraude, est_anomalie, seuil_applique, version_modele, date_prediction) "
+                                "VALUES (:fid, :score, :anom, :seuil, :ver, :dt) "
+                                "RETURNING id"
+                            ),
+                            {
+                                "fid": facture_id,
+                                "score": score_fraude,
+                                "anom": est_anomalie,
+                                "seuil": seuil_applique,
+                                "ver": version_modele,
+                                "dt": date_prediction,
+                            },
+                        ).first()
+                        if pred_row and top_facteurs:
+                            conn.execute(
+                                text(
+                                    "INSERT INTO explications_shap (prediction_id, top_features, date_generation) "
+                                    "VALUES (:pid, :tf::jsonb, :dt)"
+                                ),
+                                {
+                                    "pid": pred_row[0],
+                                    "tf": json.dumps(top_facteurs),
+                                    "dt": date_prediction,
+                                },
+                            )
+            except Exception as e_db:
+                logger.warning("Échec persistance prédiction dynamique pour %s : %s", facture_id, e_db)
+
+            shap_factors = [
+                ShapFactor(
+                    feature=f["feature"],
+                    valeur=f["valeur"] if isinstance(f["valeur"], (int, float, str)) else 0.0,
+                    impact_shap=float(f["impact_shap"]),
+                    description=f["description"],
+                )
+                for f in top_facteurs
+            ]
+            return PredictionResponse(
+                facture_id=facture_id,
+                prediction=PredictionInfo(
+                    score_fraude=score_fraude,
+                    seuil_applique=seuil_applique,
+                    est_anomalie=est_anomalie,
+                    version_modele=version_modele,
+                    date_prediction=date_prediction,
+                ),
+                explicabilite=ExplicabiliteInfo(
+                    top_facteurs=shap_factors,
+                    recommandation=recommandation,
+                ),
+            )
+    except Exception as exc:
+        logger.warning("Calcul dynamique impossible pour %s : %s", facture_id, exc)
+
+    # 7. Aucune prédiction disponible
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Aucune prédiction disponible pour la facture {facture_id}.",
@@ -889,19 +976,72 @@ def get_prediction(
     response_model=DecisionResponse,
     responses={404: {"description": "Facture inexistante."}},
 )
-def post_decision(facture_id: str, body: DecisionRequest) -> DecisionResponse:
-    """Arbitrage gestionnaire (mock)."""
-    _get_or_404(facture_id)
+def post_decision(
+    facture_id: str,
+    body: DecisionRequest,
+    current_user: Annotated[UserInfo, Depends(get_optional_user)] = None,
+) -> DecisionResponse:
+    """Arbitrage gestionnaire avec persistance atomique."""
+    claim = _get_or_404(facture_id)
     statut_map = {
         DecisionValeur.VALIDE: StatutFacture.PAYEE,
         DecisionValeur.REJETE: StatutFacture.REJETEE,
         DecisionValeur.INVESTIGATION: StatutFacture.EN_COURS,
     }
+    nouveau_statut = statut_map[body.decision]
+    gestionnaire_id = current_user.id if current_user and current_user.id else "USR-0012"
+    now = datetime.now(UTC)
+
+    # Persistance en base PostgreSQL
+    try:
+        engine = _db_engine()
+        if engine is not None:
+            with engine.begin() as conn:
+                pred_id = conn.execute(
+                    text("SELECT id FROM predictions WHERE facture_id = :fid ORDER BY date_prediction DESC LIMIT 1"),
+                    {"fid": facture_id},
+                ).scalar()
+
+                conn.execute(
+                    text(
+                        "INSERT INTO decisions_gestionnaire "
+                        "(facture_id, prediction_id, decision, motif, montant_final_accorde, gestionnaire_id, date_decision) "
+                        "VALUES (:fid, :pred_id, :dec, :motif, :montant, :gid, :dt)"
+                    ),
+                    {
+                        "fid": facture_id,
+                        "pred_id": pred_id,
+                        "dec": body.decision.value,
+                        "motif": body.motif,
+                        "montant": body.montant_accorde,
+                        "gid": gestionnaire_id,
+                        "dt": now,
+                    },
+                )
+
+                conn.execute(
+                    text(
+                        "UPDATE factures "
+                        "SET statut = :statut, montant_pris_en_charge = :montant "
+                        "WHERE facture_id = :fid"
+                    ),
+                    {
+                        "statut": nouveau_statut.value,
+                        "montant": body.montant_accorde,
+                        "fid": facture_id,
+                    },
+                )
+    except Exception as exc:
+        logger.warning("Échec persistance décision en base pour %s : %s", facture_id, exc)
+
+    if facture_id in _SUBMITTED_CLAIMS:
+        _SUBMITTED_CLAIMS[facture_id].statut = nouveau_statut
+
     return DecisionResponse(
         facture_id=facture_id,
-        statut=statut_map[body.decision],
+        statut=nouveau_statut,
         decision=body.decision,
-        gestionnaire_id="USR-0012",
-        date_decision=_NOW,
+        gestionnaire_id=gestionnaire_id,
+        date_decision=now,
         message="Décision enregistrée avec succès.",
     )
