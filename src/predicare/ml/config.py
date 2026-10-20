@@ -161,7 +161,7 @@ PARAMS_LIGHTGBM_V11 = {
 }
 
 # --------------------------------------------------------------------------- #
-# Libellés métier pour l'explicabilité (PB-13)
+# Libellés métier pour l'explicabilité
 # --------------------------------------------------------------------------- #
 FEATURE_LABELS: dict[str, str] = {
     "montant_total": "Montant total de la facture",
