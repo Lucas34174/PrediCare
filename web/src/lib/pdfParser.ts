@@ -58,14 +58,20 @@ const RE_ENTENTE = /Entente\s*pr[ée]alable\s*([A-Z0-9-]+)/i // Souvent "—"
 const RE_MODE = /Mode\s*(TIERS_PAYANT|REMBOURSEMENT_ASSURE)/i
 const RE_TOTAL = /TOTAL\s*([\d\s]+)\s*Ar/i
 
+const RE_ORD_NUM = /R[ée]f\.\s*(ORD-[A-Z0-9]+)/i
+const RE_ORD_DATE = /le\s*(\d{4}-\d{2}-\d{2})/i
+const RE_ORD_PATIENT = /Patient\s*:\s*([^–\n]+?)\s*[–-]\s*(\d+\s*ans?)/i
+const RE_ORD_PRESCRIPTEUR = /(?:Docteur|Dr\.?|Polyclinique|Clinique)\s+([A-ZÀ-Ÿ][^\n]+)/i
+const RE_ORD_SPECIALITE = /(M[ée]decine\s+g[ée]n[ée]rale[^\n]*)/i
+const RE_ORD_ORDRE = /ONM-(\d+)/i
+const RE_ORD_CLINIQUE = /Renseignement\s+clinique\s*:\s*([^\n]+?)(?=\s+\d+\.|\s*$)/i
+const RE_ORD_VALIDITE = /Validit[ée]\s*:\s*(\d+)\s*jours/i
+const RE_LIGNE_ORDONNANCE = /(\d+)\.\s*([^–\n]+?)\s*–\s*Qt[ée]\s*:\s*(\d+)\s*[\n\s]+([^\d\n][^\n]*?)(?=\s*\d+\.\s*|$)/gi
+
 // Ligne de facture : CODE DESIGNATION QTÉ P.U. MONTANT
 // Ex: "LAB-DFS Numération formule sanguine 1 11 500 Ar 11 500 Ar"
 const RE_LIGNE_FACTURE =
   /([A-Z]{3}-[A-Z0-9]+)\s+(.+?)\s+(\d+)\s+([\d\s]+)\s*Ar\s+([\d\s]+)\s*Ar/g
-
-// Ligne ordonnance : "1. Produit – Qté : N" puis "posologie" sur la ligne suivante
-const RE_LIGNE_ORDONNANCE =
-  /(\d+)\.\s+([^\n–]+?)\s*–\s*Qt[ée]\s*:\s*(\d+)\s*\n\s*([^\n]+)/g
 
 const toInt = (s: string) => Number(s.replace(/\s/g, ''))
 
@@ -132,28 +138,22 @@ export function parseOrdonnance(rawText: string): ParsedOrdonnance {
   const text = rawText.replace(/[ \t]+/g, ' ').trim()
   const warnings: string[] = []
 
-  const numero_ordonnance =
-    text.match(/R[ée]f\.\s*(ORD-[A-Z0-9]+)/i)?.[1] ?? ''
+  const numero_ordonnance = text.match(RE_ORD_NUM)?.[1] ?? ''
   if (!numero_ordonnance) warnings.push('Référence ordonnance introuvable.')
 
-  const date = text.match(/le\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? ''
+  const date = text.match(RE_ORD_DATE)?.[1] ?? ''
 
-  const patientMatch = text.match(/Patient\s*:\s*([^–\n]+?)\s*[–-]\s*(\d+\s*ans?)/i)
+  const patientMatch = text.match(RE_ORD_PATIENT)
   const patient_nom = patientMatch?.[1]?.trim() ?? ''
   const patient_age = patientMatch?.[2]?.trim() ?? ''
+  if (!patient_nom) warnings.push('Nom du patient introuvable.')
 
-  const prescripteurMatch = text.match(
-    /(?:Docteur|Dr\.?)\s+([A-ZÀ-Ÿ][A-ZÀ-Ÿa-zà-ÿ\s]+?)\s*\n/i,
-  )
-  const prescripteur = prescripteurMatch?.[1]?.trim() ?? ''
-
-  const specialite = text.match(/(M[ée]decine\s+g[ée]n[ée]rale[^\n]*)/i)?.[1]?.trim() ?? ''
-  const numero_ordre = text.match(/ONM-(\d+)/)?.[0] ?? ''
-
-  const renseignement_clinique =
-    text.match(/Renseignement\s+clinique\s*:\s*([^\n]+)/i)?.[1]?.trim() ?? ''
-
-  const validite_jours = Number(text.match(/Validit[ée]\s*:\s*(\d+)\s*jours/i)?.[1] ?? '') || null
+  const prescripteurMatch = text.match(RE_ORD_PRESCRIPTEUR)
+  const prescripteur = prescripteurMatch?.[1]?.split('Médecine')[0]?.trim() ?? ''
+  const specialite = text.match(RE_ORD_SPECIALITE)?.[1]?.trim() ?? ''
+  const numero_ordre = text.match(RE_ORD_ORDRE)?.[0] ?? ''
+  const renseignement_clinique = text.match(RE_ORD_CLINIQUE)?.[1]?.trim() ?? ''
+  const validite_jours = Number(text.match(RE_ORD_VALIDITE)?.[1] ?? '') || null
 
   const lignes: ParsedOrdonnance['lignes'] = []
   for (const m of rawText.matchAll(RE_LIGNE_ORDONNANCE)) {

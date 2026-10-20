@@ -50,35 +50,45 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --canvas: #FBF8F3;
+  
+  /* Nouvelle palette bleue (basée sur le Login) */
+  --canvas: #F8FAFC;
   --surface: #FFFFFF;
-  --surface-soft: #F2ECE2;
-  --ink: #13231F;
-  --ink-muted: #4A5B55;
-  --green: #0F6B66;
-  --green-dark: #0B4F4B;
-  --green-light: #DCEFEC;
-  --amber: #A55F00;
-  --line: #E4DBCB;
-  --red: #B3261E;
-  --input-border: #7A8B84;
-  --primary-soft: #DCEFEC;
-  --primary-soft-foreground: #0B4F4B;
-  --accent: #B8651B;
-  --accent-soft: #F6E5D2;
-  --accent-soft-foreground: #7A3F0B;
-  --success: #17794A;
-  --success-soft: #DDF3E7;
-  --success-soft-foreground: #0F5A36;
-  --warning: #A55F00;
-  --warning-soft: #FBEBCB;
-  --warning-soft-foreground: #6B3E00;
-  --danger: #B3261E;
-  --danger-soft: #FBE1DE;
-  --danger-soft-foreground: #8A1C16;
-  --info: #1F5FA5;
-  --info-soft: #DDEBFA;
-  --info-soft-foreground: #174A82;
+  --surface-soft: #F1F5F9;
+  --ink: #0F172A;
+  --ink-muted: #64748B;
+  
+  --green: #3B82F6;         /* Le bleu clair du login (remplace le vert) */
+  --green-dark: #1D4ED8;    /* Bleu plus foncé pour le hover */
+  --green-light: #EFF6FF;   /* Bleu très clair pour les fonds */
+  
+  --amber: #D97706;
+  --line: #E2E8F0;
+  --red: #DC2626;
+  --input-border: #CBD5E1;
+  
+  --primary-soft: #EFF6FF;
+  --primary-soft-foreground: #1E3A8A;
+  --accent: #3B82F6;
+  --accent-soft: #DBEAFE;
+  --accent-soft-foreground: #1D4ED8;
+  
+  --success: #10B981;
+  --success-soft: #ECFDF5;
+  --success-soft-foreground: #047857;
+  
+  --warning: #D97706;
+  --warning-soft: #FFFBEB;
+  --warning-soft-foreground: #B45309;
+  
+  --danger: #DC2626;
+  --danger-soft: #FEF2F2;
+  --danger-soft-foreground: #991B1B;
+  
+  --info: #3B82F6;
+  --info-soft: #EFF6FF;
+  --info-soft-foreground: #1D4ED8;
+
   --background: var(--canvas);
   --foreground: var(--ink);
   --card: var(--surface);
@@ -89,42 +99,50 @@
   --muted: var(--surface-soft);
   --muted-foreground: var(--ink-muted);
   --border: var(--line);
-  --ring: #0F6B66;
+  --ring: #3B82F6;
   --radius: 0.8rem;
-  --shadow-soft: 0 14px 38px -28px rgb(19 35 31 / 20%);
+  --shadow-soft: 0 10px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.01);
 }
 
 .app-root.dark {
   color-scheme: dark;
-  --canvas: #0D1816;
-  --surface: #14231F;
-  --surface-soft: #1B2D29;
-  --ink: #EAF3F0;
-  --ink-muted: #9DB3AC;
-  --green: #5CC4B8;
-  --green-dark: #BFEDE6;
-  --green-light: #12403C;
-  --amber: #F2B24A;
-  --line: #2B413B;
-  --red: #FF8A80;
-  --input-border: #6E8A82;
-  --ring: #5CC4B8;
-  --primary-foreground: #06231F;
-  --primary-soft: #12403C;
-  --primary-soft-foreground: #BFEDE6;
-  --success: #5BD08F;
-  --success-soft: #12392A;
-  --success-soft-foreground: #BDF0D3;
-  --warning: #F2B24A;
-  --warning-soft: #3F2E0B;
-  --warning-soft-foreground: #FBDDA0;
-  --danger: #FF8A80;
-  --danger-soft: #4A1C19;
-  --danger-soft-foreground: #FFD3CF;
-  --info: #7DB7F0;
-  --info-soft: #14304F;
-  --info-soft-foreground: #C9E1FB;
-  --shadow-soft: 0 14px 38px -28px rgb(0 0 0 / 50%);
+  --canvas: #0B1120;
+  --surface: #0F172A;
+  --surface-soft: #1E293B;
+  --ink: #F8FAFC;
+  --ink-muted: #94A3B8;
+  
+  --green: #60A5FA;
+  --green-dark: #93C5FD;
+  --green-light: #1E3A8A;
+  
+  --amber: #FBBF24;
+  --line: #334155;
+  --red: #F87171;
+  --input-border: #475569;
+  --ring: #60A5FA;
+  
+  --primary-foreground: #0F172A;
+  --primary-soft: #1E3A8A;
+  --primary-soft-foreground: #BFDBFE;
+  
+  --success: #34D399;
+  --success-soft: #064E3B;
+  --success-soft-foreground: #A7F3D0;
+  
+  --warning: #FBBF24;
+  --warning-soft: #78350F;
+  --warning-soft-foreground: #FDE68A;
+  
+  --danger: #F87171;
+  --danger-soft: #7F1D1D;
+  --danger-soft-foreground: #FECACA;
+  
+  --info: #60A5FA;
+  --info-soft: #172554;
+  --info-soft-foreground: #BFDBFE;
+  
+  --shadow-soft: 0 10px 25px -5px rgb(0 0 0 / 0.5);
 }
 
 @layer base {

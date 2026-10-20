@@ -63,6 +63,10 @@ services:
         condition: service_completed_successfully
       ollama:
         condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+      api-init:
+        condition: service_completed_successfully
     environment:
       APP_ENV: ${APP_ENV:-dev}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -164,6 +168,10 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+      api-init:
+        condition: service_completed_successfully
     ports:
       - "${FRONT_PORT:-3000}:80"
     healthcheck:
@@ -191,6 +199,45 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+
+  ollama-init:
+    image: ollama/ollama:0.3.14
+    container_name: predicare-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        echo "  ___ Téléchargement des modèles (cela peut prendre 5-10 min)..."
+        OLLAMA_HOST=http://ollama:11434 ollama pull bge-m3
+        OLLAMA_HOST=http://ollama:11434 ollama pull phi3:mini
+        echo "  ___ Modèles prêts."
+    restart: "no"
+
+  api-init:
+    build: .
+    image: predicare-tpa/api:dev
+    container_name: predicare-api-init
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-predicare}
+      DB_USER: ${POSTGRES_USER:-predicare}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - ./data/raw:/data/raw:ro
+      - ./migrations:/app/migrations
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    command: [ "/bin/sh", "/app/scripts/init.sh" ]
+    restart: "no"
 
 volumes:
   pgdata:
