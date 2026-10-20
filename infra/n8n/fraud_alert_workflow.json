@@ -12,136 +12,217 @@
       "name": "Webhook Alerte Fraude",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [100, 300],
-      "webhookId": "fraud-alert"
+      "position": [
+        0,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst valid = Boolean(\n  body &&\n  body.event === 'FRAUD_ALERT' &&\n  body.facture &&\n  body.facture.facture_id &&\n  body.prediction &&\n  typeof body.prediction.score_fraude === 'number' &&\n  typeof body.prediction.seuil_applique === 'number'\n);\nreturn [{ json: { ...body, _valid_payload: valid } }];"
+        "jsCode": "const raw = $input.first().json;\nconst b = raw.body ?? raw;\nconst errors = [];\nconst isStr = (v) => typeof v === 'string' && v.trim() !== '';\nconst isNum = (v) => typeof v === 'number' && Number.isFinite(v);\nconst isRate = (v) => isNum(v) && v >= 0 && v <= 1;\n\nif (!b || typeof b !== 'object') {\n  errors.push('corps JSON absent ou invalide');\n} else {\n  const f = b.facture, p = b.prediction, s = b.explicabilite_shap, a = b.liens_action;\n  if (b.event !== 'FRAUD_ALERT') errors.push(\"event doit valoir 'FRAUD_ALERT'\");\n  if (!f || typeof f !== 'object') {\n    errors.push('facture manquante');\n  } else {\n    if (!isStr(f.facture_id)) errors.push('facture.facture_id manquant');\n    if (!isStr(f.prestataire_id)) errors.push('facture.prestataire_id manquant');\n    if (!isStr(f.assure_id)) errors.push('facture.assure_id manquant');\n    if (!isNum(f.montant_total)) errors.push('facture.montant_total doit etre numerique');\n    if (!isNum(f.montant_demande)) errors.push('facture.montant_demande doit etre numerique');\n  }\n  if (!p || typeof p !== 'object') {\n    errors.push('prediction manquante');\n  } else {\n    if (!isRate(p.score_fraude)) errors.push('prediction.score_fraude doit etre un nombre entre 0 et 1');\n    if (!isRate(p.seuil_applique)) errors.push('prediction.seuil_applique doit etre un nombre entre 0 et 1');\n    if (!isStr(p.version_modele)) errors.push('prediction.version_modele manquant');\n  }\n  if (!s || typeof s !== 'object' || !isStr(s.facteur_principal)) {\n    errors.push('explicabilite_shap.facteur_principal manquant');\n  }\n  if (!a || typeof a !== 'object' || !isStr(a.dashboard_url) || !/^https?:\\/\\//.test(a.dashboard_url)) {\n    errors.push('liens_action.dashboard_url manquant ou invalide');\n  }\n}\n\nreturn [{ json: { ...(b && typeof b === 'object' ? b : {}), valid: errors.length === 0, errors } }];"
       },
-      "id": "node-valider-schema",
-      "name": "Valider Schema",
+      "id": "node-valider",
+      "name": "Valider Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [320, 300]
+      "position": [
+        220,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "boolean": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
             {
-              "value1": "={{ $json._valid_payload }}",
-              "value2": true
+              "id": "cond-valid",
+              "leftValue": "={{ $json.valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
-          ]
-        }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
       "id": "node-if-valid",
       "name": "Payload Valide ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [540, 300]
+      "position": [
+        440,
+        300
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ error: 'Payload invalide : contrat §4 non respecte' }) }}",
+        "responseBody": "={{ JSON.stringify({ error: 'Payload invalide (contrat §4 non respecte)', details: $json.errors }) }}",
         "options": {
           "responseCode": 400
         }
       },
-      "id": "node-reponse-400",
+      "id": "node-rep-400",
       "name": "Reponse 400 Invalide",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [760, 480]
+      "position": [
+        660,
+        520
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "number": [
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
             {
-              "value1": "={{ $json.prediction.score_fraude }}",
-              "operation": "largerEqual",
-              "value2": "={{ $json.prediction.seuil_applique }}"
+              "id": "cond-seuil",
+              "leftValue": "={{ $json.prediction.score_fraude }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "rightValue": "={{ $json.prediction.seuil_applique }}"
             }
-          ]
-        }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
       "id": "node-if-seuil",
       "name": "Score >= Seuil ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [760, 240]
+      "position": [
+        660,
+        300
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: 'ignored', message: 'Score sous le seuil : aucune alerte emise', score: $json.prediction.score_fraude, seuil: $json.prediction.seuil_applique }) }}",
+        "responseBody": "={{ JSON.stringify({ status: 'ignored', message: 'Score sous le seuil : aucune alerte emise', score_fraude: $json.prediction.score_fraude, seuil_applique: $json.prediction.seuil_applique }) }}",
         "options": {
           "responseCode": 200
         }
       },
-      "id": "node-reponse-ignore",
+      "id": "node-rep-ignore",
       "name": "Reponse 200 Sous Seuil",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [980, 400]
+      "position": [
+        880,
+        520
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst f = item.facture || {};\nconst p = item.prediction || {};\nconst s = item.explicabilite_shap || {};\nconst a = item.liens_action || {};\n\nconst slack_text = `🚨 *ALERTE FRAUDE SANTE*\\n` +\n  `• *Facture* : \\`${f.facture_id}\\` (N° ${f.numero_facture || 'N/A'})\\n` +\n  `• *Prestataire* : \\`${f.prestataire_id}\\` | *Assuré* : \\`${f.assure_id}\\`\\n` +\n  `• *Montant Total* : ${f.montant_total} MGA (Demandé : ${f.montant_demande} MGA)\\n` +\n  `• *Score de Risque* : *${p.score_fraude}* (Seuil : ${p.seuil_applique}) [Modèle : \\`${p.version_modele}\\`]\\n` +\n  `• *Facteur Principal* : ${s.facteur_principal || 'N/A'}\\n` +\n  `• *Facteur Secondaire* : ${s.facteur_secondaire || 'N/A'}\\n` +\n  `👉 <${a.dashboard_url}|Accéder au dossier dans le dashboard>`;\n\nconst email_subject = `[ALERTE FRAUDE] Facture ${f.facture_id} - Score ${p.score_fraude}`;\n\nconst email_html = `<h2>🚨 Alerte Détection de Fraude - PrediCare TPA</h2>` +\n  `<p>Une anomalie prioritaire a été détectée lors de la télétransmission.</p>` +\n  `<ul>` +\n  `<li><b>Identifiant Facture :</b> ${f.facture_id}</li>` +\n  `<li><b>Numéro d'émission :</b> ${f.numero_facture || 'N/A'}</li>` +\n  `<li><b>Prestataire :</b> ${f.prestataire_id}</li>` +\n  `<li><b>Bénéficiaire (Assuré) :</b> ${f.assure_id}</li>` +\n  `<li><b>Montant Réclamé :</b> ${f.montant_demande} MGA (Total : ${f.montant_total} MGA)</li>` +\n  `<li><b>Score de Risque :</b> <span style=\"color:red;font-weight:bold;\">${p.score_fraude}</span> (Seuil configuré : ${p.seuil_applique})</li>` +\n  `<li><b>Version Modèle :</b> ${p.version_modele}</li>` +\n  `<li><b>Facteur Explicatif Principal :</b> ${s.facteur_principal || 'N/A'}</li>` +\n  `<li><b>Facteur Explicatif Secondaire :</b> ${s.facteur_secondaire || 'N/A'}</li>` +\n  `</ul>` +\n  `<p><a href=\"${a.dashboard_url}\" style=\"background:#0055ff;color:#fff;padding:10px 16px;text-decoration:none;border-radius:4px;\">Consulter la facture sur le Dashboard</a></p>`;\n\nreturn [{\n  json: {\n    ...item,\n    slack_text,\n    email_subject,\n    email_html\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\nconst f = item.facture;\nconst p = item.prediction;\nconst s = item.explicabilite_shap;\nconst a = item.liens_action;\n\nconst html = (v) => String(v ?? 'N/A')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\nconst slk = (v) => String(v ?? 'N/A')\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst ar = (n) => String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' ') + ' Ar';\nconst score = p.score_fraude.toFixed(2);\nconst seuil = p.seuil_applique.toFixed(2);\nconst second = s.facteur_secondaire || null;\nconst reco = s.recommandation || null;\n\nlet slack_text =\n  ':rotating_light: *ALERTE FRAUDE - PrediCare TPA*\\n' +\n  `- *Facture* : \\`${slk(f.facture_id)}\\`` + (f.numero_facture ? ` (N° ${slk(f.numero_facture)})` : '') + '\\n' +\n  `- *Prestataire* : \\`${slk(f.prestataire_id)}\\` | *Assuré* : \\`${slk(f.assure_id)}\\`\\n` +\n  `- *Montant total* : ${ar(f.montant_total)} (demandé : ${ar(f.montant_demande)})\\n` +\n  `- *Score de risque* : *${score}* (seuil : ${seuil}) | modèle \\`${slk(p.version_modele)}\\`\\n` +\n  `- *Facteur principal* : ${slk(s.facteur_principal)}\\n` +\n  (second ? `- *Facteur secondaire* : ${slk(second)}\\n` : '') +\n  (reco ? `- *Recommandation* : ${slk(reco)}\\n` : '') +\n  `<${a.dashboard_url}|Ouvrir le dossier dans le tableau de bord>`;\n\nconst email_subject = `[ALERTE FRAUDE] Facture ${f.facture_id} - score ${score}`;\n\nconst email_html =\n  '<h2>Alerte détection de fraude - PrediCare TPA</h2>' +\n  '<p>Le score de risque d\\'une facture dépasse le seuil configuré. Un contrôle est requis.</p>' +\n  '<ul>' +\n  `<li><b>Facture :</b> ${html(f.facture_id)}` + (f.numero_facture ? ` (N° ${html(f.numero_facture)})` : '') + '</li>' +\n  `<li><b>Prestataire :</b> ${html(f.prestataire_id)}</li>` +\n  `<li><b>Assuré :</b> ${html(f.assure_id)}</li>` +\n  `<li><b>Montant total :</b> ${ar(f.montant_total)} (demandé : ${ar(f.montant_demande)})</li>` +\n  `<li><b>Score de risque :</b> <b style=\"color:#c00000;\">${score}</b> (seuil : ${seuil})</li>` +\n  `<li><b>Version du modèle :</b> ${html(p.version_modele)}</li>` +\n  '</ul>' +\n  '<h3>Rapport d\\'explicabilité</h3>' +\n  '<ul>' +\n  `<li><b>Facteur principal :</b> ${html(s.facteur_principal)}</li>` +\n  (second ? `<li><b>Facteur secondaire :</b> ${html(second)}</li>` : '') +\n  (reco ? `<li><b>Recommandation :</b> ${html(reco)}</li>` : '') +\n  '</ul>' +\n  `<p><a href=\"${html(a.dashboard_url)}\" style=\"background:#0055ff;color:#ffffff;padding:10px 16px;text-decoration:none;border-radius:4px;\">Consulter le dossier</a></p>`;\n\nreturn [{ json: { ...item, slack_text, email_subject, email_html } }];"
       },
-      "id": "node-formater-messages",
+      "id": "node-formater",
       "name": "Formater Messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [980, 160]
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'accepted', facture_id: $json.facture.facture_id, score_fraude: $json.prediction.score_fraude }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-rep-ok",
+      "name": "Reponse 200 Alerte Acceptee",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        120
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SLACK_WEBHOOK_URL || 'http://localhost:5678/webhook/mock-slack' }}",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ text: $json.slack_text }) }}",
-        "options": {}
+        "options": {
+          "timeout": 10000
+        }
       },
       "id": "node-slack",
       "name": "Notifier Slack",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, 100],
-      "continueOnFail": true
+      "position": [
+        1100,
+        300
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "fromEmail": "={{ $env.SMTP_FROM || 'alerte-fraude@predicare.mg' }}",
-        "toEmail": "={{ $env.ALERT_EMAIL_TO || 'gestionnaire@predicare.mg' }}",
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $env.ALERT_EMAIL_TO }}",
         "subject": "={{ $json.email_subject }}",
+        "emailFormat": "html",
         "html": "={{ $json.email_html }}",
-        "options": {}
+        "options": {
+          "appendAttribution": false
+        }
       },
       "id": "node-email",
       "name": "Notifier Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [1400, 100],
-      "continueOnFail": true
+      "position": [
+        1100,
+        480
+      ],
+      "onError": "continueErrorOutput"
     },
     {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ status: 'alert_dispatched', facture_id: $json.facture.facture_id, score_fraude: $json.prediction.score_fraude }) }}",
-        "options": {
-          "responseCode": 200
-        }
-      },
-      "id": "node-reponse-200",
-      "name": "Reponse 200 Succes",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [1600, 100]
+      "parameters": {},
+      "id": "node-echec-slack",
+      "name": "Echec canal Slack",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        360
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "node-echec-email",
+      "name": "Echec canal Email",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        540
+      ]
     }
   ],
   "connections": {
@@ -149,14 +230,14 @@
       "main": [
         [
           {
-            "node": "Valider Schema",
+            "node": "Valider Payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Valider Schema": {
+    "Valider Payload": {
       "main": [
         [
           {
@@ -207,16 +288,15 @@
       "main": [
         [
           {
+            "node": "Reponse 200 Alerte Acceptee",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "Notifier Slack",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Notifier Slack": {
-      "main": [
-        [
+          },
           {
             "node": "Notifier Email",
             "type": "main",
@@ -225,11 +305,24 @@
         ]
       ]
     },
-    "Notifier Email": {
+    "Notifier Slack": {
       "main": [
+        [],
         [
           {
-            "node": "Reponse 200 Succes",
+            "node": "Echec canal Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notifier Email": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Echec canal Email",
             "type": "main",
             "index": 0
           }

@@ -183,6 +183,7 @@ L'intégration du modèle de détection de fraude et de son explicabilité local
 4. **Endpoint `GET /claims/{id}/prediction` et contrôle RBAC** :
    - L'accès à l'évaluation et aux explications SHAP est réservé aux rôles `gestionnaire` et `administrateur` (`403 Forbidden` pour `assure` et `professionnel_sante`).
    - Les cas d'erreur 404 sont désormais distincts et explicites : rejet `404 Facture {id} introuvable.` si le dossier n'existe pas, et `404 Aucune prédiction disponible pour la facture {id}.` si la facture a été enregistrée sans prédiction exploitable.
+
 ## PB-19 — Chargement automatique et chiffrement PII
 
 - Un service Docker `init` one-shot applique `alembic upgrade head`, puis charge
@@ -196,3 +197,8 @@ L'intégration du modèle de détection de fraude et de son explicabilité local
   `PII_KEY_VERSION` prépare une rotation future.
 - Les labels ne sont pas chargés en base : ils restent dans `data/raw/labels`
   pour l'entraînement ML.
+
+### Alertes n8n (PB-24) :
+
+L'automatisation des alertes de fraude repose sur un découplage strict entre l'API FastAPI et le moteur n8n (Module 4, Flux 1). Lors de la télétransmission d'une facture (`POST /claims`), l'alerte est déclenchée uniquement si le score de risque atteint ou dépasse le seuil configuré (`score_fraude >= seuil_applique`). Le payload transmis au webhook (`http://n8n:5678/webhook/fraud-alert`) respecte rigoureusement la structure du §4 des contrats d'interface, combinant les identifiants pseudonymisés de la facture, les métadonnées de prédiction, les deux principaux facteurs explicatifs SHAP et le lien direct vers le dossier dans le dashboard.
+L'appel HTTP vers n8n est entièrement non bloquant pour le flux de gestion : encapsulé avec un timeout court (2 s) et exécuté après la persistance transactionnelle PostgreSQL, une indisponibilité ou un ralentissement de n8n ne compromet en aucun cas l'enregistrement de la facture ni le code retour `201 Created`. Au sein du workflow n8n (`infra/n8n/fraud_alert_workflow.json`), les canaux de notification Slack (Incoming Webhook) et E-mail (SMTP) sont paramétrés via des variables d'environnement (`SLACK_WEBHOOK_URL`, `ALERT_EMAIL_TO`) et configurés avec `continueOnFail`, garantissant qu'une défaillance d'un canal n'empêche pas l'émission sur le second. Aucune donnée à caractère personnel (PII) n'est injectée dans les messages ni stockée dans les exports de workflow.
