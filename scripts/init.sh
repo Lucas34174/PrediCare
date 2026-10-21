@@ -2,7 +2,7 @@
 set -e
 
 echo "  __ Attente de la base de données..."
-until pg_isready -h db -U predicare > /dev/null 2>&1; do
+until python -c "from predicare.core.config import database_url; from sqlalchemy import create_engine; engine = create_engine(database_url()); conn = engine.connect(); conn.close()" > /dev/null 2>&1; do
   sleep 2
 done
 
