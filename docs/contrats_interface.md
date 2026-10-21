@@ -427,6 +427,19 @@ Interroge l'agent conversationnel ReAct combinant la recherche documentaire vect
 }
 ```
 
+### `GET /assistant/cache/stats`
+Récupère les statistiques du cache semantique.
+- **Accès** : `administrateur`, `gestionnaire`
+- **Réponse (200 OK)** :
+```json
+{
+  "entries":27,
+  "total_hits":38,
+  "estimated_saved_tokens":19000,
+  "message":"Le cache a permis d'économiser environ 19000 tokens."
+  }
+```
+
 ---
 
 ### 3.7. Administration, MLOps & Exploitation (CDC §2)

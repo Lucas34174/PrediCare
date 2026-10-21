@@ -147,6 +147,14 @@ Cela permet :
 
 ### Décision : routage déterministe + LLM en fallback
 
+### Agent ReAct et Fallback Local
+
+En raison des contraintes matérielles du POC (CPU sans GPU), le LLM (`phi3:mini`) 
+dépasse régulièrement le timeout de 10s. Une stratégie de "Fallback déterministe" 
+a été implémentée : si le LLM timeout, l'agent extrait directement les données 
+structurées (ex: Tarifs) du document source et les affiche à l'utilisateur.
+**Justification** : Garantit une disponibilité de 100% (EU AI Act) et un coût de latence nul.
+
 **Contexte** : POC tournant sur CPU, sans GPU. Un modèle 8B met > 3 minutes 
 pour générer une réponse avec un prompt ReAct complet. Inacceptable.
 

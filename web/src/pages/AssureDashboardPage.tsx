@@ -8,8 +8,11 @@ import { Money } from '@/components/Money'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ServerPagination } from '@/components/ServerPagination'
 import type { ClaimsQuery } from '@/api/types'
+import { useAuth } from '@/auth/AuthContext'
 
 export function AssureDashboardPage() {
+  const { user } = useAuth()
+  const isPro = user?.role === 'professionnel_sante'
   const [page, setPage] = useState(1)
   const query: ClaimsQuery = { page, page_size: 8 }
   
@@ -55,7 +58,9 @@ export function AssureDashboardPage() {
                 {data?.items.map((item) => (
                   <tr key={item.facture_id} className="queue-row">
                     <th scope="row">
-                      <Link to={`/assure/dossiers/${item.facture_id}`}>{item.facture_id}</Link>
+                      <Link to={isPro ? `/professionnel-sante/dossiers/${item.facture_id}` : `/assure/dossiers/${item.facture_id}`}>
+                        {item.facture_id}
+                      </Link>
                       <small>{item.numero_facture}</small>
                     </th>
                     <td className="queue-col-secondary queue-date">
@@ -65,7 +70,7 @@ export function AssureDashboardPage() {
                     <td className="queue-amount"><Money amount={item.part_assure} /></td>
                     <td><StatusBadge status={item.statut} /></td>
                     <td style={{ textAlign: 'right' }}>
-                      <Link to={`/assure/dossiers/${item.facture_id}`} className="nav-item" style={{ display: 'inline-flex', minHeight: 'auto', padding: '4px' }}>
+                      <Link to={isPro ? `/professionnel-sante/dossiers/${item.facture_id}` : `/assure/dossiers/${item.facture_id}`} className="nav-item" style={{ display: 'inline-flex', minHeight: 'auto', padding: '4px' }}>
                         <ChevronRight size={16} />
                       </Link>
                     </td>
