@@ -21,7 +21,8 @@ import { AuthProvider, useAuth } from '@/auth/AuthContext'
 import { ProDashboardPage } from '@/pages/ProDashboardPage'
 import { ProDossierListPage, ProDossierDetailPage } from '@/pages/ProDossierPage'
 import { AssureDashboardHome } from '@/pages/AssureDashboardHome'
-
+import { ProClaimDetailPage } from '@/pages/ProClaimDetailPage'
+import { PublicDashboardPage } from '@/pages/PublicDashboardPage'
 
 const ManagerClaimDetailPage = lazy(() =>
   import('@/pages/ManagerClaimDetailPage').then((module) => ({ default: module.ManagerClaimDetailPage })),
@@ -158,6 +159,7 @@ function AppRoutes() {
         {/* 3. Route par défaut */}
         <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="*" element={<NotFoundPage />} />
+        <Route path="/dashboard-public" element={<PublicDashboardPage />} />
       </Routes>
     </div>
   )
