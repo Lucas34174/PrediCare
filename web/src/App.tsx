@@ -22,6 +22,7 @@ import { ProDashboardPage } from '@/pages/ProDashboardPage'
 import { ProDossierListPage, ProDossierDetailPage } from '@/pages/ProDossierPage'
 import { AssureDashboardHome } from '@/pages/AssureDashboardHome'
 
+
 const ManagerClaimDetailPage = lazy(() =>
   import('@/pages/ManagerClaimDetailPage').then((module) => ({ default: module.ManagerClaimDetailPage })),
 )
@@ -142,6 +143,9 @@ function AppRoutes() {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardPage /></ProtectedRoute>} />
           <Route path="/admin/config" element={<ProtectedRoute allowedRoles={['admin']}><AdminConfigPage /></ProtectedRoute>} />
           <Route path="/admin/models" element={<ProtectedRoute allowedRoles={['admin']}><AdminModelsPage /></ProtectedRoute>} />
+          {/* {user.role === 'gestionnaire' || user.role === 'administrateur' ? ( */}
+          <Route path="/dashboardi" element={<DashboardPage />} />
+          {/* // ) : null} */}
 
           {/* Pro de santé */}
           <Route path="/professionnel-sante/factures/nouvelle" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><NewProClaimPage /></ProtectedRoute>} />

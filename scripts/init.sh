@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+echo "  __ Attente de la base de données..."
+until pg_isready -h db -U predicare > /dev/null 2>&1; do
+  sleep 2
+done
+
+echo "  __ Base de données prête. Application des migrations..."
+alembic upgrade head
+
+echo "  __ Ingestion du corpus RAG..."
+python -m predicare.rag.ingest_all
+
+echo " __ Initialisation terminée !"

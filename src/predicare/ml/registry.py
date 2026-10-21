@@ -11,7 +11,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
+import re
 import shutil
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -199,7 +202,11 @@ def _charger_registre(chemin: Path | str | None = None) -> dict[str, Any]:
     p = Path(chemin) if chemin else REGISTRY_PATH
     if not p.is_file():
         return {"versions": [], "production": None, "historique_production": []}
-    return json.loads(p.read_text(encoding="utf-8"))
+    registre = json.loads(p.read_text(encoding="utf-8"))
+    registre.setdefault("versions", [])
+    registre.setdefault("production", None)
+    registre.setdefault("historique_production", [])
+    return registre
 
 
 def _ecrire_registre(registre: dict[str, Any], chemin: Path | str | None = None) -> Path:
@@ -207,8 +214,114 @@ def _ecrire_registre(registre: dict[str, Any], chemin: Path | str | None = None)
 
     p = Path(chemin) if chemin else REGISTRY_PATH
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(registre, indent=2, ensure_ascii=False), encoding="utf-8")
+    contenu = json.dumps(registre, indent=2, ensure_ascii=False)
+    fd, temporaire = tempfile.mkstemp(prefix=f".{p.name}.", suffix=".tmp", dir=p.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fichier:
+            fichier.write(contenu)
+            fichier.flush()
+            os.fsync(fichier.fileno())
+        os.replace(temporaire, p)
+        try:
+            descripteur = os.open(p.parent, os.O_RDONLY)
+            try:
+                os.fsync(descripteur)
+            finally:
+                os.close(descripteur)
+        except OSError:  # pragma: no cover - certains systèmes ne synchronisent pas les dossiers
+            pass
+    finally:
+        if os.path.exists(temporaire):
+            os.unlink(temporaire)
     return p
+
+
+def _chemin_artefact(entree: dict[str, Any], racine_modeles: Path | None = None) -> Path:
+    """Résout un chemin d'artefact et interdit toute sortie du répertoire models/."""
+    from predicare.ml.config import MODELS_ROOT
+
+    racine = Path(racine_modeles or MODELS_ROOT).resolve()
+    chemin = Path(entree["artefact"])
+    if not chemin.is_absolute():
+        chemin = racine.parent / chemin
+    chemin = chemin.resolve()
+    if chemin != racine and racine not in chemin.parents:
+        raise ValueError("Le chemin de l'artefact sort du répertoire models/.")
+    return chemin
+
+
+def _verifier_artefact(entree: dict[str, Any], racine_modeles: Path | None = None) -> Path:
+    """Vérifie l'intégrité et la capacité d'inférence avant promotion/chargement."""
+    chemin = _chemin_artefact(entree, racine_modeles)
+    if not chemin.is_file():
+        raise FileNotFoundError(f"Artefact introuvable pour {entree['version']}: {chemin}")
+    empreinte = hacher_artefact(chemin)
+    if empreinte != entree.get("sha256"):
+        raise ValueError(f"Empreinte SHA-256 invalide pour la version {entree['version']}.")
+    modele = joblib.load(chemin)
+    if isinstance(modele, dict):
+        modele = modele.get("pipeline", modele.get("modele"))
+    if modele is None or not callable(getattr(modele, "predict_proba", None)):
+        raise ValueError(f"L'artefact {entree['version']} n'expose pas predict_proba().")
+    return chemin
+
+
+def modele_production(chemin_registre: Path | str | None = None) -> dict[str, Any] | None:
+    """Renvoie l'entrée production vérifiée, ou None si le registre n'en a pas."""
+    from predicare.ml.config import MODELS_ROOT
+
+    registre = _charger_registre(chemin_registre)
+    version = registre.get("production")
+    if version is None:
+        return None
+    entree = next((v for v in registre["versions"] if v.get("version") == version), None)
+    if entree is None or entree.get("statut") != "production":
+        raise ValueError("Le pointeur de production ne correspond à aucune version active.")
+    chemin = _chemin_artefact(entree, MODELS_ROOT)
+    if not chemin.is_file():
+        raise FileNotFoundError(f"Artefact introuvable pour {version}: {chemin}")
+    return {**entree, "chemin_absolu": chemin}
+
+
+def _ajouter_champion_historique(registre: dict[str, Any], racine_modeles: Path) -> None:
+    """Importe le champion historique dans le registre avant le premier déploiement v2."""
+    from predicare.core.config import model_version
+
+    if registre.get("production") or registre["versions"]:
+        return
+    source = racine_modeles / "model_champion.joblib"
+    if not source.is_file():
+        return
+    version = model_version()
+    destination = racine_modeles / version / "model.joblib"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if not destination.exists():
+        fd, temporaire = tempfile.mkstemp(prefix=f".{destination.name}.", dir=destination.parent)
+        os.close(fd)
+        try:
+            shutil.copy2(source, temporaire)
+            os.replace(temporaire, destination)
+        finally:
+            if os.path.exists(temporaire):
+                os.unlink(temporaire)
+    metadata_path = racine_modeles / "models_metadata.json"
+    meta: dict[str, Any] = {}
+    if metadata_path.is_file():
+        try:
+            meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            logger.warning("Métadonnées du champion historique illisibles : %s", metadata_path)
+    entry = {
+        "version": version,
+        "cree": datetime.now(UTC).isoformat(),
+        "artefact": str(destination.relative_to(racine_modeles.parent)),
+        "sha256": hacher_artefact(destination),
+        "statut": "production",
+        "metadonnees": meta,
+    }
+    registre["versions"].append(entry)
+    registre["production"] = version
+    registre["historique_production"].append(version)
 
 
 def lister_versions(chemin: Path | str | None = None) -> list[dict[str, Any]]:
@@ -228,24 +341,49 @@ def enregistrer_version(
     statut: str = "staging",
     promouvoir: bool = False,
     chemin_registre: Path | str | None = None,
+    racine_modeles: Path | str | None = None,
 ) -> dict[str, Any]:
     """Enregistre une version dans models/registry.json."""
     from predicare.ml.config import MODELS_ROOT
 
     if statut not in STATUTS:
         raise ValueError(f"Statut invalide : {statut!r} (attendu : {STATUTS}).")
+    if statut == "production":
+        raise ValueError(
+            "Enregistrer une version en production est interdit ; utiliser promouvoir()."
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", version):
+        raise ValueError(f"Identifiant de version invalide : {version!r}.")
+    racine = Path(racine_modeles or MODELS_ROOT).resolve()
     chemin_m = Path(chemin_modele)
     if not chemin_m.is_file():
         raise FileNotFoundError(f"Artefact introuvable : {chemin_m}")
-    destination = MODELS_ROOT / version / "model.joblib"
+    destination = racine / version / "model.joblib"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if chemin_m.resolve() != destination.resolve():
-        shutil.copy2(chemin_m, destination)
+        empreinte_source = hacher_artefact(chemin_m)
+        if destination.exists():
+            if hacher_artefact(destination) != empreinte_source:
+                raise FileExistsError(
+                    f"La version {version} existe déjà avec un autre artefact ; les versions sont immuables."
+                )
+        else:
+            fd, temporaire = tempfile.mkstemp(
+                prefix=f".{destination.name}.", dir=destination.parent
+            )
+            os.close(fd)
+            try:
+                shutil.copy2(chemin_m, temporaire)
+                os.replace(temporaire, destination)
+            finally:
+                if os.path.exists(temporaire):
+                    os.unlink(temporaire)
     registre = _charger_registre(chemin_registre)
+    _ajouter_champion_historique(registre, racine)
     entree = {
         "version": version,
         "cree": datetime.now(UTC).isoformat(),
-        "artefact": str(destination.relative_to(MODELS_ROOT.parent)),
+        "artefact": str(destination.relative_to(racine.parent)),
         "sha256": hacher_artefact(destination),
         "statut": statut,
         "metadonnees": metadonnees or {},
@@ -253,6 +391,11 @@ def enregistrer_version(
     registre["versions"] = [v for v in registre["versions"] if v["version"] != version]
     registre["versions"].append(entree)
     if promouvoir:
+        if statut != "staging":
+            raise ValueError(
+                "Seule une version en staging peut être promue lors de son enregistrement."
+            )
+        _verifier_artefact(entree, racine)
         _basculer_production(registre, version)
     _ecrire_registre(registre, chemin_registre)
     return entree
@@ -271,9 +414,13 @@ def _basculer_production(registre: dict[str, Any], version: str) -> None:
 
 def promouvoir(version: str, chemin_registre: Path | str | None = None) -> dict[str, Any]:
     """Promeut une version en production."""
+    from predicare.ml.config import MODELS_ROOT
+
     registre = _charger_registre(chemin_registre)
-    if version not in {v["version"] for v in registre["versions"]}:
+    entree = next((v for v in registre["versions"] if v.get("version") == version), None)
+    if entree is None:
         raise KeyError(f"Version inconnue : {version}")
+    _verifier_artefact(entree, MODELS_ROOT)
     _basculer_production(registre, version)
     _ecrire_registre(registre, chemin_registre)
     return registre
@@ -283,14 +430,18 @@ def rollback(
     version: str | None = None, chemin_registre: Path | str | None = None
 ) -> dict[str, Any]:
     """Revient sur la version précédente en production."""
+    from predicare.ml.config import MODELS_ROOT
+
     registre = _charger_registre(chemin_registre)
     historique = registre.get("historique_production", [])
     if version is None:
         if len(historique) < 2:
             raise ValueError("Aucune version antérieure en production : rollback impossible.")
         version = historique[-2]
-    if version not in {v["version"] for v in registre["versions"]}:
+    entree = next((v for v in registre["versions"] if v.get("version") == version), None)
+    if entree is None:
         raise KeyError(f"Version inconnue : {version}")
+    _verifier_artefact(entree, MODELS_ROOT)
     _basculer_production(registre, version)
     _ecrire_registre(registre, chemin_registre)
     return registre

@@ -88,3 +88,11 @@ Le coût du projet est **dérisoire** (temps de dev), comparé aux **sanctions
 
 - docs/decisions.md
 - docs/rag_architecture.md
+
+## Semantic Caching (PB-37)
+
+- **Table** : `semantic_cache` (déjà en base).
+- **Mécanisme** : si une question identique a déjà été posée, la réponse est servie depuis la base.
+- **Bénéfice** : économie d'environ 500 tokens par requête répétée.
+- **Métrique exposée** : `GET /assistant/cache/stats`.
+- **Conformité FinOps** : taux de hit mesurable, coût LLM réduit.
