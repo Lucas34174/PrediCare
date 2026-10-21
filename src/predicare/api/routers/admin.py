@@ -6,16 +6,15 @@ import shutil
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import create_engine, text
 
 from predicare.api.deps import require_roles
 from predicare.core.config import (
     database_url,
-    fraud_score_threshold,
     model_version,
-    n8n_webhook_url,
 )
+from predicare.core.config_service import get_system_config, update_system_config
 from predicare.ml.baseline import MODELS_DIR
 from predicare.ml.config import MODELS_ROOT
 from predicare.ml.registry import lister_versions, promouvoir, rollback, version_production
@@ -39,29 +38,31 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Administration"])
 
-_CONFIG = AdminConfig(
-    fraud_score_threshold=fraud_score_threshold(),
-    n8n_webhook_url=n8n_webhook_url(),
-    semantic_cache_enabled=True,
-    semantic_cache_threshold=0.85,
-    updated_at=datetime.now(UTC),
-)
-
 
 @router.get("/config", response_model=AdminConfig)
-def get_config() -> AdminConfig:
-    """Paramètres opérationnels courants."""
-    return _CONFIG
+def get_config(
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+) -> AdminConfig:
+    """Paramètres opérationnels courants (réservé administrateur)."""
+    return get_system_config()
 
 
 @router.put("/config", response_model=AdminConfig)
-def update_config(body: AdminConfigUpdateRequest) -> AdminConfig:
-    """Mise à jour des paramètres à chaud."""
-    global _CONFIG
+def update_config(
+    body: AdminConfigUpdateRequest,
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+    request: Request,
+) -> AdminConfig:
+    """Mise à jour des paramètres à chaud (réservé administrateur)."""
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    updates["updated_at"] = datetime.now(UTC)
-    _CONFIG = _CONFIG.model_copy(update=updates)
-    return _CONFIG
+    ip_source = request.client.host if request.client else "127.0.0.1"
+    role_str = _admin.role.value if hasattr(_admin.role, "value") else str(_admin.role)
+    return update_system_config(
+        updates=updates,
+        user_id=_admin.id,
+        role=role_str,
+        ip_source=ip_source,
+    )
 
 
 @router.get("/models", response_model=AdminModelsResponse)
