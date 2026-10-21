@@ -1,5 +1,5 @@
 {
-  "active_version": "v1.0.0-xgb",
+  "active_version": "v0.9.0-baseline",
   "available_models": [
     {
       "version_id": "v1.0.0-xgb",
@@ -8,7 +8,7 @@
       "precision_test": 0.3333,
       "f1_score": 0.3077,
       "date_entrainement": "2026-10-19",
-      "statut": "ACTIVE"
+      "statut": "STANDBY"
     },
     {
       "version_id": "v0.9.0-baseline",
@@ -17,7 +17,7 @@
       "precision_test": 0.6,
       "f1_score": 0.5,
       "date_entrainement": "2026-10-19",
-      "statut": "STANDBY"
+      "statut": "ACTIVE"
     },
     {
       "version_id": "v1.1.0-xgb",

@@ -84,9 +84,10 @@ class ReactAgent:
             # On utilise la question originale !
             results = self._retriever.search(question, top_k=3)
             bons = [
-                r for r in results 
-                if (r.score_vector or 0) >= SEUIL_ABSTENTION 
-                or (r.score_fulltext or 0) > 0.001 
+                r
+                for r in results
+                if (r.score_vector or 0) >= SEUIL_ABSTENTION
+                or (r.score_fulltext or 0) > 0.001
                 or (r.score_rrf or 0) > 0.001
             ]
 

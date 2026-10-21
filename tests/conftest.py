@@ -11,7 +11,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
-from predicare.api.routers.claims import _SUBMITTED_CLAIMS, _PERSISTED_PREDICTIONS
+from predicare.api.routers.claims import _PERSISTED_PREDICTIONS, _SUBMITTED_CLAIMS
 from predicare.api.schemas import (
     ClaimDetail,
     LigneFacture,
@@ -111,7 +111,7 @@ _MOCK_USERS: dict[str, dict] = {
 @pytest.fixture(autouse=True)
 def seed_submitted_claims():
     """Injecte les factures de référence et leurs prédictions dans les dicts en mémoire."""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
 
     _SUBMITTED_CLAIMS["FAC-00005637"] = _MOCK_CLAIM
     _SUBMITTED_CLAIMS["FAC-00084700"] = _MOCK_CLAIM.model_copy(

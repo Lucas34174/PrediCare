@@ -56,6 +56,7 @@ def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
             if role == "assure" and assure_id:
                 try:
                     from predicare.core.pii import decrypt_identity, get_pii_key
+
                     pii = decrypt_identity(conn, assure_id, get_pii_key())
                     if pii and (pii.get("nom") or pii.get("prenoms")):
                         prenoms = pii.get("prenoms") or ""
@@ -63,7 +64,10 @@ def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
                         nom_complet = f"{prenoms} {nom}".strip()
                 except Exception as exc:  # noqa: BLE001
                     import logging
-                    logging.getLogger(__name__).warning("Impossible de déchiffrer PII pour %s : %s", assure_id, exc)
+
+                    logging.getLogger(__name__).warning(
+                        "Impossible de déchiffrer PII pour %s : %s", assure_id, exc
+                    )
 
             elif role == "professionnel_sante" and prestataire_id:
                 prest = (
@@ -87,7 +91,10 @@ def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
 
     except SQLAlchemyError as exc:
         import logging
-        logging.getLogger(__name__).warning("DB inaccessible dans find_user_by_identifier : %s", exc)
+
+        logging.getLogger(__name__).warning(
+            "DB inaccessible dans find_user_by_identifier : %s", exc
+        )
 
     return None
 

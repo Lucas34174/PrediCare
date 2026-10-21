@@ -3,6 +3,7 @@
 import json
 import logging
 import math
+
 from sqlalchemy import text
 
 from predicare.api.deps import _db_engine
@@ -54,7 +55,9 @@ def precalculer(limite: int = 50) -> int:
             clean_top_facteurs = [
                 {
                     "feature": f["feature"],
-                    "valeur": None if (isinstance(f.get("valeur"), float) and math.isnan(f["valeur"])) else f.get("valeur"),
+                    "valeur": None
+                    if (isinstance(f.get("valeur"), float) and math.isnan(f["valeur"]))
+                    else f.get("valeur"),
                     "impact_shap": float(f["impact_shap"]),
                     "description": f["description"],
                 }

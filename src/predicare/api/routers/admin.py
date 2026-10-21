@@ -2,10 +2,8 @@
 
 import json
 import logging
-import os
 import shutil
-from datetime import UTC, date, datetime
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
@@ -71,7 +69,9 @@ def list_models() -> AdminModelsResponse:
             if _ACTIVE_MODEL_VERSION is not None:
                 data["active_version"] = _ACTIVE_MODEL_VERSION
                 for m in data.get("available_models", []):
-                    m["statut"] = "ACTIVE" if m["version_id"] == _ACTIVE_MODEL_VERSION else "STANDBY"
+                    m["statut"] = (
+                        "ACTIVE" if m["version_id"] == _ACTIVE_MODEL_VERSION else "STANDBY"
+                    )
             else:
                 _ACTIVE_MODEL_VERSION = data.get("active_version", "v1.0.0-xgb")
             return AdminModelsResponse(**data)
@@ -145,7 +145,9 @@ def activate_model(version_id: str) -> ModelActivateResponse:
             models_data["active_version"] = version_id
             for m in models_data.get("available_models", []):
                 m["statut"] = "ACTIVE" if m["version_id"] == version_id else "STANDBY"
-            metadata_file.write_text(json.dumps(models_data, indent=2, ensure_ascii=False), encoding="utf-8")
+            metadata_file.write_text(
+                json.dumps(models_data, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
         except Exception as exc:
             logger.warning("Échec mise à jour models_metadata.json : %s", exc)
 

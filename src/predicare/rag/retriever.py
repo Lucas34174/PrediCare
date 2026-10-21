@@ -191,12 +191,33 @@ class Retriever:
             rows = conn.execute(sql, params).fetchall()
             if not rows:
                 import re
+
                 mots_ignores = {
-                    "combien", "coute", "coûte", "prix", "quel", "quelle",
-                    "quels", "quelles", "qui", "comment", "pourquoi", "quand", "est", "sont",
-                    "une", "des", "pour", "dans", "avec"
+                    "combien",
+                    "coute",
+                    "coûte",
+                    "prix",
+                    "quel",
+                    "quelle",
+                    "quels",
+                    "quelles",
+                    "qui",
+                    "comment",
+                    "pourquoi",
+                    "quand",
+                    "est",
+                    "sont",
+                    "une",
+                    "des",
+                    "pour",
+                    "dans",
+                    "avec",
                 }
-                mots = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 2 and w not in mots_ignores]
+                mots = [
+                    w
+                    for w in re.findall(r"\w+", query.lower())
+                    if len(w) > 2 and w not in mots_ignores
+                ]
                 if mots:
                     params_clean = dict(params)
                     params_clean["query"] = " | ".join(mots)

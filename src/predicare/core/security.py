@@ -10,7 +10,9 @@ import bcrypt
 import jwt
 
 ALGORITHM = "HS256"
-DEFAULT_EXPIRE_SECONDS = 7 * 24 * 3600  # 7 jours (évite l'expiration de session en session de travail)
+DEFAULT_EXPIRE_SECONDS = (
+    7 * 24 * 3600
+)  # 7 jours (évite l'expiration de session en session de travail)
 
 
 def get_jwt_secret() -> str:
