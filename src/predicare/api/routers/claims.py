@@ -5,8 +5,8 @@ import logging
 import math
 import uuid
 from datetime import UTC, date, datetime
-from typing import Annotated
-from typing import Any
+from typing import Annotated, Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 
@@ -393,19 +393,25 @@ def list_claims(
                 if current_user:
                     if current_user.role == Role.ASSURE:
                         if not current_user.assure_id:
-                            return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+                            return ClaimsListResponse(
+                                total=0, page=page, page_size=page_size, items=[]
+                            )
                         conditions.append("f.assure_id = :assure_id")
                         params["assure_id"] = current_user.assure_id
 
                     elif current_user.role == Role.PROFESSIONNEL_SANTE:
                         if not current_user.prestataire_id:
-                            return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+                            return ClaimsListResponse(
+                                total=0, page=page, page_size=page_size, items=[]
+                            )
                         conditions.append("f.prestataire_id = :prestataire_id")
                         params["prestataire_id"] = current_user.prestataire_id
 
                 # Recherche libre par ID ou numéro
                 if q and q.strip():
-                    conditions.append("(f.facture_id ILIKE :q OR f.numero_facture ILIKE :q OR f.assure_id ILIKE :q)")
+                    conditions.append(
+                        "(f.facture_id ILIKE :q OR f.numero_facture ILIKE :q OR f.assure_id ILIKE :q)"
+                    )
                     params["q"] = f"%{q.strip()}%"
 
                 # Filtre par statut
@@ -551,17 +557,21 @@ def get_couverture_assure(
     try:
         engine = _db_engine()
         with engine.connect() as conn:
-            row = conn.execute(
-                text(
-                    """
+            row = (
+                conn.execute(
+                    text(
+                        """
                     SELECT a.assure_id, a.contrat_id, c.formule, c.statut AS statut_contrat
                     FROM assures a
                     JOIN contrats c ON c.contrat_id = a.contrat_id
                     WHERE a.assure_id = :aid
                     """
-                ),
-                {"aid": assure_id},
-            ).mappings().first()
+                    ),
+                    {"aid": assure_id},
+                )
+                .mappings()
+                .first()
+            )
 
             if not row:
                 raise HTTPException(
@@ -571,18 +581,22 @@ def get_couverture_assure(
 
             formule = row["formule"]
 
-            garanties_rows = conn.execute(
-                text(
-                    """
+            garanties_rows = (
+                conn.execute(
+                    text(
+                        """
                     SELECT categorie, taux_remboursement, franchise_par_facture,
                            plafond_annuel_categorie, attestation_requise
                     FROM garanties
                     WHERE formule = :formule
                     ORDER BY categorie
                     """
-                ),
-                {"formule": formule},
-            ).mappings().all()
+                    ),
+                    {"formule": formule},
+                )
+                .mappings()
+                .all()
+            )
 
             taux_consultation = 80
             franchise_defaut = 0
@@ -806,7 +820,7 @@ def _prediction_repli(facture_id: str) -> PredictionResponse:
             seuil_applique=0.80,
             est_anomalie=False,
             version_modele="indisponible",
-            date_prediction=_NOW,
+            date_prediction=datetime.now(UTC),
         ),
         explicabilite=ExplicabiliteInfo(
             top_facteurs=[
@@ -886,37 +900,7 @@ def get_prediction(
                 ),
             )
 
-    # 5. Si facture de référence connue (ex: FAC-00005637), calcul dynamique
-    if facture_id in _KNOWN_CLAIM_IDS:
-        resultat = _predire(facture_id, budget=budget)
-        if resultat is None:
-            return _prediction_repli(facture_id)
-
-        top_facteurs = [
-            ShapFactor(
-                feature=f["feature"],
-                valeur=f["valeur"] if isinstance(f["valeur"], (int, float, str)) else 0.0,
-                impact_shap=float(f["impact_shap"]),
-                description=f["description"],
-            )
-            for f in resultat["explicabilite"]["top_facteurs"]
-        ]
-        return PredictionResponse(
-            facture_id=facture_id,
-            prediction=PredictionInfo(
-                score_fraude=resultat["prediction"]["score_fraude"],
-                seuil_applique=resultat["prediction"]["seuil_applique"],
-                est_anomalie=resultat["prediction"]["est_anomalie"],
-                version_modele=resultat["prediction"]["version_modele"],
-                date_prediction=datetime.now(UTC),
-            ),
-            explicabilite=ExplicabiliteInfo(
-                top_facteurs=top_facteurs,
-                recommandation=resultat["explicabilite"]["recommandation"],
-            ),
-        )
-
-    # 6. Si la facture existe en base, calcul dynamique par le modèle champion et persistance
+    # 5. Si la facture existe en base, calcul dynamique par le modèle champion et persistance
     try:
         facture_db = _get_claim_db(facture_id)
         if facture_db is not None:
@@ -945,7 +929,9 @@ def get_prediction(
             clean_top_facteurs = [
                 {
                     "feature": f["feature"],
-                    "valeur": None if (isinstance(f.get("valeur"), float) and math.isnan(f["valeur"])) else f.get("valeur"),
+                    "valeur": None
+                    if (isinstance(f.get("valeur"), float) and math.isnan(f["valeur"]))
+                    else f.get("valeur"),
                     "impact_shap": float(f["impact_shap"]),
                     "description": f["description"],
                 }
@@ -985,7 +971,9 @@ def get_prediction(
                                 },
                             )
             except Exception as e_db:
-                logger.warning("Échec persistance prédiction dynamique pour %s : %s", facture_id, e_db)
+                logger.warning(
+                    "Échec persistance prédiction dynamique pour %s : %s", facture_id, e_db
+                )
 
             shap_factors = [
                 ShapFactor(
@@ -1031,7 +1019,7 @@ def post_decision(
     current_user: Annotated[UserInfo, Depends(get_optional_user)] = None,
 ) -> DecisionResponse:
     """Arbitrage gestionnaire avec persistance atomique."""
-    claim = _get_or_404(facture_id)
+    _get_or_404(facture_id)
     statut_map = {
         DecisionValeur.VALIDE: StatutFacture.PAYEE,
         DecisionValeur.REJETE: StatutFacture.REJETEE,
@@ -1047,7 +1035,9 @@ def post_decision(
         if engine is not None:
             with engine.begin() as conn:
                 pred_id = conn.execute(
-                    text("SELECT id FROM predictions WHERE facture_id = :fid ORDER BY date_prediction DESC LIMIT 1"),
+                    text(
+                        "SELECT id FROM predictions WHERE facture_id = :fid ORDER BY date_prediction DESC LIMIT 1"
+                    ),
                     {"fid": facture_id},
                 ).scalar()
 
@@ -1077,11 +1067,13 @@ def post_decision(
                     {
                         "gid": gestionnaire_id,
                         "fid": facture_id,
-                        "details": json.dumps({
-                            "decision": body.decision.value,
-                            "motif": body.motif,
-                            "montant_final_accorde": body.montant_accorde,
-                        }),
+                        "details": json.dumps(
+                            {
+                                "decision": body.decision.value,
+                                "motif": body.motif,
+                                "montant_final_accorde": body.montant_accorde,
+                            }
+                        ),
                         "dt": now,
                     },
                 )
