@@ -7,6 +7,9 @@ import uuid
 from datetime import date
 from unittest.mock import patch
 
+os.environ.setdefault("JWT_SECRET", "test_jwt_secret_32_caracteres_min_obligatoire_pour_hs256")
+os.environ.setdefault("PII_ENCRYPTION_KEY", "change_me_pii_key_0123456789abcdef")
+
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError

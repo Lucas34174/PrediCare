@@ -7,6 +7,26 @@ from sqlalchemy.engine import URL
 DEFAULT_FRAUD_THRESHOLD = 0.30
 
 
+class ConfigurationError(RuntimeError):
+    """Erreur de configuration ou secret requis manquant."""
+
+
+def validate_required_secrets() -> None:
+    """Vérifie la présence des secrets obligatoires dans l'environnement.
+
+    Lève ConfigurationError si un secret obligatoire est manquant,
+    sans jamais afficher de valeur secrète.
+    """
+    manquants = []
+    if not os.environ.get("JWT_SECRET"):
+        manquants.append("JWT_SECRET")
+    if not os.environ.get("PII_ENCRYPTION_KEY"):
+        manquants.append("PII_ENCRYPTION_KEY")
+    if manquants:
+        noms = ", ".join(manquants)
+        raise ConfigurationError(f"Variables d'environnement obligatoires manquantes : {noms}")
+
+
 def database_url() -> URL:
     """URL de connexion PostgreSQL (driver psycopg 3).
 
@@ -24,11 +44,13 @@ def database_url() -> URL:
 
 
 def fraud_score_threshold() -> float:
-    """Seuil d'alerte de fraude lu dynamiquement depuis l'environnement (défaut 0.30)."""
-    valeur = os.environ.get("FRAUD_SCORE_THRESHOLD")
+    """Seuil d'alerte de fraude lu depuis l'environnement (supporte ALERT_THRESHOLD et FRAUD_SCORE_THRESHOLD)."""
+    valeur = os.environ.get("ALERT_THRESHOLD") or os.environ.get("FRAUD_SCORE_THRESHOLD")
     if valeur is not None:
         try:
-            return float(valeur)
+            f = float(valeur)
+            if 0.0 <= f <= 1.0:
+                return f
         except ValueError:
             pass
     return DEFAULT_FRAUD_THRESHOLD
