@@ -34,6 +34,7 @@ export function ManagerQueuePage() {
   const [search, setSearch] = useState('')
   const [signal, setSignal] = useState<SignalFilter>('alert')
   const [decision, setDecision] = useState<DecisionFilter>('all')
+  const [sortBy, setSortBy] = useState<'score' | 'date'>('score')
   const debouncedSearch = useDebouncedValue(search)
   const navigate = useNavigate()
 
@@ -41,14 +42,12 @@ export function ManagerQueuePage() {
     () => ({
       page,
       page_size: PAGE_SIZE,
-      // À brancher: tri et filtres propres à la file d'examen, à confirmer avec M2.
-      // Le contrat ne connaît que `fraud_alert_only` ; `q` et `decision_enregistree` sont simulés.
-      sort: SORT_BY_SCORE_DESC,
+      sort: sortBy === 'score' ? SORT_BY_SCORE_DESC : undefined,
       fraud_alert_only: signal === 'alert' ? true : undefined,
       q: debouncedSearch.trim() || undefined,
       decision_enregistree: decision === 'all' ? undefined : decision === 'decided',
     }),
-    [page, signal, debouncedSearch, decision],
+    [page, signal, debouncedSearch, decision, sortBy],
   )
 
   const { data, error, isPending, isFetching, isError, refetch } = useQuery({
@@ -58,12 +57,24 @@ export function ManagerQueuePage() {
   })
 
   const items = data?.items ?? []
-  const filtersActive = Boolean(search.trim()) || signal !== 'alert' || decision !== 'all'
-  const openClaim = (factureId: string) => navigate(`/gestionnaire/dossiers/${encodeURIComponent(factureId)}`)
+  const filtersActive =
+    Boolean(search.trim()) ||
+    signal !== 'alert' ||
+    decision !== 'all' ||
+    sortBy !== 'score'
+  const openClaim = (factureId: string) =>
+    navigate(`/gestionnaire/dossiers/${encodeURIComponent(factureId)}`)
 
   function changeFilter(update: () => void) {
     update()
     setPage(1)
+  }
+
+  function handleSignalChange(newSignal: SignalFilter) {
+    changeFilter(() => {
+      setSignal(newSignal)
+      setSortBy(newSignal === 'all' ? 'date' : 'score')
+    })
   }
 
   function resetFilters() {
@@ -71,6 +82,7 @@ export function ManagerQueuePage() {
       setSearch('')
       setSignal('alert')
       setDecision('all')
+      setSortBy('score')
     })
   }
 
@@ -80,7 +92,7 @@ export function ManagerQueuePage() {
     if (window.getSelection()?.toString()) return
     openClaim(factureId)
   }
-
+      
   return (
     <div className="queue-page">
       <header className="page-heading">
@@ -112,10 +124,21 @@ export function ManagerQueuePage() {
           <select
             id="queue-signal"
             value={signal}
-            onChange={(event) => changeFilter(() => setSignal(event.target.value as SignalFilter))}
+            onChange={(event) => handleSignalChange(event.target.value as SignalFilter)}
           >
             <option value="alert">Signal à examiner</option>
             <option value="all">Tous les dossiers</option>
+          </select>
+        </div>
+        <div className="queue-field">
+          <label htmlFor="queue-sort">Tri</label>
+          <select
+            id="queue-sort"
+            value={sortBy}
+            onChange={(event) => changeFilter(() => setSortBy(event.target.value as 'score' | 'date'))}
+          >
+            <option value="score">Score de risque (décroissant)</option>
+            <option value="date">Date de soumission (plus récentes)</option>
           </select>
         </div>
         <div className="queue-field">
@@ -173,7 +196,7 @@ export function ManagerQueuePage() {
                   <th scope="col">Facture</th>
                   <th scope="col" className="queue-col-secondary">Assuré</th>
                   <th scope="col" className="queue-col-secondary">Prestataire</th>
-                  <th scope="col" className="queue-col-secondary">Date de soin</th>
+                  <th scope="col" className="queue-col-secondary">Date de soumission</th>
                   <th scope="col" className="queue-amount">Montant total</th>
                   <th scope="col">Statut</th>
                   <th scope="col">Signal</th>
@@ -192,7 +215,9 @@ export function ManagerQueuePage() {
                     </th>
                     <td className="queue-col-secondary">{item.assure_id}</td>
                     <td className="queue-col-secondary">{item.prestataire_id}</td>
-                    <td className="queue-col-secondary queue-date">{item.date_soin}</td>
+                    <td className="queue-col-secondary queue-date">
+                      {item.date_reception || item.date_soin}
+                    </td>
                     <td className="queue-amount"><Money amount={item.montant_total} /></td>
                     <td><StatusBadge status={item.statut} /></td>
                     <td>

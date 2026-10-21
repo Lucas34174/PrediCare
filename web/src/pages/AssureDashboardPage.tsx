@@ -44,7 +44,7 @@ export function AssureDashboardPage() {
               <thead>
                 <tr>
                   <th>Facture</th>
-                  <th className="queue-col-secondary">Date de soin</th>
+                  <th className="queue-col-secondary">Date de soumission</th>
                   <th className="queue-amount">Montant total</th>
                   <th className="queue-amount">Part assuré</th>
                   <th>Statut</th>
@@ -58,7 +58,9 @@ export function AssureDashboardPage() {
                       <Link to={`/assure/dossiers/${item.facture_id}`}>{item.facture_id}</Link>
                       <small>{item.numero_facture}</small>
                     </th>
-                    <td className="queue-col-secondary queue-date">{item.date_soin}</td>
+                    <td className="queue-col-secondary queue-date">
+                      {item.date_reception || item.date_soin}
+                    </td>
                     <td className="queue-amount"><Money amount={item.montant_total} /></td>
                     <td className="queue-amount"><Money amount={item.part_assure} /></td>
                     <td><StatusBadge status={item.statut} /></td>

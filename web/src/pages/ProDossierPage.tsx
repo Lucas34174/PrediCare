@@ -56,7 +56,7 @@ export function ProDossierListPage() {
               <thead>
                 <tr>
                   <th>Facture</th>
-                  <th className="queue-col-secondary">Date de soin</th>
+                  <th className="queue-col-secondary">Date de soumission</th>
                   <th className="queue-col-secondary">Assuré</th>
                   <th className="queue-amount">Montant total</th>
                   <th className="queue-amount">Montant demandé</th>
@@ -73,7 +73,9 @@ export function ProDossierListPage() {
                       </Link>
                       <small>{item.numero_facture}</small>
                     </th>
-                    <td className="queue-col-secondary queue-date">{item.date_soin}</td>
+                    <td className="queue-col-secondary queue-date">
+                      {item.date_reception || item.date_soin}
+                    </td>
                     <td className="queue-col-secondary">
                       <code style={{ fontSize: '0.75rem' }}>{item.assure_id}</code>
                     </td>
