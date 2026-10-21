@@ -172,12 +172,11 @@ def require_roles(allowed_roles: Sequence[Role]):
 
 def get_optional_user(
     authorization: Annotated[str | None, Header()] = None,
-) -> UserInfo:
-    """Valide le token JWT Bearer et renvoie l'utilisateur connecté (401 si absent)."""
+) -> UserInfo | None:
+    """Valide le token JWT Bearer s'il est présent et valide, sinon renvoie None sans bloquer la requête."""
     if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token manquant ou invalide.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return get_current_user(authorization)
+        return None
+    try:
+        return get_current_user(authorization)
+    except HTTPException:
+        return None
