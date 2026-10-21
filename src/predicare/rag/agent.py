@@ -11,7 +11,6 @@ import httpx
 from sqlalchemy import Engine
 
 from predicare.rag.config import RagConfig
-from predicare.rag.prompts import SYSTEM_PROMPT
 from predicare.rag.retriever import Retriever
 from predicare.rag.tools import Tools
 
@@ -60,7 +59,9 @@ class ReactAgent:
         if q_lower.strip() in ["bonjour", "salut", "hello", "bonsoir", "voucou", "coucou"]:
             return AgentResult(
                 answer="Bonjour ! Je suis l'assistant PrediCare. Posez-moi une question sur vos garanties ou le barème.",
-                abstention=False, sources=[], steps=[]
+                abstention=False,
+                sources=[],
+                steps=[],
             )
 
         # 1. ROUTAGE SQL (Factures)
@@ -124,24 +125,38 @@ class ReactAgent:
 
     def _generate_answer(self, question: str, contexte: str) -> str:
         import re
-        
+
         # 1. On nettoie le contexte (enlever les crochets [Barème | ...])
         contexte_propre = re.sub(r"\[.*?\]", "", contexte).strip()
-        
+
         # 2. On isole le PREMIER document (le plus pertinent) pour ne pas mélanger les infos
         documents = contexte_propre.split("\n\n")
         premier_doc = documents[0] if documents else contexte_propre
         lignes = [l.strip() for l in premier_doc.split("\n") if l.strip()]
-        
+
         infos_cles = []
         for l in lignes:
-            if any(k in l for k in ["Tarif", "Contact", "Horaires", "Prestataire", "Adresse", "Exclu", "pris en charge", "taux", "Libellé", "Plafond"]):
+            if any(
+                k in l
+                for k in [
+                    "Tarif",
+                    "Contact",
+                    "Horaires",
+                    "Prestataire",
+                    "Adresse",
+                    "Exclu",
+                    "pris en charge",
+                    "taux",
+                    "Libellé",
+                    "Plafond",
+                ]
+            ):
                 infos_cles.append(l)
-        
+
         if not infos_cles and lignes:
             infos_cles = [lignes[0]]
 
-        resume = "\n- ".join(infos_cles[:4]) # Max 4 lignes propres
+        resume = "\n- ".join(infos_cles[:4])  # Max 4 lignes propres
 
         # 3. Le prompt pour le LLM
         prompt = (
@@ -150,12 +165,17 @@ class ReactAgent:
             f"Question de l'assuré : {question}\n\n"
             f"Rédige une réponse polie, claire et concise (1 ou 3 phrases) en te basant STRICTEMENT sur ces informations."
         )
-        
+
         try:
             response = self._client.post(
                 "/api/generate",
-                json={"model": self._llm_model, "prompt": prompt, "stream": False, "options": {"temperature": 0.1, "num_predict": 150}},
-                timeout=150.0 # On laisse 15 secondes au LLM
+                json={
+                    "model": self._llm_model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"temperature": 0.1, "num_predict": 150},
+                },
+                timeout=150.0,  # On laisse 15 secondes au LLM
             )
             response.raise_for_status()
             ans = response.json().get("response", "").strip()
