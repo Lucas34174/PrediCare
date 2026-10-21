@@ -629,12 +629,24 @@ def get_claim(
     facture_id: str,
     current_user: Annotated[UserInfo, Depends(get_optional_user)],
 ) -> ClaimDetail:
-    """Détail d'une facture. Un assuré ne peut voir que ses propres factures."""
+    """Détail d'une facture.
+    - Un assuré ne peut voir que ses propres factures.
+    - Un professionnel de santé ne peut voir que les factures de son établissement.
+    """
     claim = _get_or_404(facture_id)
     if current_user.role == Role.ASSURE and current_user.assure_id != claim.assure_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès refusé : vous n'êtes pas le titulaire de cette facture.",
+        )
+    if (
+        current_user.role == Role.PROFESSIONNEL_SANTE
+        and current_user.prestataire_id
+        and current_user.prestataire_id != claim.prestataire_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès refusé : cette facture n'appartient pas à votre établissement.",
         )
     return claim
 

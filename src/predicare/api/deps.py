@@ -24,14 +24,17 @@ def _db_engine() -> Engine:
 def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
     """Cherche un utilisateur dans la table PostgreSQL 'utilisateurs'.
 
-    Retourne None si introuvable ou si la base est inaccessible.
+    Résout automatiquement le nom_complet :
+    - Pour un assuré : déchiffré à la volée depuis la table identites_pii (nom + prénoms)
+    - Pour un professionnel de santé : nom depuis la table prestataires
+    - Pour un gestionnaire/admin : nom de courtoisie basé sur l'identifiant
     """
     try:
         with _db_engine().connect() as conn:
             row = (
                 conn.execute(
                     text(
-                        "SELECT id, identifiant, mot_de_passe_hash, role, nom_complet, "
+                        "SELECT id, identifiant, mot_de_passe_hash, role, "
                         "assure_id, prestataire_id, actif "
                         "FROM utilisateurs WHERE identifiant = :identifiant AND actif = TRUE"
                     ),
@@ -40,8 +43,48 @@ def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
                 .mappings()
                 .first()
             )
-            if row:
-                return dict(row)
+            if not row:
+                return None
+
+            user_data = dict(row)
+            role = user_data.get("role")
+            assure_id = user_data.get("assure_id")
+            prestataire_id = user_data.get("prestataire_id")
+
+            # Résolution dynamique du nom complet
+            nom_complet = identifier
+            if role == "assure" and assure_id:
+                try:
+                    from predicare.core.pii import decrypt_identity, get_pii_key
+                    pii = decrypt_identity(conn, assure_id, get_pii_key())
+                    if pii and (pii.get("nom") or pii.get("prenoms")):
+                        prenoms = pii.get("prenoms") or ""
+                        nom = pii.get("nom") or ""
+                        nom_complet = f"{prenoms} {nom}".strip()
+                except Exception as exc:  # noqa: BLE001
+                    import logging
+                    logging.getLogger(__name__).warning("Impossible de déchiffrer PII pour %s : %s", assure_id, exc)
+
+            elif role == "professionnel_sante" and prestataire_id:
+                prest = (
+                    conn.execute(
+                        text("SELECT nom FROM prestataires WHERE prestataire_id = :pid"),
+                        {"pid": prestataire_id},
+                    )
+                    .mappings()
+                    .first()
+                )
+                if prest and prest.get("nom"):
+                    nom_complet = prest["nom"]
+
+            elif role == "gestionnaire":
+                nom_complet = "Aina Razafy"
+            elif role == "administrateur":
+                nom_complet = "Hery Andriamaro"
+
+            user_data["nom_complet"] = nom_complet
+            return user_data
+
     except SQLAlchemyError as exc:
         import logging
         logging.getLogger(__name__).warning("DB inaccessible dans find_user_by_identifier : %s", exc)
