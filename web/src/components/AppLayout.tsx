@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Link, LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react'
+import { LogOut, Menu, Moon, ShieldCheck, Sun, X } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
 import { roleLabels, roleMenus } from './navigation'
-import { navigationItems } from '@/components/navigation';
 
 interface AppLayoutProps {
   dark: boolean
@@ -14,18 +13,6 @@ export function AppLayout({ dark, onToggleTheme }: AppLayoutProps) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  // {navigationItems.map((item) => {
-  // if (!item.roles.includes(user.role)) return null;
-
-  // const Icon = item.icon; // On récupère le composant de l'icône
-
-  // return (
-  //   <Link key={item.path} to={item.path} className="nav-link">
-  //     {Icon && <Icon size={18} className="mr-2" />} {/* Affichage de l'icône */}
-  //     <span>{item.label}</span>
-  //   </Link>
-  // );
-  // })}
   if (!user) return null
 
   return (
