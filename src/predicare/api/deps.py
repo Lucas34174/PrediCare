@@ -48,7 +48,7 @@ _DEMO_USERS: dict[str, dict[str, Any]] = {
         "id": "USR-0050",
         "identifier": "pro1",
         "role": Role.PROFESSIONNEL_SANTE,
-        "nom_complet": "Dr. Solo Rakotondrabe",
+        "nom_complet": "Pharmacie Voninkazo Tanjombato",
         "mot_de_passe_hash": hash_password("pro123"),
         "assure_id": None,
         "prestataire_id": "PRE-00050",
