@@ -18,8 +18,8 @@ export function validateClaimDraft(draft: ClaimDraft, profile: 'gestionnaire' | 
   for (const field of fields) {
     if (!draft[field].trim()) errors[field] = ['Ce champ est obligatoire.']
   }
-  if (draft.assure_id && !/^ASS-[A-Z0-9]{10}$/.test(draft.assure_id)) {
-    errors.assure_id = ['Utilisez un identifiant pseudonyme au format ASS-XXXXXXXXXX.']
+  if (draft.assure_id && !/^ASS-[A-Z0-9]{4,12}$/i.test(draft.assure_id)) {
+    errors.assure_id = ['Utilisez un identifiant pseudonyme au format ASS-XXXXX...']
   }
   if (draft.date_soin && draft.date_emission && draft.date_soin > draft.date_emission) {
     errors.date_emission = ['La date d’émission doit être égale ou postérieure à la date de soin.']

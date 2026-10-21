@@ -59,9 +59,13 @@ const RE_MODE = /Mode\s*(TIERS_PAYANT|REMBOURSEMENT_ASSURE)/i
 const RE_TOTAL = /TOTAL\s*([\d\s]+)\s*Ar/i
 
 // Ligne de facture : CODE DESIGNATION QTÉ P.U. MONTANT
-// Ex: "LAB-DFS Numération formule sanguine 1 11 500 Ar 11 500 Ar"
+// Format multiligne (PDF layout) : Code, Désignation, Qté, P.U., Montant
+const RE_LIGNE_TABLE =
+  /([A-Z]{3,4}-[A-Z0-9]+)\s*\n\s*(.+?)\s*\n\s*(\d+)\s*\n\s*([\d\s]+)\s*Ar\s*\n\s*([\d\s]+)\s*Ar/g
+
+// Format en ligne
 const RE_LIGNE_FACTURE =
-  /([A-Z]{3}-[A-Z0-9]+)\s+(.+?)\s+(\d+)\s+([\d\s]+)\s*Ar\s+([\d\s]+)\s*Ar/g
+  /([A-Z]{3,4}-[A-Z0-9]+)\s+(.+?)\s+(\d+)\s+([\d\s]+)\s*Ar\s+([\d\s]+)\s*Ar/g
 
 // Ligne ordonnance : "1. Produit – Qté : N" puis "posologie" sur la ligne suivante
 const RE_LIGNE_ORDONNANCE =
@@ -97,8 +101,27 @@ export function parseFacture(rawText: string): ParsedFacture {
 
   const montant_total = toInt(text.match(RE_TOTAL)?.[1] ?? '0')
 
+  // Découpage de la zone du tableau (entre Montant/Code et TOTAL) pour éviter de capturer l'en-tête
+  let tableText = rawText
+  const mMatch = rawText.match(/Montant\s*\n/i)
+  if (mMatch && mMatch.index !== undefined) {
+    tableText = rawText.slice(mMatch.index + mMatch[0].length)
+  } else {
+    const cMatch = rawText.match(/Code\s*\n/i)
+    if (cMatch && cMatch.index !== undefined) {
+      tableText = rawText.slice(cMatch.index + cMatch[0].length)
+    }
+  }
+
+  const tMatch = tableText.match(/TOTAL\s*[\d\s]+Ar/i)
+  if (tMatch && tMatch.index !== undefined) {
+    tableText = tableText.slice(0, tMatch.index)
+  }
+
   const lignes: ParsedFacture['lignes'] = []
-  for (const m of rawText.matchAll(RE_LIGNE_FACTURE)) {
+
+  // 1. Format multiligne standard des factures PDF PrediCare
+  for (const m of tableText.matchAll(RE_LIGNE_TABLE)) {
     lignes.push({
       code: m[1].trim(),
       designation: m[2].trim(),
@@ -107,6 +130,33 @@ export function parseFacture(rawText: string): ParsedFacture {
       montant: toInt(m[5]),
     })
   }
+
+  // 2. Format en ligne si non trouvé en multiligne
+  if (!lignes.length) {
+    for (const m of tableText.matchAll(RE_LIGNE_FACTURE)) {
+      lignes.push({
+        code: m[1].trim(),
+        designation: m[2].trim(),
+        quantite: Number(m[3]),
+        prix_unitaire: toInt(m[4]),
+        montant: toInt(m[5]),
+      })
+    }
+  }
+
+  // 3. Fallback sur le texte brut complet
+  if (!lignes.length) {
+    for (const m of rawText.matchAll(RE_LIGNE_FACTURE)) {
+      lignes.push({
+        code: m[1].trim(),
+        designation: m[2].trim(),
+        quantite: Number(m[3]),
+        prix_unitaire: toInt(m[4]),
+        montant: toInt(m[5]),
+      })
+    }
+  }
+
   if (!lignes.length) warnings.push('Aucune ligne de facture détectée.')
 
   return {

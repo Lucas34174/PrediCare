@@ -70,3 +70,25 @@ export interface ManagerClaimsPage {
   page_size: number
   items: ManagerClaimListItem[]
 }
+
+export interface AssureCoverage {
+  assure_id: string
+  contrat_id: string
+  formule: 'ESSENTIEL' | 'CONFORT' | 'PREMIUM' | string
+  statut_contrat: string
+  taux_remboursement: number
+  taux_prise_en_charge: number
+  taux_part_assure: number
+  franchise: number
+  nom_patient?: string | null
+  garanties: Record<string, {
+    taux_remboursement: number
+    franchise: number
+    plafond: number
+    attestation_requise: boolean
+  }>
+}
+
+export function getAssureCoverage(assureId: string): Promise<AssureCoverage> {
+  return request<AssureCoverage>(`/claims/couverture/${encodeURIComponent(assureId)}`)
+}

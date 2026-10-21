@@ -1,8 +1,8 @@
 // web/src/features/claims/ClaimForm.tsx
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Plus, ReceiptText, ShieldCheck, Trash2 } from 'lucide-react'
-import { createClaim } from '@/api/claims'
+import { createClaim, getAssureCoverage, type AssureCoverage } from '@/api/claims'
 import {
   type ClaimCreateRequest,
   type ClaimDraft,
@@ -138,34 +138,87 @@ export function ClaimForm({ profile, providerId }: ClaimFormProps) {
     setSummary('')
   }
 
-  // web/src/features/claims/ClaimForm.tsx
-// ... imports existants
+  const [coverage, setCoverage] = useState<AssureCoverage | null>(null)
+  const [loadingCoverage, setLoadingCoverage] = useState(false)
 
-// Simule la récupération de la formule (à remplacer par un appel API plus tard)
-function getFormuleFromAssure(assureId: string): 'ESSENTIEL' | 'CONFORT' | 'PREMIUM' {
-  // Règle fictive pour la démo : on alterne selon la fin de l'ID
-  if (!assureId) return 'ESSENTIEL'
-  const lastChar = assureId.slice(-1)
-  if (['1', '4', '7'].includes(lastChar)) return 'CONFORT'
-  if (['2', '5', '8'].includes(lastChar)) return 'PREMIUM'
-  return 'ESSENTIEL'
-}
+  // Chargement de la formule et garanties réelles depuis l'API quand l'assure_id change
+  useEffect(() => {
+    const aid = draft.assure_id?.trim()
+    if (!aid) {
+      setCoverage(null)
+      return
+    }
+    let active = true
+    setLoadingCoverage(true)
+    getAssureCoverage(aid)
+      .then((cov) => {
+        if (active) {
+          setCoverage(cov)
+          const part = Math.max(0, Math.round(total * cov.taux_part_assure + cov.franchise))
+          setDraft((curr) => ({
+            ...curr,
+            part_assure: String(part),
+            patient_nom: curr.patient_nom || cov.nom_patient || '',
+          }))
+        }
+      })
+      .catch(() => {
+        if (active) setCoverage(null)
+      })
+      .finally(() => {
+        if (active) setLoadingCoverage(false)
+      })
 
-// Taux de prise en charge selon la formule (simulé)
-const coverageRates = {
-  ESSENTIEL: 0.80, // 80% pris en charge, 20% part assuré
-  CONFORT: 0.70,   // 70% pris en charge, 30% part assuré
-  PREMIUM: 0.90,   // 90% pris en charge, 10% part assuré
-}
+    return () => {
+      active = false
+    }
+  }, [draft.assure_id])
+
+  // Recalcul automatique de la part assuré lorsque le total de la facture évolue
+  useEffect(() => {
+    if (coverage) {
+      const part = Math.max(0, Math.round(total * coverage.taux_part_assure + coverage.franchise))
+      setDraft((curr) => {
+        if (curr.part_assure === String(part)) return curr
+        return { ...curr, part_assure: String(part) }
+      })
+    }
+  }, [total, coverage])
 
   function handleFactureParsed(doc: ParsedDocument) {
-  setFactureParsed(doc)
-  if (doc.kind === 'FACTURE') {
-    setDraft((current) => applyFactureToDraft(doc, current, providerId))
-    setSummary('')
-    setFailed(false)
+    setFactureParsed(doc)
+    if (doc.kind === 'FACTURE') {
+      const nextDraft = applyFactureToDraft(doc, draft, providerId)
+      const nextTotal = nextDraft.lines.reduce(
+        (sum, line) => sum + Number(line.quantite || 0) * Number(line.prix_unitaire || 0),
+        0,
+      )
+      setDraft(nextDraft)
+      setSummary('')
+      setFailed(false)
+
+      const targetAssureId = nextDraft.assure_id?.trim()
+      if (targetAssureId) {
+        setLoadingCoverage(true)
+        getAssureCoverage(targetAssureId)
+          .then((cov) => {
+            setCoverage(cov)
+            const part = Math.max(0, Math.round(nextTotal * cov.taux_part_assure + cov.franchise))
+            setDraft((curr) => ({
+              ...curr,
+              part_assure: String(part),
+              patient_nom: curr.patient_nom || cov.nom_patient || '',
+            }))
+          })
+          .catch(() => {
+            setCoverage(null)
+          })
+          .finally(() => {
+            setLoadingCoverage(false)
+          })
+      }
+    }
   }
-}
 
 function handleOrdonnanceParsed(doc: ParsedDocument) {
   setOrdonnanceParsed(doc)
@@ -406,19 +459,39 @@ function clearOrdonnance() {
             {input('ordonnance_id', 'Identifiant de l’ordonnance')}
             {input('date_soin', 'Date de soin')}
             {input('date_emission', 'Date d’émission')}
-            {input('part_assure', 'Part de l’assuré (MGA)','Calculée automatiquement selon la formule.', true)}
+            {input(
+              'part_assure',
+              'Part de l’assuré (MGA)',
+              coverage
+                ? `Calculée automatiquement : ${Math.round(coverage.taux_part_assure * 100)}% du montant total${coverage.franchise > 0 ? ` + franchise ${coverage.franchise} Ar` : ''}.`
+                : 'Calculée automatiquement selon la formule de l’assuré.',
+            )}
             <div className="claim-field">
-            <label>Formule de l'assuré (auto)</label>
-            <input
-              value={getFormuleFromAssure(draft.assure_id)}
-              readOnly
-              disabled
-              style={{ background: 'var(--surface-soft)', color: 'var(--ink-muted)' }}
-            />
-            <small className="claim-hint">
-              Taux de prise en charge : {Math.round(coverageRates[getFormuleFromAssure(draft.assure_id)] * 100)}%
-            </small>
-          </div>
+              <label>Formule de l'assuré (auto)</label>
+              <input
+                value={
+                  loadingCoverage
+                    ? 'Chargement de la formule…'
+                    : coverage
+                    ? coverage.formule
+                    : 'Formule non identifiée'
+                }
+                readOnly
+                disabled
+                style={{
+                  background: 'var(--surface-soft)',
+                  color: coverage ? 'var(--ink)' : 'var(--ink-muted)',
+                  fontWeight: 600,
+                }}
+              />
+              <small className="claim-hint">
+                {loadingCoverage
+                  ? 'Interrogation de la table garanties en cours…'
+                  : coverage
+                  ? `Contrat ${coverage.contrat_id} (${coverage.statut_contrat}) · Prise en charge : ${Math.round(coverage.taux_prise_en_charge * 100)}% · Part assuré : ${Math.round(coverage.taux_part_assure * 100)}%`
+                  : 'Saisissez ou importez un assuré pour charger sa formule.'}
+              </small>
+            </div>
             {isManager && input('date_reception', 'Date de réception')}
             {isManager && (
               <div className="claim-field">

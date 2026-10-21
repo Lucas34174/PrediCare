@@ -116,6 +116,7 @@ export interface ClaimListItem {
   prestataire_id: string
   date_soin: string
   date_emission: string
+  date_reception?: string
   montant_total: number
   part_assure: number
   montant_demande: number
