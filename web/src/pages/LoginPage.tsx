@@ -6,12 +6,9 @@ import {
   EyeOff,
   HeartPulse,
   LockKeyhole,
-  Moon,
-  ShieldCheck,
-  Sun,
-  User,
   Mail,
   Shield,
+  ShieldCheck,
 } from "lucide-react";
 import { ApiError } from "@/api/errors";
 import { useAuth } from "@/auth/AuthContext";

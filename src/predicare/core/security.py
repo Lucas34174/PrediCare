@@ -19,8 +19,9 @@ def get_jwt_secret() -> str:
     """Récupère le secret JWT depuis les variables d'environnement."""
     secret = os.environ.get("JWT_SECRET")
     if not secret:
-        # Valeur de repli pour tests locaux hors conteneur
-        return "change_me_jwt_secret_0123456789abcdef"
+        from predicare.core.config import ConfigurationError
+
+        raise ConfigurationError("Variable d'environnement obligatoire manquante : JWT_SECRET")
     return secret
 
 

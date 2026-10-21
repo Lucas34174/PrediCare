@@ -1,12 +1,10 @@
 #!/bin/sh
 set -e
 
-echo " ___ Attente de la base de données..."
-python -c "
-import time
-from sqlalchemy import create_engine, text
-from predicare.core.config import database_url
-import sys
+echo "  __ Attente de la base de données..."
+until python -c "from predicare.core.config import database_url; from sqlalchemy import create_engine; engine = create_engine(database_url()); conn = engine.connect(); conn.close()" > /dev/null 2>&1; do
+  sleep 2
+done
 
 engine = create_engine(database_url())
 for i in range(30):
