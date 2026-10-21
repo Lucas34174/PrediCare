@@ -41,6 +41,7 @@ _CONFIG = AdminConfig(
 )
 
 _KNOWN_VERSIONS = {"v1.0.0-xgb", "v0.9.0-baseline", "v1.1.0-xgb"}
+_ACTIVE_MODEL_VERSION: str | None = None
 
 
 @router.get("/config", response_model=AdminConfig)
@@ -62,16 +63,24 @@ def update_config(body: AdminConfigUpdateRequest) -> AdminConfig:
 @router.get("/models", response_model=AdminModelsResponse)
 def list_models() -> AdminModelsResponse:
     """Liste des versions de modèles disponibles lues dynamiquement depuis models_metadata.json."""
+    global _ACTIVE_MODEL_VERSION
     metadata_file = MODELS_DIR / "models_metadata.json"
     if metadata_file.exists():
         try:
             data = json.loads(metadata_file.read_text(encoding="utf-8"))
+            if _ACTIVE_MODEL_VERSION is not None:
+                data["active_version"] = _ACTIVE_MODEL_VERSION
+                for m in data.get("available_models", []):
+                    m["statut"] = "ACTIVE" if m["version_id"] == _ACTIVE_MODEL_VERSION else "STANDBY"
+            else:
+                _ACTIVE_MODEL_VERSION = data.get("active_version", "v1.0.0-xgb")
             return AdminModelsResponse(**data)
         except Exception as exc:
             logger.warning("Échec lecture models_metadata.json : %s", exc)
 
+    active_ver = _ACTIVE_MODEL_VERSION or "v1.0.0-xgb"
     return AdminModelsResponse(
-        active_version="v1.0.0-xgb",
+        active_version=active_ver,
         available_models=[
             ModelVersion(
                 version_id="v1.0.0-xgb",
@@ -80,7 +89,7 @@ def list_models() -> AdminModelsResponse:
                 precision_test=0.843,
                 f1_score=0.876,
                 date_entrainement=datetime.now(UTC).date(),
-                statut="ACTIVE",
+                statut="ACTIVE" if active_ver == "v1.0.0-xgb" else "STANDBY",
             ),
             ModelVersion(
                 version_id="v0.9.0-baseline",
@@ -89,7 +98,16 @@ def list_models() -> AdminModelsResponse:
                 precision_test=0.791,
                 f1_score=0.812,
                 date_entrainement=datetime.now(UTC).date(),
-                statut="STANDBY",
+                statut="ACTIVE" if active_ver == "v0.9.0-baseline" else "STANDBY",
+            ),
+            ModelVersion(
+                version_id="v1.1.0-xgb",
+                type="XGBoost",
+                recall_test=0.4286,
+                precision_test=0.4286,
+                f1_score=0.4286,
+                date_entrainement=datetime.now(UTC).date(),
+                statut="ACTIVE" if active_ver == "v1.1.0-xgb" else "STANDBY",
             ),
         ],
     )
@@ -102,6 +120,7 @@ def list_models() -> AdminModelsResponse:
 )
 def activate_model(version_id: str) -> ModelActivateResponse:
     """Bascule vers une version de modèle avec persistance et journalisation audit."""
+    global _ACTIVE_MODEL_VERSION
     metadata_file = MODELS_DIR / "models_metadata.json"
     known_versions = set(_KNOWN_VERSIONS)
 
@@ -118,6 +137,7 @@ def activate_model(version_id: str) -> ModelActivateResponse:
         raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.")
 
     now = datetime.now(UTC)
+    _ACTIVE_MODEL_VERSION = version_id
 
     # Mise à jour du fichier models_metadata.json si présent
     if models_data is not None:

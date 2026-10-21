@@ -88,7 +88,7 @@ services:
 
     volumes:
       - ./data/raw:/data/raw:ro
-      - ./models:/app/models:ro
+      - ./models:/app/models
       - ./migrations:/app/migrations
       - ./tests:/app/tests
       - ./docs:/app/docs
