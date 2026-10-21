@@ -19,6 +19,7 @@ import { AssureClaimDetailPage } from '@/pages/AssureClaimDetailPage'
 import { AssureChatPage } from '@/pages/AssureChatPage'
 import { AuthProvider, useAuth } from '@/auth/AuthContext'
 import { ProDashboardPage } from '@/pages/ProDashboardPage'
+import { ProDossierListPage, ProDossierDetailPage } from '@/pages/ProDossierPage'
 import { AssureDashboardHome } from '@/pages/AssureDashboardHome'
 
 const ManagerClaimDetailPage = lazy(() =>
@@ -144,8 +145,9 @@ function AppRoutes() {
 
           {/* Pro de santé */}
           <Route path="/professionnel-sante/factures/nouvelle" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><NewProClaimPage /></ProtectedRoute>} />
-          <Route path="/professionnel-sante/dossiers" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><AssureDashboardPage /></ProtectedRoute>} />
           <Route path="/professionnel-sante/factures/:claimId" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><ClaimReceiptPage /></ProtectedRoute>} />
+          <Route path="/professionnel-sante/dossiers" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><ProDossierListPage /></ProtectedRoute>} />
+          <Route path="/professionnel-sante/dossiers/:factureId" element={<ProtectedRoute allowedRoles={['professionnel_sante']}><ProDossierDetailPage /></ProtectedRoute>} />
           
         </Route>
 

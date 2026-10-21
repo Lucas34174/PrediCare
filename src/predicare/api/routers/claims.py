@@ -408,9 +408,20 @@ def list_claims(
                             page_size=page_size,
                             items=[],
                         )
-
                     conditions.append("f.assure_id = :assure_id")
                     params["assure_id"] = current_user.assure_id
+
+                # Restriction d'accès pour les professionnels de santé
+                elif current_user.role == Role.PROFESSIONNEL_SANTE:
+                    if not current_user.prestataire_id:
+                        return ClaimsListResponse(
+                            total=0,
+                            page=page,
+                            page_size=page_size,
+                            items=[],
+                        )
+                    conditions.append("f.prestataire_id = :prestataire_id")
+                    params["prestataire_id"] = current_user.prestataire_id
 
                 # Filtre par statut
                 if statut:
