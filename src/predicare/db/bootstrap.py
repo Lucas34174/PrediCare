@@ -108,6 +108,85 @@ def run_migrations() -> None:
         _configure_logging()
 
 
+# ---------------------------------------------------------------------------
+# Comptes de démonstration — seeded automatiquement à chaque `docker compose up`
+# ---------------------------------------------------------------------------
+
+_DEMO_USERS = [
+    {
+        "id": "USR-0001",
+        "identifiant": "admin1",
+        "mot_de_passe": "admin123",
+        "role": "administrateur",
+        "assure_id": None,
+        "prestataire_id": None,
+    },
+    {
+        "id": "USR-0012",
+        "identifiant": "gestionnaire1",
+        "mot_de_passe": "gestionnaire123",
+        "role": "gestionnaire",
+        "assure_id": None,
+        "prestataire_id": None,
+    },
+    {
+        "id": "USR-0021",
+        "identifiant": "assure1",
+        "mot_de_passe": "assure123",
+        "role": "assure",
+        "assure_id": None,  # sera mis à jour ci-dessous si un assuré existe
+        "prestataire_id": None,
+    },
+    {
+        "id": "USR-0050",
+        "identifiant": "pro1",
+        "mot_de_passe": "pro123",
+        "role": "professionnel_sante",
+        "assure_id": None,
+        "prestataire_id": None,  # sera mis à jour ci-dessous si un prestataire existe
+    },
+]
+
+
+def seed_users(conn: Connection) -> None:
+    """Insère les comptes de démonstration s'ils n'existent pas encore (idempotent)."""
+    from predicare.core.security import hash_password
+
+    # Résoudre un vrai assure_id et prestataire_id depuis les données chargées
+    first_assure = conn.execute(text("SELECT assure_id FROM assures LIMIT 1")).scalar()
+    first_prestataire = conn.execute(
+        text("SELECT prestataire_id FROM prestataires LIMIT 1")
+    ).scalar()
+
+    users_inserted = 0
+    for user in _DEMO_USERS:
+        assure_id = first_assure if user["role"] == "assure" else user["assure_id"]
+        prestataire_id = (
+            first_prestataire if user["role"] == "professionnel_sante" else user["prestataire_id"]
+        )
+        conn.execute(
+            text("""
+                INSERT INTO utilisateurs (
+                    id, identifiant, mot_de_passe_hash, role, assure_id, prestataire_id, actif
+                )
+                VALUES (
+                    :id, :identifiant, :hash, :role, :assure_id, :prestataire_id, TRUE
+                )
+                ON CONFLICT (id) DO NOTHING
+            """),
+            {
+                "id": user["id"],
+                "identifiant": user["identifiant"],
+                "hash": hash_password(user["mot_de_passe"]),
+                "role": user["role"],
+                "assure_id": assure_id,
+                "prestataire_id": prestataire_id,
+            },
+        )
+        users_inserted += 1
+    logger.info("seed_users : %d comptes de démonstration vérifiés/insérés.", users_inserted)
+
+
 def source_checksum(source_dir: Path) -> str:
     """Calcule un SHA-256 stable des 12 CSV métier attendus."""
     expected = [f"{table}.csv" for table in SOURCE_TABLES]
@@ -255,6 +334,10 @@ def bootstrap(
         try:
             if apply_migrations:
                 run_migrations()
+
+            # Seed idempotent des comptes de démonstration (toujours exécuté)
+            with conn.begin():
+                seed_users(conn)
 
             if not auto_load:
                 logger.info("AUTO_LOAD_DATA désactivé : chargement ignoré.")
