@@ -8,7 +8,8 @@ from typing import Any
 
 import httpx
 
-from predicare.core.config import dashboard_base_url, n8n_webhook_url
+from predicare.core.config import dashboard_base_url
+from predicare.core.config_service import get_current_n8n_webhook_url
 
 logger = logging.getLogger("predicare.api.alertes")
 
@@ -95,7 +96,7 @@ def emettre_alerte_fraude(
     timeout: float = 10.0,
 ) -> bool:
     """Envoie l'alerte vers n8n sans jamais bloquer ni lever d'exception."""
-    cible = url or n8n_webhook_url()
+    cible = url or get_current_n8n_webhook_url()
     fid = payload.get("facture", {}).get("facture_id", "inconnue")
     try:
         with httpx.Client(timeout=timeout) as client:

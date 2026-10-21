@@ -125,4 +125,7 @@ def test_persistence_and_audit_with_database(db_temporaire):
         assert details["nouvelles_valeurs"]["fraud_score_threshold"] == 0.77
         assert details["nouvelles_valeurs"]["semantic_cache_threshold"] == 0.91
 
+    with moteur.begin() as conn:
+        conn.execute(text("DELETE FROM app_config"))
     moteur.dispose()
+    invalidate_config_cache(clear_overrides=True)

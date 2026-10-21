@@ -160,7 +160,11 @@ def mock_db_and_auth():
         Le code de list_claims saute le bloc `if engine is not None` et renvoie
         ClaimsListResponse(total=0) au lieu de lever 503.
       - find_user_by_identifier dans deps → retourne le _MOCK_USERS dict.
+      - Invalidation du cache de configuration et suppression des overrides en mémoire.
     """
+    from predicare.core.config_service import invalidate_config_cache
+
+    invalidate_config_cache(clear_overrides=True)
     with (
         patch("predicare.api.routers.claims._db_engine", return_value=None),
         patch("predicare.api.deps._db_engine", return_value=None),
@@ -170,6 +174,7 @@ def mock_db_and_auth():
         ),
     ):
         yield
+    invalidate_config_cache(clear_overrides=True)
 
 
 # ---------------------------------------------------------------------------

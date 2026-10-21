@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from predicare.api.deps import _db_engine, get_optional_user
 from predicare.api.schemas import Role, UserInfo
-from predicare.core.config import fraud_score_threshold
+from predicare.core.config_service import get_current_fraud_threshold
 from predicare.ml.service import ModeleIndisponible, predire_facture_en_ligne
 
 from ..schemas import (
@@ -352,7 +352,7 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
                     score_fraude=float(row["score_fraude"]),
                     seuil_applique=float(row["seuil_applique"])
                     if row["seuil_applique"] is not None
-                    else fraud_score_threshold(),
+                    else get_current_fraud_threshold(),
                     est_anomalie=bool(row["est_anomalie"]),
                     version_modele=str(row["version_modele"] or "inconnue"),
                     date_prediction=row["date_prediction"],
@@ -710,7 +710,7 @@ def create_claim(
     except ModeleIndisponible as exc:
         logger.error("Modèle indisponible lors de la soumission de %s : %s", facture_id, exc)
         score_fraude = 0.0
-        seuil_applique = fraud_score_threshold()
+        seuil_applique = get_current_fraud_threshold()
         est_anomalie = False
         version_modele = "indisponible"
         top_facteurs = []
@@ -878,10 +878,12 @@ def get_prediction(
             expl_data = persisted.get("explicabilite", {})
             top_facteurs = [
                 ShapFactor(
-                    feature=f["feature"],
-                    valeur=f["valeur"] if isinstance(f["valeur"], (int, float, str)) else 0.0,
-                    impact_shap=float(f["impact_shap"]),
-                    description=f["description"],
+                    feature=f.get("feature", "inconnue"),
+                    valeur=f.get("valeur")
+                    if isinstance(f.get("valeur"), (int, float, str))
+                    else 0.0,
+                    impact_shap=float(f.get("impact_shap", 0.0)),
+                    description=f.get("description", ""),
                 )
                 for f in expl_data.get("top_facteurs", [])
             ]

@@ -15,11 +15,10 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, text
 
 from predicare.api.schemas import AdminConfig
 from predicare.core.config import (
-    database_url,
     fraud_score_threshold,
     n8n_webhook_url,
 )
@@ -39,17 +38,7 @@ def _get_engine(engine: Engine | None = None) -> Engine | None:
     try:
         from predicare.api.deps import _db_engine
 
-        eng = _db_engine()
-        if eng is not None:
-            return eng
-    except Exception:
-        pass
-    try:
-        return create_engine(
-            database_url(),
-            connect_args={"connect_timeout": 2},
-            pool_pre_ping=True,
-        )
+        return _db_engine()
     except Exception:
         return None
 
