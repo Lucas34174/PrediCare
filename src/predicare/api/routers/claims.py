@@ -35,42 +35,6 @@ from ..schemas import (
 
 router = APIRouter(prefix="/claims", tags=["Factures"])
 
-_NOW = datetime(2026, 10, 15, 10, 15, tzinfo=UTC)
-
-_MOCK_CLAIM = ClaimDetail(
-    facture_id="FAC-00005637",
-    numero_facture="F-2025-00124",
-    assure_id="ASS-00421",
-    prestataire_id="PR-0015",
-    nom_etablissement="Clinique Saint-Paul",
-    ordonnance_id="ORD-0003289",
-    date_soin=date(2025, 4, 12),
-    date_emission=date(2025, 4, 13),
-    montant_total=45000,
-    part_assure=9000,
-    montant_demande=36000,
-    statut=StatutFacture.EN_COURS,
-    lignes=[
-        LigneFacture(
-            num_ligne=1,
-            code="ACT-CS-01",
-            type_ligne=TypeLigne.ACTE,
-            quantite=1,
-            prix_unitaire=30000,
-            montant_total=30000,
-        ),
-        LigneFacture(
-            num_ligne=2,
-            code="MED-CIP-0045",
-            type_ligne=TypeLigne.MEDICAMENT,
-            quantite=2,
-            prix_unitaire=7500,
-            montant_total=15000,
-        ),
-    ],
-)
-
-_KNOWN_CLAIM_IDS = {"FAC-00005637", "FAC-00084700"}
 _SUBMITTED_CLAIMS: dict[str, ClaimDetail] = {}
 
 _PERSISTED_PREDICTIONS: dict[str, dict] = {}
@@ -211,7 +175,7 @@ def _persister_facture_db(
 
 def _facture_existe(facture_id: str) -> bool:
     """Vérifie si la facture existe en mémoire ou en base PostgreSQL."""
-    if facture_id in _SUBMITTED_CLAIMS or facture_id in _KNOWN_CLAIM_IDS:
+    if facture_id in _SUBMITTED_CLAIMS:
         return True
     try:
         engine = _db_engine()
@@ -299,16 +263,14 @@ def _get_claim_db(facture_id: str) -> ClaimDetail | None:
         return None
 
 
-# _get_or_404 mise à jour (mémoire → DB → mock)
+# _get_or_404 (mémoire → DB → 404)
 def _get_or_404(facture_id: str) -> ClaimDetail:
     if facture_id in _SUBMITTED_CLAIMS:
         return _SUBMITTED_CLAIMS[facture_id]
     claim_db = _get_claim_db(facture_id)
     if claim_db is not None:
         return claim_db
-    if facture_id not in _KNOWN_CLAIM_IDS:
-        raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
-    return _MOCK_CLAIM.model_copy(update={"facture_id": facture_id})
+    raise HTTPException(status_code=404, detail=f"Facture {facture_id} introuvable.")
 
 
 def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
@@ -538,82 +500,17 @@ def list_claims(
                 )
 
     except Exception as exc:
-        logger.warning(
-            "DB indisponible pour list_claims (repli mock) : %s",
-            exc,
-        )
-
-    # Repli mock existant
-    if current_user.role == Role.ASSURE and current_user.assure_id != _MOCK_CLAIM.assure_id:
-        return ClaimsListResponse(
-            total=0,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
-
-    item = ClaimSummary(
-        facture_id=_MOCK_CLAIM.facture_id,
-        numero_facture=_MOCK_CLAIM.numero_facture,
-        assure_id=_MOCK_CLAIM.assure_id,
-        prestataire_id=_MOCK_CLAIM.prestataire_id,
-        date_soin=_MOCK_CLAIM.date_soin,
-        date_emission=_MOCK_CLAIM.date_emission,
-        montant_total=_MOCK_CLAIM.montant_total,
-        part_assure=_MOCK_CLAIM.part_assure,
-        montant_demande=_MOCK_CLAIM.montant_demande,
-        statut=_MOCK_CLAIM.statut,
-        score_fraude=0.87,
-        est_anomalie=True,
-    )
-
-    # Application des filtres au mock
-    if statut is not None and item.statut != statut:
-        return ClaimsListResponse(
-            total=0,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
-
-    if date_debut is not None and item.date_soin < date_debut:
-        return ClaimsListResponse(
-            total=0,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
-
-    if date_fin is not None and item.date_soin > date_fin:
-        return ClaimsListResponse(
-            total=0,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
-
-    if fraud_alert_only and not item.est_anomalie:
-        return ClaimsListResponse(
-            total=0,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
-
-    # Pagination du mock
-    if page > 1:
-        return ClaimsListResponse(
-            total=1,
-            page=page,
-            page_size=page_size,
-            items=[],
-        )
+        logger.warning("DB inaccessible pour list_claims : %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de données temporairement indisponible.",
+        ) from exc
 
     return ClaimsListResponse(
-        total=1,
+        total=0,
         page=page,
         page_size=page_size,
-        items=[item],
+        items=[],
     )
 
 
