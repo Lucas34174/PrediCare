@@ -236,14 +236,14 @@ def test_assistant_message_vide_rejete():
 
 
 def test_get_admin_config_structure():
-    data = client.get("/admin/config").json()
+    data = _admin_client.get("/admin/config").json()
     assert "fraud_score_threshold" in data
     assert "n8n_webhook_url" in data
     assert 0.0 <= data["fraud_score_threshold"] <= 1.0
 
 
 def test_update_admin_config():
-    data = client.put("/admin/config", json={"fraud_score_threshold": 0.75}).json()
+    data = _admin_client.put("/admin/config", json={"fraud_score_threshold": 0.75}).json()
     assert data["fraud_score_threshold"] == 0.75
 
 
@@ -280,6 +280,8 @@ def test_get_audit_default():
 
 def test_get_audit_filtre_type_action():
     data = client.get("/admin/audit?type_action=DECISION_FRAUDE").json()
+    assert "items" in data
+    assert len(data["items"]) > 0
     assert data["items"][0]["type_action"] == "DECISION_FRAUDE"
 
 

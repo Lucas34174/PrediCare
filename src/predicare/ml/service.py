@@ -17,7 +17,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from predicare.core.config import fraud_score_threshold, model_path, model_version
+from predicare.core.config import model_path, model_version
+from predicare.core.config_service import get_current_fraud_threshold
 from predicare.ml.config import MODELS_ROOT
 from predicare.ml.explain import SHAP_DISPONIBLE, expliquer_facture
 from predicare.ml.features import FORBIDDEN_FEATURE_COLS, build_features
@@ -341,7 +342,7 @@ def predire_facture_en_ligne(
     features_df = construire_features_facture(facture, lignes, ref_tables)
 
     score_fraude = round(modele.scorer_unitaire(features_df), 4)
-    seuil = fraud_score_threshold()
+    seuil = get_current_fraud_threshold()
 
     # Détection explicite de doublon (règle métier & signal historique)
     deja_vu = False
@@ -406,7 +407,7 @@ def predire_facture_en_ligne(
 def predire_facture(facture_id: str, budget: float | None = None) -> dict[str, Any]:
     """Consulte ou calcule la prédiction pour une facture existante (rétro-compatibilité)."""
     modele = get_model()
-    seuil = fraud_score_threshold()
+    seuil = get_current_fraud_threshold()
     noms = _charger_feature_names()
     ligne = pd.Series({nom: float("nan") for nom in noms}, name=facture_id)
     features_df = pd.DataFrame([ligne])

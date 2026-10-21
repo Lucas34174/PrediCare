@@ -37,6 +37,7 @@ TABLES_ATTENDUES = {
     "documents",
     "utilisateurs",
     "ingest_state",
+    "app_config",
 }
 
 

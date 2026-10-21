@@ -9,8 +9,9 @@ from __future__ import annotations
 from datetime import date, datetime
 from enum import StrEnum
 from typing import Any, Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 # Énumérations partagées
 
@@ -268,19 +269,54 @@ class ChatResponse(BaseModel):
 # 3.7 Administration, MLOps & Exploitation
 
 
+def _valider_webhook_url(v: str | None) -> str | None:
+    """Valide qu'une URL de webhook utilise HTTP(S) et n'attaque pas les métadonnées cloud."""
+    if v is None:
+        return None
+    url_clean = v.strip()
+    if not url_clean:
+        raise ValueError("L'URL du webhook ne peut pas être vide")
+    parsed = urlparse(url_clean)
+    if parsed.scheme.lower() not in ("http", "https"):
+        raise ValueError("L'URL du webhook doit impérativement utiliser le protocole http ou https")
+    if not parsed.netloc:
+        raise ValueError("L'URL du webhook doit comporter un nom d'hôte ou une adresse valide")
+    hostname = (parsed.hostname or "").lower()
+    if hostname in ("169.254.169.254", "metadata.google.internal"):
+        raise ValueError("Adresse d'hôte interdite pour le webhook (protection SSRF)")
+    return url_clean
+
+
 class AdminConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     fraud_score_threshold: float = Field(..., ge=0.0, le=1.0)
     n8n_webhook_url: str
     semantic_cache_enabled: bool
     semantic_cache_threshold: float = Field(..., ge=0.0, le=1.0)
     updated_at: datetime | None = None
 
+    @field_validator("n8n_webhook_url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        res = _valider_webhook_url(v)
+        if not res:
+            raise ValueError("L'URL du webhook est obligatoire")
+        return res
+
 
 class AdminConfigUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     fraud_score_threshold: float | None = Field(None, ge=0.0, le=1.0)
     n8n_webhook_url: str | None = None
     semantic_cache_enabled: bool | None = None
     semantic_cache_threshold: float | None = Field(None, ge=0.0, le=1.0)
+
+    @field_validator("n8n_webhook_url")
+    @classmethod
+    def validate_url(cls, v: str | None) -> str | None:
+        return _valider_webhook_url(v)
 
 
 class ModelVersion(BaseModel):

@@ -1,5 +1,6 @@
 """Point d'entrée de l'API PrediCare TPA."""
 
+from contextlib import asynccontextmanager
 from functools import cache
 
 from fastapi import FastAPI, Response, status
@@ -9,13 +10,21 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from predicare.api.routers import admin, assistant, auth, claims, dashboard, predictions
 from predicare.api.schemas import HealthResponse
-from predicare.core.config import database_url
+from predicare.core.config import database_url, validate_required_secrets
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    validate_required_secrets()
+    yield
+
 
 API_VERSION = "0.1.0"
 app = FastAPI(
     title="PrediCare TPA API",
     version=API_VERSION,
     description="Détection de fraudes médicales, assistant RAG et pilotage opérationnel.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
