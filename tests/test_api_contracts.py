@@ -280,6 +280,8 @@ def test_get_audit_default():
 
 def test_get_audit_filtre_type_action():
     data = client.get("/admin/audit?type_action=DECISION_FRAUDE").json()
+    assert "items" in data
+    assert len(data["items"]) > 0
     assert data["items"][0]["type_action"] == "DECISION_FRAUDE"
 
 
