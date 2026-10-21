@@ -1,18 +1,29 @@
-"""Router tableau de bord – /dashboard/kpis."""
+"""Router tableau de bord – /dashboard/kpis et /dashboard/pro-kpis."""
 
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 
 from predicare.core.config import database_url
 
-from ..schemas import DashboardKpisResponse, FraudeDistribution, KpiMetrics
+from ..deps import get_current_user
+from ..schemas import DashboardKpisResponse, FraudeDistribution, KpiMetrics, Role, UserInfo
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboard", tags=["Tableau de bord"])
+
+
+class ProKpisResponse(BaseModel):
+    prestataire_id: str
+    total_factures: int
+    en_attente: int
+    remboursements_recus: int
+    total_facture_mga: int
+    montant_rembourse_mga: int
 
 
 @router.get("/kpis", response_model=DashboardKpisResponse)
@@ -130,3 +141,60 @@ def kpis(periode: Literal["7d", "30d", "all"] = "30d") -> DashboardKpisResponse:
             FraudeDistribution(type="PRESCRIPTION_NON_CONFORME", count=12),
         ],
     )
+
+
+@router.get("/pro-kpis", response_model=ProKpisResponse)
+def pro_kpis(
+    current_user: Annotated[UserInfo, Depends(get_current_user)],
+) -> ProKpisResponse:
+    """KPIs personnels du professionnel de santé connecté – filtrés par prestataire_id."""
+    if current_user.role != Role.PROFESSIONNEL_SANTE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès réservé aux professionnels de santé.",
+        )
+    prestataire_id = current_user.prestataire_id
+    if not prestataire_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Aucun prestataire_id associé à ce compte.",
+        )
+
+    try:
+        engine = create_engine(database_url())
+        with engine.connect() as conn:
+            row = (
+                conn.execute(
+                    text("""
+                SELECT
+                    COUNT(*)                                              AS total_factures,
+                    COUNT(*) FILTER (WHERE statut = 'EN_COURS')          AS en_attente,
+                    COUNT(*) FILTER (WHERE statut = 'PAYEE')             AS remboursements_recus,
+                    COALESCE(SUM(montant_total), 0)                      AS total_facture_mga,
+                    COALESCE(SUM(montant_total) FILTER (WHERE statut = 'PAYEE'), 0)
+                                                                         AS montant_rembourse_mga
+                FROM factures
+                WHERE prestataire_id = :pid
+            """),
+                    {"pid": prestataire_id},
+                )
+                .mappings()
+                .first()
+            )
+
+        return ProKpisResponse(
+            prestataire_id=prestataire_id,
+            total_factures=int(row["total_factures"] or 0),
+            en_attente=int(row["en_attente"] or 0),
+            remboursements_recus=int(row["remboursements_recus"] or 0),
+            total_facture_mga=int(row["total_facture_mga"] or 0),
+            montant_rembourse_mga=int(row["montant_rembourse_mga"] or 0),
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Erreur calcul pro-kpis pour %s : %s", prestataire_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de données temporairement indisponible.",
+        ) from exc

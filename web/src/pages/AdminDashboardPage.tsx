@@ -1,6 +1,6 @@
 // web/src/pages/AdminDashboardPage.tsx
 import { useQuery } from '@tanstack/react-query'
-import { Activity, AlertTriangle, CheckCircle2, Server, ShieldAlert, FileClock } from 'lucide-react'
+import { Activity, AlertTriangle, CheckCircle2, Server, ShieldAlert } from 'lucide-react'
 import { getAdminMetrics, getAdminAudit } from '@/api/admin'
 
 export function AdminDashboardPage() {
