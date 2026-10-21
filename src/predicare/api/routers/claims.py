@@ -6,7 +6,7 @@ import math
 import uuid
 from datetime import UTC, date, datetime
 from typing import Annotated
-
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 
@@ -64,6 +64,32 @@ def _persister_facture_db(
                 or "CTR-2025-001"
             )
 
+            # Vérification et gestion de l'ordonnance_id
+            ordonnance_id = body.ordonnance_id
+            if ordonnance_id:
+                ord_exists = conn.execute(
+                    text("SELECT 1 FROM ordonnances WHERE ordonnance_id = :oid"),
+                    {"oid": ordonnance_id},
+                ).scalar()
+                if not ord_exists:
+                    try:
+                        conn.execute(
+                            text(
+                                "INSERT INTO ordonnances ("
+                                "ordonnance_id, assure_id, prescripteur_id, date_prescription, validite_jours, type_ordonnance"
+                                ") VALUES (:oid, :aid, :pid, :dt, 30, 'CONSULTATION') "
+                                "ON CONFLICT (ordonnance_id) DO NOTHING"
+                            ),
+                            {
+                                "oid": ordonnance_id,
+                                "aid": body.assure_id,
+                                "pid": body.prestataire_id,
+                                "dt": body.date_soin,
+                            },
+                        )
+                    except Exception:
+                        ordonnance_id = None
+
             # 2. Insertion facture
             conn.execute(
                 text(
@@ -85,7 +111,7 @@ def _persister_facture_db(
                     "prestataire_id": body.prestataire_id,
                     "assure_id": body.assure_id,
                     "contrat_id": contrat_id,
-                    "ordonnance_id": body.ordonnance_id,
+                    "ordonnance_id": ordonnance_id,
                     "date_soin": body.date_soin,
                     "date_facture": body.date_emission,
                     "nb_lignes": len(body.lignes),
@@ -343,13 +369,15 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
 
 @router.get("", response_model=ClaimsListResponse)
 def list_claims(
-    current_user: Annotated[UserInfo, Depends(get_optional_user)],
+    current_user: Annotated[UserInfo | None, Depends(get_optional_user)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     statut: StatutFacture | None = None,
     date_debut: date | None = None,
     date_fin: date | None = None,
     fraud_alert_only: bool = False,
+    sort: str | None = None,
+    q: str | None = None,
 ) -> ClaimsListResponse:
     """Liste paginée des factures. Un assuré ne voit que ses propres dossiers."""
 
@@ -361,29 +389,24 @@ def list_claims(
                 conditions = []
                 params = {}
 
-                # Restriction d'accès pour les assurés
-                if current_user.role == Role.ASSURE:
-                    if not current_user.assure_id:
-                        return ClaimsListResponse(
-                            total=0,
-                            page=page,
-                            page_size=page_size,
-                            items=[],
-                        )
-                    conditions.append("f.assure_id = :assure_id")
-                    params["assure_id"] = current_user.assure_id
+                # Restriction d'accès selon le profil
+                if current_user:
+                    if current_user.role == Role.ASSURE:
+                        if not current_user.assure_id:
+                            return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+                        conditions.append("f.assure_id = :assure_id")
+                        params["assure_id"] = current_user.assure_id
 
-                # Restriction d'accès pour les professionnels de santé
-                elif current_user.role == Role.PROFESSIONNEL_SANTE:
-                    if not current_user.prestataire_id:
-                        return ClaimsListResponse(
-                            total=0,
-                            page=page,
-                            page_size=page_size,
-                            items=[],
-                        )
-                    conditions.append("f.prestataire_id = :prestataire_id")
-                    params["prestataire_id"] = current_user.prestataire_id
+                    elif current_user.role == Role.PROFESSIONNEL_SANTE:
+                        if not current_user.prestataire_id:
+                            return ClaimsListResponse(total=0, page=page, page_size=page_size, items=[])
+                        conditions.append("f.prestataire_id = :prestataire_id")
+                        params["prestataire_id"] = current_user.prestataire_id
+
+                # Recherche libre par ID ou numéro
+                if q and q.strip():
+                    conditions.append("(f.facture_id ILIKE :q OR f.numero_facture ILIKE :q OR f.assure_id ILIKE :q)")
+                    params["q"] = f"%{q.strip()}%"
 
                 # Filtre par statut
                 if statut:
@@ -409,13 +432,19 @@ def list_claims(
                 # Dernière prédiction de chaque facture
                 join = """
                     LEFT JOIN LATERAL (
-                        SELECT score_fraude, est_anomalie
+                        SELECT score_fraude, est_anomalie, date_prediction
                         FROM predictions
                         WHERE facture_id = f.facture_id
                         ORDER BY date_prediction DESC
                         LIMIT 1
                     ) p ON true
                 """
+
+                # Ordre de tri dynamique : tri uniquement par la date et l'horodatage de soumission
+                if sort == "score_fraude:desc":
+                    order_by = "ORDER BY p.score_fraude DESC NULLS LAST, f.date_reception DESC, p.date_prediction DESC NULLS LAST, f.facture_id DESC"
+                else:
+                    order_by = "ORDER BY f.date_reception DESC, p.date_prediction DESC NULLS LAST, f.facture_id DESC"
 
                 # Nombre total de résultats correspondant aux filtres
                 total = (
@@ -449,6 +478,7 @@ def list_claims(
                             f.prestataire_id,
                             f.date_soin,
                             f.date_facture AS date_emission,
+                            f.date_reception,
                             f.montant_total,
                             f.reste_a_charge AS part_assure,
                             (
@@ -460,9 +490,7 @@ def list_claims(
                         FROM factures f
                         {join}
                         {where}
-                        ORDER BY
-                            f.date_soin DESC,
-                            f.facture_id DESC
+                        {order_by}
                         LIMIT :lim OFFSET :off
                         """
                         ),
@@ -484,6 +512,7 @@ def list_claims(
                             prestataire_id=r["prestataire_id"],
                             date_soin=r["date_soin"],
                             date_emission=r["date_emission"],
+                            date_reception=r.get("date_reception"),
                             montant_total=r["montant_total"],
                             part_assure=r["part_assure"],
                             montant_demande=r["montant_demande"],
@@ -512,6 +541,96 @@ def list_claims(
         page_size=page_size,
         items=[],
     )
+
+
+@router.get("/couverture/{assure_id}")
+def get_couverture_assure(
+    assure_id: str,
+) -> dict[str, Any]:
+    """Récupère la formule et les garanties d'un assuré depuis PostgreSQL."""
+    try:
+        engine = _db_engine()
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    """
+                    SELECT a.assure_id, a.contrat_id, c.formule, c.statut AS statut_contrat
+                    FROM assures a
+                    JOIN contrats c ON c.contrat_id = a.contrat_id
+                    WHERE a.assure_id = :aid
+                    """
+                ),
+                {"aid": assure_id},
+            ).mappings().first()
+
+            if not row:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Assuré {assure_id} introuvable ou sans contrat associé.",
+                )
+
+            formule = row["formule"]
+
+            garanties_rows = conn.execute(
+                text(
+                    """
+                    SELECT categorie, taux_remboursement, franchise_par_facture,
+                           plafond_annuel_categorie, attestation_requise
+                    FROM garanties
+                    WHERE formule = :formule
+                    ORDER BY categorie
+                    """
+                ),
+                {"formule": formule},
+            ).mappings().all()
+
+            taux_consultation = 80
+            franchise_defaut = 0
+            garanties_dict = {}
+            for g in garanties_rows:
+                cat = g["categorie"]
+                garanties_dict[cat] = {
+                    "taux_remboursement": g["taux_remboursement"],
+                    "franchise": g["franchise_par_facture"],
+                    "plafond": g["plafond_annuel_categorie"],
+                    "attestation_requise": g["attestation_requise"],
+                }
+                if cat == "CONSULTATION":
+                    taux_consultation = g["taux_remboursement"]
+                    franchise_defaut = g["franchise_par_facture"]
+
+            nom_patient = None
+            try:
+                from predicare.core.pii import decrypt_identity, get_pii_key
+
+                pii = decrypt_identity(conn, assure_id, get_pii_key())
+                if pii and (pii.get("prenoms") or pii.get("nom")):
+                    prenoms = pii.get("prenoms") or ""
+                    nom = pii.get("nom") or ""
+                    nom_patient = f"{prenoms} {nom}".strip()
+            except Exception:
+                pass
+
+            return {
+                "assure_id": row["assure_id"],
+                "contrat_id": row["contrat_id"],
+                "formule": formule,
+                "statut_contrat": row["statut_contrat"],
+                "taux_remboursement": taux_consultation,
+                "taux_prise_en_charge": round(taux_consultation / 100.0, 2),
+                "taux_part_assure": round((100 - taux_consultation) / 100.0, 2),
+                "franchise": franchise_defaut,
+                "nom_patient": nom_patient,
+                "garanties": garanties_dict,
+            }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Erreur récupération couverture pour %s : %s", assure_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la lecture de la couverture : {exc}",
+        ) from exc
 
 
 @router.get(

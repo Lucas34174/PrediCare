@@ -105,6 +105,7 @@ class ClaimSummary(BaseModel):
     prestataire_id: str
     date_soin: date
     date_emission: date
+    date_reception: date | None = None
     montant_total: int
     part_assure: int
     montant_demande: int
