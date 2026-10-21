@@ -3,14 +3,22 @@
 import json
 import logging
 import shutil
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import create_engine, text
 
-from predicare.core.config import database_url, fraud_score_threshold, n8n_webhook_url
+from predicare.api.deps import require_roles
+from predicare.core.config import (
+    database_url,
+    fraud_score_threshold,
+    model_version,
+    n8n_webhook_url,
+)
 from predicare.ml.baseline import MODELS_DIR
+from predicare.ml.config import MODELS_ROOT
+from predicare.ml.registry import lister_versions, promouvoir, rollback, version_production
 
 from ..schemas import (
     AdminAuditResponse,
@@ -24,6 +32,7 @@ from ..schemas import (
     ModelActivateResponse,
     ModelVersion,
     Role,
+    UserInfo,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,9 +46,6 @@ _CONFIG = AdminConfig(
     semantic_cache_threshold=0.85,
     updated_at=datetime.now(UTC),
 )
-
-_KNOWN_VERSIONS = {"v1.0.0-xgb", "v0.9.0-baseline", "v1.1.0-xgb"}
-_ACTIVE_MODEL_VERSION: str | None = None
 
 
 @router.get("/config", response_model=AdminConfig)
@@ -60,25 +66,52 @@ def update_config(body: AdminConfigUpdateRequest) -> AdminConfig:
 
 @router.get("/models", response_model=AdminModelsResponse)
 def list_models() -> AdminModelsResponse:
-    """Liste des versions de modèles disponibles lues dynamiquement depuis models_metadata.json."""
-    global _ACTIVE_MODEL_VERSION
-    metadata_file = MODELS_DIR / "models_metadata.json"
-    if metadata_file.exists():
-        try:
-            data = json.loads(metadata_file.read_text(encoding="utf-8"))
-            if _ACTIVE_MODEL_VERSION is not None:
-                data["active_version"] = _ACTIVE_MODEL_VERSION
-                for m in data.get("available_models", []):
-                    m["statut"] = (
-                        "ACTIVE" if m["version_id"] == _ACTIVE_MODEL_VERSION else "STANDBY"
-                    )
-            else:
-                _ACTIVE_MODEL_VERSION = data.get("active_version", "v1.0.0-xgb")
-            return AdminModelsResponse(**data)
-        except Exception as exc:
-            logger.warning("Échec lecture models_metadata.json : %s", exc)
+    """Liste les modèles réellement enregistrés, avec repli sur le catalogue historique."""
+    versions = lister_versions()
+    if versions:
+        available = []
+        for entry in versions:
+            meta = entry.get("metadonnees") or {}
+            metrics = meta.get("metriques_test") or meta.get("test") or {}
+            created = str(entry.get("cree", ""))[:10]
+            try:
+                trained = date.fromisoformat(created)
+            except ValueError:
+                trained = date.today()
+            available.append(
+                ModelVersion(
+                    version_id=entry["version"],
+                    type=str(meta.get("modele", "XGBoost")),
+                    recall_test=float(metrics.get("recall", 0.0)),
+                    precision_test=float(metrics.get("precision", 0.0)),
+                    f1_score=float(metrics.get("f1", 0.0)),
+                    date_entrainement=trained,
+                    statut={
+                        "production": "ACTIVE",
+                        "staging": "STANDBY",
+                        "archive": "ARCHIVED",
+                    }.get(str(entry.get("statut", "staging")), "STANDBY"),
+                )
+            )
+        return AdminModelsResponse(
+            active_version=version_production() or model_version(),
+            available_models=available,
+        )
 
-    active_ver = _ACTIVE_MODEL_VERSION or "v1.0.0-xgb"
+    metadata_path = MODELS_ROOT / "models_metadata.json"
+    if metadata_path.is_file():
+        try:
+            return AdminModelsResponse.model_validate_json(
+                metadata_path.read_text(encoding="utf-8")
+            )
+        except Exception:
+            try:
+                data = json.loads(metadata_path.read_text(encoding="utf-8"))
+                return AdminModelsResponse(**data)
+            except Exception:
+                logger.exception("Catalogue historique des modèles invalide : %s", metadata_path)
+
+    active_ver = version_production() or model_version()
     return AdminModelsResponse(
         active_version=active_ver,
         available_models=[
@@ -88,7 +121,7 @@ def list_models() -> AdminModelsResponse:
                 recall_test=0.912,
                 precision_test=0.843,
                 f1_score=0.876,
-                date_entrainement=datetime.now(UTC).date(),
+                date_entrainement=date.today(),
                 statut="ACTIVE" if active_ver == "v1.0.0-xgb" else "STANDBY",
             ),
             ModelVersion(
@@ -97,7 +130,7 @@ def list_models() -> AdminModelsResponse:
                 recall_test=0.835,
                 precision_test=0.791,
                 f1_score=0.812,
-                date_entrainement=datetime.now(UTC).date(),
+                date_entrainement=date.today(),
                 statut="ACTIVE" if active_ver == "v0.9.0-baseline" else "STANDBY",
             ),
             ModelVersion(
@@ -106,7 +139,7 @@ def list_models() -> AdminModelsResponse:
                 recall_test=0.4286,
                 precision_test=0.4286,
                 f1_score=0.4286,
-                date_entrainement=datetime.now(UTC).date(),
+                date_entrainement=date.today(),
                 statut="ACTIVE" if active_ver == "v1.1.0-xgb" else "STANDBY",
             ),
         ],
@@ -118,38 +151,19 @@ def list_models() -> AdminModelsResponse:
     response_model=ModelActivateResponse,
     responses={404: {"description": "Version de modèle inconnue."}},
 )
-def activate_model(version_id: str) -> ModelActivateResponse:
-    """Bascule vers une version de modèle avec persistance et journalisation audit."""
-    global _ACTIVE_MODEL_VERSION
-    metadata_file = MODELS_DIR / "models_metadata.json"
-    known_versions = set(_KNOWN_VERSIONS)
-
-    models_data = None
-    if metadata_file.exists():
-        try:
-            models_data = json.loads(metadata_file.read_text(encoding="utf-8"))
-            for m in models_data.get("available_models", []):
-                known_versions.add(m["version_id"])
-        except Exception:
-            pass
-
-    if version_id not in known_versions:
-        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.")
+def activate_model(
+    version_id: str,
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+) -> ModelActivateResponse:
+    """Bascule atomiquement le pointeur vers une version validée."""
+    try:
+        promouvoir(version_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.") from exc
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     now = datetime.now(UTC)
-    _ACTIVE_MODEL_VERSION = version_id
-
-    # Mise à jour du fichier models_metadata.json si présent
-    if models_data is not None:
-        try:
-            models_data["active_version"] = version_id
-            for m in models_data.get("available_models", []):
-                m["statut"] = "ACTIVE" if m["version_id"] == version_id else "STANDBY"
-            metadata_file.write_text(
-                json.dumps(models_data, indent=2, ensure_ascii=False), encoding="utf-8"
-            )
-        except Exception as exc:
-            logger.warning("Échec mise à jour models_metadata.json : %s", exc)
 
     # Mise à jour du modèle champion actif sur le disque si le joblib versionné existe
     versioned_joblib = MODELS_DIR / f"fraud_xgb_{version_id}.joblib"
@@ -162,7 +176,7 @@ def activate_model(version_id: str) -> ModelActivateResponse:
 
     # Trace dans le journal d'audit PostgreSQL
     try:
-        engine = create_engine(database_url())
+        engine = create_engine(database_url(), connect_args={"connect_timeout": 1})
         with engine.begin() as conn:
             conn.execute(
                 text("""
@@ -180,9 +194,28 @@ def activate_model(version_id: str) -> ModelActivateResponse:
         logger.warning("Échec journalisation audit pour activation modèle : %s", exc)
 
     return ModelActivateResponse(
-        message="Bascule effectuée avec succès.",
+        message="Bascule effectuée ; les requêtes en cours terminent sur leur modèle initial.",
         active_version=version_id,
         switched_at=now,
+    )
+
+
+@router.post("/models/rollback", response_model=ModelActivateResponse)
+def rollback_model(
+    _admin: Annotated[UserInfo, Depends(require_roles([Role.ADMINISTRATEUR]))],
+    version_id: str | None = Query(default=None),
+) -> ModelActivateResponse:
+    """Revient à la version précédente (ou à celle explicitement demandée)."""
+    try:
+        registre = rollback(version_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} inconnue.") from exc
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return ModelActivateResponse(
+        message="Retour arrière effectué.",
+        active_version=registre["production"],
+        switched_at=datetime.now(UTC),
     )
 
 
