@@ -56,8 +56,12 @@ class ReactAgent:
             return AgentResult(
                 answer="Je ne peux pas répondre à une question vide.", abstention=True, steps=[]
             )
-
         q_lower = question.lower()
+        if q_lower.strip() in ["bonjour", "salut", "hello", "bonsoir", "voucou", "coucou"]:
+            return AgentResult(
+                answer="Bonjour ! Je suis l'assistant PrediCare. Posez-moi une question sur vos garanties ou le barème.",
+                abstention=False, sources=[], steps=[]
+            )
 
         # 1. ROUTAGE SQL (Factures)
         if any(
@@ -119,29 +123,49 @@ class ReactAgent:
         return AgentResult(answer=answer, abstention=False, sources=sources, steps=steps)
 
     def _generate_answer(self, question: str, contexte: str) -> str:
-        """Tente d'utiliser le LLM, sinon bascule sur un template local."""
-        prompt = f"Contexte:\n{contexte[:800]}\n\nQuestion: {question}\nRéponse courte:"
+        import re
+        
+        # 1. On nettoie le contexte (enlever les crochets [Barème | ...])
+        contexte_propre = re.sub(r"\[.*?\]", "", contexte).strip()
+        
+        # 2. On isole le PREMIER document (le plus pertinent) pour ne pas mélanger les infos
+        documents = contexte_propre.split("\n\n")
+        premier_doc = documents[0] if documents else contexte_propre
+        lignes = [l.strip() for l in premier_doc.split("\n") if l.strip()]
+        
+        infos_cles = []
+        for l in lignes:
+            if any(k in l for k in ["Tarif", "Contact", "Horaires", "Prestataire", "Adresse", "Exclu", "pris en charge", "taux", "Libellé", "Plafond"]):
+                infos_cles.append(l)
+        
+        if not infos_cles and lignes:
+            infos_cles = [lignes[0]]
 
+        resume = "\n- ".join(infos_cles[:4]) # Max 4 lignes propres
+
+        # 3. Le prompt pour le LLM
+        prompt = (
+            f"Voici les informations extraites d'un document officiel :\n"
+            f"{resume}\n\n"
+            f"Question de l'assuré : {question}\n\n"
+            f"Rédige une réponse polie, claire et concise (1 ou 3 phrases) en te basant STRICTEMENT sur ces informations."
+        )
+        
         try:
             response = self._client.post(
                 "/api/generate",
-                json={
-                    "model": self._llm_model,
-                    "prompt": prompt,
-                    "system": SYSTEM_PROMPT,
-                    "stream": False,
-                    "options": {"temperature": 0.0},
-                },
+                json={"model": self._llm_model, "prompt": prompt, "stream": False, "options": {"temperature": 0.1, "num_predict": 150}},
+                timeout=150.0 # On laisse 15 secondes au LLM
             )
             response.raise_for_status()
             ans = response.json().get("response", "").strip()
-            if not ans:
-                raise ValueError("Réponse vide")
-            return ans
+            if ans:
+                return ans
         except Exception as exc:
-            logger.warning("LLM trop lent ou indisponible (%s). Fallback local.", exc)
-            # FALLBACK LOCAL : On retourne le contexte brut enrichi
-            return f"Selon les documents PrediCare :\n{contexte[:400]}..."
+            logger.warning("LLM trop lent (%s). Fallback local.", exc)
+
+        # 4. Fallback si le LLM timeout (Affichage propre)
+        return f"D'après le document source :\n\n- {resume}\n\n*(Note : Le générateur de texte est indisponible, voici l'extrait brut.)*"
 
     def close(self) -> None:
         self._client.close()

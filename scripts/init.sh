@@ -1,15 +1,30 @@
 #!/bin/sh
 set -e
 
-echo "  __ Attente de la base de données..."
-until pg_isready -h db -U predicare > /dev/null 2>&1; do
-  sleep 2
-done
+echo " ___ Attente de la base de données..."
+python -c "
+import time
+from sqlalchemy import create_engine, text
+from predicare.core.config import database_url
+import sys
 
-echo "  __ Base de données prête. Application des migrations..."
+engine = create_engine(database_url())
+for i in range(30):
+    try:
+        with engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        print(' ___ Base de données prête.')
+        sys.exit(0)
+    except Exception:
+        time.sleep(2)
+print(' ___ Timeout : la base de données ne répond pas.')
+sys.exit(1)
+"
+
+echo " ___ Base de données prête. Application des migrations..."
 alembic upgrade head
 
-echo "  __ Ingestion du corpus RAG..."
+echo " ___ Ingestion du corpus RAG..."
 python -m predicare.rag.ingest_all
 
-echo " __ Initialisation terminée !"
+echo " ___ Initialisation terminée !"
