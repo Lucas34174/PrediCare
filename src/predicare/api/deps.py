@@ -13,47 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from predicare.api.schemas import Role, UserInfo
 from predicare.core.config import database_url
-from predicare.core.security import decode_access_token, hash_password
-
-# Comptes de démonstration avec hash bcrypt (repli si la base n'est pas encore peuplée)
-_DEMO_USERS: dict[str, dict[str, Any]] = {
-    "gestionnaire1": {
-        "id": "USR-0012",
-        "identifier": "gestionnaire1",
-        "role": Role.GESTIONNAIRE,
-        "nom_complet": "Aina Razafy",
-        "mot_de_passe_hash": hash_password("gestionnaire123"),
-        "assure_id": None,
-        "prestataire_id": None,
-    },
-    "assure1": {
-        "id": "ASS-00421",
-        "identifier": "assure1",
-        "role": Role.ASSURE,
-        "nom_complet": "Rabe Rakoto",
-        "mot_de_passe_hash": hash_password("assure123"),
-        "assure_id": "ASS-00421",
-        "prestataire_id": None,
-    },
-    "admin1": {
-        "id": "USR-0001",
-        "identifier": "admin1",
-        "role": Role.ADMINISTRATEUR,
-        "nom_complet": "Hery Andriamaro",
-        "mot_de_passe_hash": hash_password("admin123"),
-        "assure_id": None,
-        "prestataire_id": None,
-    },
-    "pro1": {
-        "id": "USR-0050",
-        "identifier": "pro1",
-        "role": Role.PROFESSIONNEL_SANTE,
-        "nom_complet": "Pharmacie Voninkazo Tanjombato",
-        "mot_de_passe_hash": hash_password("pro123"),
-        "assure_id": None,
-        "prestataire_id": "PRE-00050",
-    },
-}
+from predicare.core.security import decode_access_token
 
 
 @cache
@@ -62,7 +22,10 @@ def _db_engine() -> Engine:
 
 
 def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
-    """Cherche un utilisateur dans la table PostgreSQL 'utilisateurs', avec repli démo."""
+    """Cherche un utilisateur dans la table PostgreSQL 'utilisateurs'.
+
+    Retourne None si introuvable ou si la base est inaccessible.
+    """
     try:
         with _db_engine().connect() as conn:
             row = (
@@ -79,10 +42,11 @@ def find_user_by_identifier(identifier: str) -> dict[str, Any] | None:
             )
             if row:
                 return dict(row)
-    except SQLAlchemyError:
-        pass
+    except SQLAlchemyError as exc:
+        import logging
+        logging.getLogger(__name__).warning("DB inaccessible dans find_user_by_identifier : %s", exc)
 
-    return _DEMO_USERS.get(identifier)
+    return None
 
 
 def get_current_user(
