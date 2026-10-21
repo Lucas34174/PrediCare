@@ -59,8 +59,8 @@ def _valeur_lisible(valeur: Any) -> float | int | str:
 
 def _description(variable: str, modalite: str | None, valeur: Any, manquante: bool) -> str:
     label = feature_label(variable)
-    if manquante:
-        return f"{label} : valeur manquante"
+    if manquante or valeur is None or (isinstance(valeur, (float, np.floating)) and np.isnan(valeur)):
+        return f"{label} (non applicable ou non renseigné)"
     if modalite:
         return f"{label} = {modalite.replace('_', ' ')}"
     if isinstance(valeur, (int, np.integer)):

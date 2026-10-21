@@ -157,6 +157,39 @@ def reset_model_cache() -> None:
     get_model.cache_clear()
 
 
+_REF_TABLES_CACHE: dict[str, pd.DataFrame] | None = None
+
+
+def get_reference_tables() -> dict[str, pd.DataFrame]:
+    """Charge et met en cache les tables de référence depuis PostgreSQL pour l'inférence temps réel."""
+    global _REF_TABLES_CACHE
+    if _REF_TABLES_CACHE is not None:
+        return _REF_TABLES_CACHE
+
+    try:
+        from predicare.api.deps import _db_engine
+
+        engine = _db_engine()
+        if engine is not None:
+            with engine.connect() as conn:
+                _REF_TABLES_CACHE = {
+                    "referentiel_actes": pd.read_sql("SELECT * FROM referentiel_actes", conn),
+                    "referentiel_medicaments": pd.read_sql("SELECT * FROM referentiel_medicaments", conn),
+                    "grille_tarifaire": pd.read_sql("SELECT * FROM grille_tarifaire", conn),
+                    "garanties": pd.read_sql("SELECT * FROM garanties", conn),
+                    "prestataires": pd.read_sql("SELECT * FROM prestataires", conn),
+                    "assures": pd.read_sql("SELECT * FROM assures", conn),
+                    "contrats": pd.read_sql("SELECT * FROM contrats", conn),
+                    "ordonnances": pd.read_sql("SELECT * FROM ordonnances", conn),
+                    "ordonnance_lignes": pd.read_sql("SELECT * FROM ordonnance_lignes", conn),
+                }
+                return _REF_TABLES_CACHE
+    except Exception as exc:
+        logger.warning("Chargement des tables de référence impossible : %s", exc)
+
+    return {}
+
+
 def construire_features_facture(
     facture: dict[str, Any],
     lignes: list[dict[str, Any]],
@@ -186,10 +219,36 @@ def construire_features_facture(
     if not lignes_df.empty and "facture_id" not in lignes_df.columns:
         lignes_df["facture_id"] = fac_df["facture_id"].iloc[0]
 
-    tables = dict(ref_tables or {})
+    base_tables = get_reference_tables() if ref_tables is None else ref_tables
+    tables = dict(base_tables)
     tables["lignes_facture"] = lignes_df
 
-    raw_features = build_features(fac_df, tables, history=pd.DataFrame())
+    history_df = pd.DataFrame()
+    try:
+        from sqlalchemy import text
+        from predicare.api.deps import _db_engine
+        engine = _db_engine()
+        if engine is not None:
+            pid = fac_df["prestataire_id"].iloc[0] if "prestataire_id" in fac_df.columns else None
+            aid = fac_df["assure_id"].iloc[0] if "assure_id" in fac_df.columns else None
+            current_fid = fac_df["facture_id"].iloc[0] if "facture_id" in fac_df.columns else None
+            if pid or aid:
+                with engine.connect() as conn:
+                    history_df = pd.read_sql(
+                        text(
+                            "SELECT facture_id, assure_id, prestataire_id, date_soin, "
+                            "montant_total, numero_facture, ordonnance_id "
+                            "FROM factures "
+                            "WHERE (prestataire_id = :pid OR assure_id = :aid) "
+                            "AND facture_id != :cfid"
+                        ),
+                        conn,
+                        params={"pid": pid, "aid": aid, "cfid": current_fid or ""},
+                    )
+    except Exception as exc:
+        logger.warning("Chargement de l'historique impossible : %s", exc)
+
+    raw_features = build_features(fac_df, tables, history=history_df)
 
     colonnes_attendues = _charger_feature_names()
     if colonnes_attendues:
@@ -212,10 +271,47 @@ def predire_facture_en_ligne(
 
     score_fraude = round(modele.scorer_unitaire(features_df), 4)
     seuil = fraud_score_threshold()
-    est_anomalie = bool(score_fraude >= seuil)
+
+    # Détection explicite de doublon (règle métier & signal historique)
+    deja_vu = False
+    if "f_numero_facture_deja_vu" in features_df.columns:
+        val = features_df["f_numero_facture_deja_vu"].iloc[0]
+        deja_vu = bool(val == 1.0 or val == 1)
+    if not deja_vu and facture.get("numero_facture") and facture.get("prestataire_id"):
+        try:
+            from sqlalchemy import text
+            from predicare.api.deps import _db_engine
+            engine = _db_engine()
+            if engine is not None:
+                with engine.connect() as conn:
+                    ex = conn.execute(
+                        text(
+                            "SELECT 1 FROM factures "
+                            "WHERE prestataire_id = :pid AND numero_facture = :num AND facture_id != :fid LIMIT 1"
+                        ),
+                        {"pid": facture.get("prestataire_id"), "num": facture.get("numero_facture"), "fid": facture.get("facture_id", "")},
+                    ).scalar()
+                    if ex:
+                        deja_vu = True
+        except Exception:
+            pass
 
     # Explicabilité SHAP locale
     facteurs, recommandation = expliquer_facture(modele, features_df.iloc[0], top_k=top_k)
+
+    if deja_vu:
+        score_fraude = max(score_fraude, 0.95)
+        est_anomalie = True
+        doublon_factor = {
+            "feature": "f_numero_facture_deja_vu",
+            "valeur": 1,
+            "impact_shap": 0.85,
+            "description": "Numéro de facture déjà transmis pour ce prestataire (DOUBLON)",
+        }
+        facteurs = [doublon_factor] + [f for f in facteurs if f.get("feature") != "f_numero_facture_deja_vu"][:top_k - 1]
+        recommandation = "Alerte DOUBLON : une facture portant ce même numéro a déjà été télétransmise par cet établissement."
+    else:
+        est_anomalie = bool(score_fraude >= seuil)
 
     return {
         "score_fraude": score_fraude,

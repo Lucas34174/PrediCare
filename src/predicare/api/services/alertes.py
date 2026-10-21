@@ -92,7 +92,7 @@ def construire_payload_alerte(
 def emettre_alerte_fraude(
     payload: dict[str, Any],
     url: str | None = None,
-    timeout: float = 2.0,
+    timeout: float = 10.0,
 ) -> bool:
     """Envoie l'alerte vers n8n sans jamais bloquer ni lever d'exception."""
     cible = url or n8n_webhook_url()
