@@ -1,41 +1,41 @@
 {
   "xgb": {
-    "best_value_pr_auc": 0.6640074319598759,
+    "best_value_pr_auc": 0.9836426465111516,
     "best_params": {
       "max_depth": 5,
-      "learning_rate": 0.07542592574732018,
-      "n_estimators": 500,
-      "subsample": 0.8872826421484238,
-      "colsample_bytree": 0.6928051321629185,
-      "min_child_weight": 3.181475260669349,
-      "reg_alpha": 0.020717867849344825,
-      "reg_lambda": 0.003397992679631575,
-      "scale_pos_weight": 7.511536811126517
+      "learning_rate": 0.17254716573280354,
+      "n_estimators": 400,
+      "subsample": 0.8394633936788146,
+      "colsample_bytree": 0.6624074561769746,
+      "min_child_weight": 2.403950683025824,
+      "reg_alpha": 0.0017073967431528124,
+      "reg_lambda": 2.9154431891537547,
+      "scale_pos_weight": 6.841564639061556
     },
     "oof_metrics": {
-      "oof_pr_auc": 0.5302027855458596,
-      "oof_recall_0.5": 0.26666666666666666,
-      "oof_f2_0.5": 0.30303030303030304
+      "oof_pr_auc": 0.9835345664701372,
+      "oof_recall_0.5": 0.960552570990023,
+      "oof_f2_0.5": 0.9430948218699138
     }
   },
   "lgbm": {
-    "best_value_pr_auc": 0.6101618429124003,
+    "best_value_pr_auc": 0.9834727350865731,
     "best_params": {
-      "max_depth": 7,
-      "num_leaves": 99,
-      "learning_rate": 0.054925234271505724,
-      "n_estimators": 450,
-      "subsample": 0.873506287696939,
-      "colsample_bytree": 0.9787654353170465,
-      "min_child_samples": 5,
-      "reg_alpha": 0.0189120755695912,
-      "reg_lambda": 0.0022424491952442427,
-      "scale_pos_weight": 5.5752514717584125
+      "max_depth": 8,
+      "num_leaves": 102,
+      "learning_rate": 0.16684619386293467,
+      "n_estimators": 500,
+      "subsample": 0.8391599915244341,
+      "colsample_bytree": 0.9687496940092467,
+      "min_child_samples": 9,
+      "reg_alpha": 0.006080390190296602,
+      "reg_lambda": 0.0015167330688076208,
+      "scale_pos_weight": 4.161521703957604
     },
     "oof_metrics": {
-      "oof_pr_auc": 0.5847398820948929,
-      "oof_recall_0.5": 0.3333333333333333,
-      "oof_f2_0.5": 0.38461538461538464
+      "oof_pr_auc": 0.9834368078998396,
+      "oof_recall_0.5": 0.9453568687643898,
+      "oof_f2_0.5": 0.942983127660226
     }
   }
 }

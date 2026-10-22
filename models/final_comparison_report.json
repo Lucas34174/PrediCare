@@ -1,201 +1,441 @@
 {
   "baseline_lr": {
     "seuil_applique": 0.5,
-    "recall": 0.4286,
+    "recall": 0.9026,
     "recall_ci_95": [
-      0.0,
-      0.8333
+      0.8807,
+      0.9219
     ],
-    "precision": 0.6,
-    "f1": 0.5,
-    "f2": 0.4545,
-    "pr_auc": 0.492,
-    "roc_auc": 0.648,
+    "precision": 0.7235,
+    "f1": 0.8032,
+    "f2": 0.8601,
+    "pr_auc": 0.9012,
+    "roc_auc": 0.949,
     "confusion_matrix": [
       [
-        82,
-        2
+        7132,
+        287
       ],
       [
-        4,
-        3
+        81,
+        751
       ]
     ],
-    "nb_alertes": 5,
+    "nb_alertes": 1038,
     "recall_by_fraud_type": {
       "ACTE_FICTIF": {
-        "total_cas": 1,
-        "detectes": 1,
-        "rates": 0,
-        "recall": 1.0
+        "total_cas": 55,
+        "detectes": 47,
+        "rates": 8,
+        "recall": 0.8545
       },
       "DOUBLON": {
-        "total_cas": 4,
-        "detectes": 0,
-        "rates": 4,
-        "recall": 0.0
+        "total_cas": 89,
+        "detectes": 88,
+        "rates": 1,
+        "recall": 0.9888
+      },
+      "FRACTIONNEMENT": {
+        "total_cas": 27,
+        "detectes": 8,
+        "rates": 19,
+        "recall": 0.2963
+      },
+      "HORS_COUVERTURE": {
+        "total_cas": 86,
+        "detectes": 86,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "INCOHERENCE_PROFIL": {
+        "total_cas": 41,
+        "detectes": 41,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "LIGNES_NON_PRESCRITES": {
+        "total_cas": 68,
+        "detectes": 68,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "ORDONNANCE_EXPIREE": {
+        "total_cas": 39,
+        "detectes": 39,
+        "rates": 0,
+        "recall": 1.0
       },
       "PRESTATAIRE_RADIE": {
-        "total_cas": 1,
-        "detectes": 1,
+        "total_cas": 31,
+        "detectes": 31,
         "rates": 0,
         "recall": 1.0
       },
-      "SURFACTURATION": {
-        "total_cas": 1,
-        "detectes": 1,
+      "QUANTITE_EXCESSIVE": {
+        "total_cas": 43,
+        "detectes": 43,
         "rates": 0,
         "recall": 1.0
+      },
+      "SOINS_JOUR_FERME": {
+        "total_cas": 14,
+        "detectes": 14,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SUBSTITUTION_PRODUIT": {
+        "total_cas": 33,
+        "detectes": 33,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SURCONSOMMATION": {
+        "total_cas": 79,
+        "detectes": 71,
+        "rates": 8,
+        "recall": 0.8987
+      },
+      "SURFACTURATION": {
+        "total_cas": 144,
+        "detectes": 144,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "UPCODING": {
+        "total_cas": 83,
+        "detectes": 38,
+        "rates": 45,
+        "recall": 0.4578
       }
     }
   },
   "baseline_rf": {
     "seuil_applique": 0.5,
-    "recall": 0.2857,
+    "recall": 0.9315,
     "recall_ci_95": [
-      0.0,
-      0.6667
+      0.9126,
+      0.9494
     ],
-    "precision": 0.5,
-    "f1": 0.3636,
-    "f2": 0.3125,
-    "pr_auc": 0.4121,
-    "roc_auc": 0.8206,
+    "precision": 0.8908,
+    "f1": 0.9107,
+    "f2": 0.9231,
+    "pr_auc": 0.9574,
+    "roc_auc": 0.9914,
     "confusion_matrix": [
       [
-        82,
-        2
+        7324,
+        95
       ],
       [
-        5,
-        2
+        57,
+        775
       ]
     ],
-    "nb_alertes": 4,
+    "nb_alertes": 870,
     "recall_by_fraud_type": {
       "ACTE_FICTIF": {
-        "total_cas": 1,
-        "detectes": 1,
-        "rates": 0,
-        "recall": 1.0
+        "total_cas": 55,
+        "detectes": 51,
+        "rates": 4,
+        "recall": 0.9273
       },
       "DOUBLON": {
-        "total_cas": 4,
-        "detectes": 0,
-        "rates": 4,
-        "recall": 0.0
+        "total_cas": 89,
+        "detectes": 80,
+        "rates": 9,
+        "recall": 0.8989
       },
-      "PRESTATAIRE_RADIE": {
-        "total_cas": 1,
-        "detectes": 0,
-        "rates": 1,
-        "recall": 0.0
+      "FRACTIONNEMENT": {
+        "total_cas": 27,
+        "detectes": 16,
+        "rates": 11,
+        "recall": 0.5926
       },
-      "SURFACTURATION": {
-        "total_cas": 1,
-        "detectes": 1,
+      "HORS_COUVERTURE": {
+        "total_cas": 86,
+        "detectes": 86,
         "rates": 0,
         "recall": 1.0
+      },
+      "INCOHERENCE_PROFIL": {
+        "total_cas": 41,
+        "detectes": 41,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "LIGNES_NON_PRESCRITES": {
+        "total_cas": 68,
+        "detectes": 68,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "ORDONNANCE_EXPIREE": {
+        "total_cas": 39,
+        "detectes": 39,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 31,
+        "detectes": 31,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "QUANTITE_EXCESSIVE": {
+        "total_cas": 43,
+        "detectes": 43,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SOINS_JOUR_FERME": {
+        "total_cas": 14,
+        "detectes": 14,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SUBSTITUTION_PRODUIT": {
+        "total_cas": 33,
+        "detectes": 33,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SURCONSOMMATION": {
+        "total_cas": 79,
+        "detectes": 68,
+        "rates": 11,
+        "recall": 0.8608
+      },
+      "SURFACTURATION": {
+        "total_cas": 144,
+        "detectes": 144,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "UPCODING": {
+        "total_cas": 83,
+        "detectes": 61,
+        "rates": 22,
+        "recall": 0.7349
       }
     }
   },
   "xgboost_optimal": {
-    "seuil_applique": 0.3,
-    "recall": 0.2857,
+    "seuil_applique": 0.95,
+    "recall": 0.8846,
     "recall_ci_95": [
-      0.0,
-      0.6667
+      0.8617,
+      0.9066
     ],
-    "precision": 0.3333,
-    "f1": 0.3077,
-    "f2": 0.2941,
-    "pr_auc": 0.434,
-    "roc_auc": 0.7517,
+    "precision": 0.9973,
+    "f1": 0.9376,
+    "f2": 0.9051,
+    "pr_auc": 0.9843,
+    "roc_auc": 0.9957,
     "confusion_matrix": [
       [
-        80,
-        4
+        7417,
+        2
       ],
       [
-        5,
-        2
+        96,
+        736
       ]
     ],
-    "nb_alertes": 6,
+    "nb_alertes": 738,
     "recall_by_fraud_type": {
       "ACTE_FICTIF": {
-        "total_cas": 1,
-        "detectes": 1,
-        "rates": 0,
-        "recall": 1.0
+        "total_cas": 55,
+        "detectes": 47,
+        "rates": 8,
+        "recall": 0.8545
       },
       "DOUBLON": {
-        "total_cas": 4,
-        "detectes": 0,
-        "rates": 4,
-        "recall": 0.0
+        "total_cas": 89,
+        "detectes": 70,
+        "rates": 19,
+        "recall": 0.7865
       },
-      "PRESTATAIRE_RADIE": {
-        "total_cas": 1,
-        "detectes": 0,
+      "FRACTIONNEMENT": {
+        "total_cas": 27,
+        "detectes": 10,
+        "rates": 17,
+        "recall": 0.3704
+      },
+      "HORS_COUVERTURE": {
+        "total_cas": 86,
+        "detectes": 85,
         "rates": 1,
-        "recall": 0.0
+        "recall": 0.9884
       },
-      "SURFACTURATION": {
-        "total_cas": 1,
-        "detectes": 1,
+      "INCOHERENCE_PROFIL": {
+        "total_cas": 41,
+        "detectes": 41,
         "rates": 0,
         "recall": 1.0
+      },
+      "LIGNES_NON_PRESCRITES": {
+        "total_cas": 68,
+        "detectes": 67,
+        "rates": 1,
+        "recall": 0.9853
+      },
+      "ORDONNANCE_EXPIREE": {
+        "total_cas": 39,
+        "detectes": 39,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 31,
+        "detectes": 31,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "QUANTITE_EXCESSIVE": {
+        "total_cas": 43,
+        "detectes": 43,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SOINS_JOUR_FERME": {
+        "total_cas": 14,
+        "detectes": 13,
+        "rates": 1,
+        "recall": 0.9286
+      },
+      "SUBSTITUTION_PRODUIT": {
+        "total_cas": 33,
+        "detectes": 33,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SURCONSOMMATION": {
+        "total_cas": 79,
+        "detectes": 62,
+        "rates": 17,
+        "recall": 0.7848
+      },
+      "SURFACTURATION": {
+        "total_cas": 144,
+        "detectes": 142,
+        "rates": 2,
+        "recall": 0.9861
+      },
+      "UPCODING": {
+        "total_cas": 83,
+        "detectes": 53,
+        "rates": 30,
+        "recall": 0.6386
       }
     }
   },
   "lightgbm_optimal": {
-    "seuil_applique": 0.05,
-    "recall": 0.4286,
+    "seuil_applique": 0.95,
+    "recall": 0.9038,
     "recall_ci_95": [
-      0.0,
-      0.8333
+      0.8828,
+      0.9236
     ],
-    "precision": 0.4286,
-    "f1": 0.4286,
-    "f2": 0.4286,
-    "pr_auc": 0.4114,
-    "roc_auc": 0.6769,
+    "precision": 0.9908,
+    "f1": 0.9453,
+    "f2": 0.92,
+    "pr_auc": 0.9804,
+    "roc_auc": 0.9946,
     "confusion_matrix": [
       [
-        80,
-        4
+        7412,
+        7
       ],
       [
-        4,
-        3
+        80,
+        752
       ]
     ],
-    "nb_alertes": 7,
+    "nb_alertes": 759,
     "recall_by_fraud_type": {
       "ACTE_FICTIF": {
-        "total_cas": 1,
-        "detectes": 1,
-        "rates": 0,
-        "recall": 1.0
+        "total_cas": 55,
+        "detectes": 49,
+        "rates": 6,
+        "recall": 0.8909
       },
       "DOUBLON": {
-        "total_cas": 4,
-        "detectes": 1,
-        "rates": 3,
-        "recall": 0.25
+        "total_cas": 89,
+        "detectes": 71,
+        "rates": 18,
+        "recall": 0.7978
       },
-      "PRESTATAIRE_RADIE": {
-        "total_cas": 1,
-        "detectes": 0,
-        "rates": 1,
-        "recall": 0.0
+      "FRACTIONNEMENT": {
+        "total_cas": 27,
+        "detectes": 16,
+        "rates": 11,
+        "recall": 0.5926
       },
-      "SURFACTURATION": {
-        "total_cas": 1,
-        "detectes": 1,
+      "HORS_COUVERTURE": {
+        "total_cas": 86,
+        "detectes": 86,
         "rates": 0,
         "recall": 1.0
+      },
+      "INCOHERENCE_PROFIL": {
+        "total_cas": 41,
+        "detectes": 41,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "LIGNES_NON_PRESCRITES": {
+        "total_cas": 68,
+        "detectes": 68,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "ORDONNANCE_EXPIREE": {
+        "total_cas": 39,
+        "detectes": 39,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "PRESTATAIRE_RADIE": {
+        "total_cas": 31,
+        "detectes": 31,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "QUANTITE_EXCESSIVE": {
+        "total_cas": 43,
+        "detectes": 43,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SOINS_JOUR_FERME": {
+        "total_cas": 14,
+        "detectes": 14,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SUBSTITUTION_PRODUIT": {
+        "total_cas": 33,
+        "detectes": 33,
+        "rates": 0,
+        "recall": 1.0
+      },
+      "SURCONSOMMATION": {
+        "total_cas": 79,
+        "detectes": 62,
+        "rates": 17,
+        "recall": 0.7848
+      },
+      "SURFACTURATION": {
+        "total_cas": 144,
+        "detectes": 142,
+        "rates": 2,
+        "recall": 0.9861
+      },
+      "UPCODING": {
+        "total_cas": 83,
+        "detectes": 57,
+        "rates": 26,
+        "recall": 0.6867
       }
     }
   }

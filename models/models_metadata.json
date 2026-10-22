@@ -1,31 +1,31 @@
 {
-  "active_version": "v0.9.0-baseline",
+  "active_version": "v1.0.0-xgb",
   "available_models": [
     {
       "version_id": "v1.0.0-xgb",
       "type": "XGBoost",
-      "recall_test": 0.2857,
-      "precision_test": 0.3333,
-      "f1_score": 0.3077,
-      "date_entrainement": "2026-10-19",
-      "statut": "STANDBY"
+      "recall_test": 0.8846,
+      "precision_test": 0.9973,
+      "f1_score": 0.9376,
+      "date_entrainement": "2026-10-22",
+      "statut": "ACTIVE"
     },
     {
       "version_id": "v0.9.0-baseline",
       "type": "LogisticRegression",
-      "recall_test": 0.4286,
-      "precision_test": 0.6,
-      "f1_score": 0.5,
-      "date_entrainement": "2026-10-19",
-      "statut": "ACTIVE"
+      "recall_test": 0.9026,
+      "precision_test": 0.7235,
+      "f1_score": 0.8032,
+      "date_entrainement": "2026-10-22",
+      "statut": "STANDBY"
     },
     {
-      "version_id": "v1.1.0-xgb",
+      "version_id": "v2.0.0-xgb",
       "type": "XGBoost",
-      "recall_test": 0.4286,
-      "precision_test": 0.4286,
-      "f1_score": 0.4286,
-      "date_entrainement": "2026-10-20",
+      "recall_test": 0.8846,
+      "precision_test": 0.9973,
+      "f1_score": 0.9376,
+      "date_entrainement": "2026-10-22",
       "statut": "STANDBY"
     }
   ]

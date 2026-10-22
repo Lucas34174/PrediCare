@@ -57,7 +57,7 @@ def test_chargement_modele_champion_et_explainer():
         pytest.skip(f"Modèle champion absent de cet environnement : {exc}")
 
     assert modele.version
-    assert len(modele.variables) == 23
+    assert len(modele.variables) == 27
     assert modele.explainer is not None
 
 
@@ -75,7 +75,7 @@ def test_anti_fuite_strict_features_inférence():
     fuites = set(features_df.columns) & FORBIDDEN_FEATURE_COLS
     assert not fuites, f"Colonnes interdites détectées : {fuites}"
     assert len(features_df) == 1
-    assert len(features_df.columns) == 23
+    assert len(features_df.columns) == 27
 
 
 def test_inference_en_ligne_complete():
