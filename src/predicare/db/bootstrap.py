@@ -143,12 +143,12 @@ _DEMO_USERS = [
         "mot_de_passe": "pro123",
         "role": "professionnel_sante",
         "assure_id": None,
-        "prestataire_id": "PRE-00050",
+        "prestataire_id": "PRE-00177",
     },
 ]
 
 
-EXCLUDED_PRESTATAIRES_BOOTSTRAP: tuple[str, ...] = ("PRE-00050",)
+EXCLUDED_PRESTATAIRES_BOOTSTRAP: tuple[str, ...] = ("PRE-00177",)
 
 
 def filter_bootstrap_data(
