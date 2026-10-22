@@ -1,5 +1,8 @@
 """Tests d'intégration pour les prédictions, arbitrages et erreurs HTTP (PB-29)."""
 
+from pathlib import Path
+
+import pytest
 from fastapi.testclient import TestClient
 
 from predicare.api.main import app
@@ -23,6 +26,20 @@ client = TestClient(app, headers={"Authorization": f"Bearer {_GESTIONNAIRE_TOKEN
 
 _EXISTING_CLAIM = "FAC-00005637"
 _UNKNOWN_CLAIM = "FAC-99999999"
+
+
+@pytest.fixture
+def v2_model(monkeypatch):
+    from predicare.ml.service import reset_model_cache
+
+    monkeypatch.setenv(
+        "PREDICARE_MODELE_PATH",
+        str(Path(__file__).resolve().parents[1] / "models" / "model_champion.joblib"),
+    )
+    monkeypatch.setenv("PREDICARE_MODELE_VERSION", "v2.0.0-xgb")
+    reset_model_cache()
+    yield
+    reset_model_cache()
 
 
 # 1. Tests des Prédictions et Explicabilité SHAP
@@ -93,7 +110,7 @@ def test_prediction_rbac_permissions():
     assert resp_admin.status_code == 200
 
 
-def test_prediction_persisted_from_submission():
+def test_prediction_persisted_from_submission(v2_model):
     """Vérifie la relecture de la prédiction persistée lors d'une soumission réelle (PB-22)."""
     from pathlib import Path
 
@@ -143,7 +160,7 @@ def test_prediction_persisted_from_submission():
 
     assert data["facture_id"] == facture_id
     assert data["prediction"]["score_fraude"] == score_soumis
-    assert data["prediction"]["version_modele"] == "v1.0.0-xgb"
+    assert data["prediction"]["version_modele"] == "v2.0.0-xgb"
     assert len(data["explicabilite"]["top_facteurs"]) > 0
 
 

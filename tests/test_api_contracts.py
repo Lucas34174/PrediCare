@@ -247,7 +247,10 @@ def test_update_admin_config():
     assert data["fraud_score_threshold"] == 0.75
 
 
-def test_list_models_structure():
+def test_list_models_structure(monkeypatch, tmp_path):
+    from predicare.ml import config
+
+    monkeypatch.setattr(config, "REGISTRY_PATH", tmp_path / "registry.json")
     data = client.get("/admin/models").json()
     assert "active_version" in data
     assert len(data["available_models"]) > 0
@@ -332,7 +335,10 @@ def test_dashboard_periode_invalide_422():
     assert client.get("/dashboard/kpis?periode=1an").status_code == 422
 
 
-def test_activate_model_inconnu_404():
+def test_activate_model_inconnu_404(monkeypatch, tmp_path):
+    from predicare.ml import config
+
+    monkeypatch.setattr(config, "REGISTRY_PATH", tmp_path / "registry.json")
     assert _admin_client.post("/admin/models/v9.9.9/activate").status_code == 404
 
 

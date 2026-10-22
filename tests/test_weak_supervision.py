@@ -8,13 +8,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from predicare.ml.registry import enregistrer_version
+
 RACINE = Path(__file__).resolve().parents[1]
 LABELS = RACINE / "data" / "raw" / "labels" / "labels_fraude.csv"
 MANIFEST_LABELS = RACINE / "data" / "raw" / "labels" / "weak_labels_manifest.json"
 DATASET = RACINE / "data" / "processed" / "dataset_fraude_v2.csv"
 MANIFEST_DATASET = RACINE / "data" / "processed" / "dataset_fraude_v2_manifest.json"
-MODELE = RACINE / "models" / "v2.0.0-weak" / "model.joblib"
-REGISTRE = RACINE / "models" / "registry.json"
 
 TYPES14 = {
     "SURFACTURATION",
@@ -75,9 +75,18 @@ def test_dataset_v2_exclut_les_variables_de_regles():
         assert manifest["par_split"][split]["positifs"] > 0
 
 
-@pytest.mark.skipif(not REGISTRE.is_file(), reason="registre absent")
-def test_registre_contient_v2():
-    registre = json.loads(REGISTRE.read_text(encoding="utf-8"))
+def test_registre_contient_v2(tmp_path):
+    modele = tmp_path / "modele.joblib"
+    modele.write_bytes(b"artefact de test")
+    chemin_registre = tmp_path / "registry.json"
+    enregistrer_version(
+        version="v2.0.0-weak",
+        chemin_modele=modele,
+        chemin_registre=chemin_registre,
+        racine_modeles=tmp_path / "models",
+    )
+
+    registre = json.loads(chemin_registre.read_text(encoding="utf-8"))
     versions = {v["version"] for v in registre["versions"]}
     assert "v2.0.0-weak" in versions
     entree = next(v for v in registre["versions"] if v["version"] == "v2.0.0-weak")
