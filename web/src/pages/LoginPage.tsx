@@ -17,13 +17,6 @@ interface LocationState {
   from?: { pathname?: string };
 }
 
-const demoAccounts = [
-  { identifier: 'gestionnaire1', display_name: 'Gestionnaire', role: 'Gestionnaire', initials: 'GE' },
-  { identifier: 'pro1', display_name: 'Clinique / Pharmacie', role: 'Pro de santé', initials: 'PS' },
-  { identifier: 'assure1', display_name: 'Assuré & Famille', role: 'Assuré', initials: 'AS' },
-  { identifier: 'admin1', display_name: 'Administrateur', role: 'Admin', initials: 'AD' },
-]
-
 export function LoginPage({
   // dark,
   // onToggleTheme,
@@ -59,12 +52,6 @@ export function LoginPage({
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function selectAccount(accountIdentifier: string) {
-    setIdentifier(accountIdentifier);
-    setPassword('demo');
-    setError('');
   }
 
   return (
@@ -175,34 +162,10 @@ export function LoginPage({
               <ArrowRight size={18} />
             </button>
           </form>
-
-          <div className="demo-section">
-            <div className="demo-header">
-              <span>Profils de démonstration rapide</span>
-              <small>Mot de passe : Demo2026!</small>
-            </div>
-            <div className="demo-grid">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.identifier}
-                  type="button"
-                  className="demo-card"
-                  onClick={() => selectAccount(account.identifier)}
-                >
-                  <span className="demo-avatar">{account.initials}</span>
-                  <div className="demo-info">
-                    <strong>{account.display_name}</strong>
-                    <small>{account.role}</small>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="ethics-note">
             <Shield size={16} />
             <p>
-              <strong>Engagement Éthique PrediCare :</strong> L'IA agit comme un filtre de clarification pour les gestionnaires, jamais comme une décision unilatérale.
+              L'IA agit comme un filtre de clarification pour les gestionnaires, jamais comme une décision unilatérale.
             </p>
           </div>
         </div>
