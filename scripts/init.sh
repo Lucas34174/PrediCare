@@ -6,19 +6,6 @@ until python -c "from predicare.core.config import database_url; from sqlalchemy
   sleep 2
 done
 
-engine = create_engine(database_url())
-for i in range(30):
-    try:
-        with engine.connect() as conn:
-            conn.execute(text('SELECT 1'))
-        print(' ___ Base de données prête.')
-        sys.exit(0)
-    except Exception:
-        time.sleep(2)
-print(' ___ Timeout : la base de données ne répond pas.')
-sys.exit(1)
-"
-
 echo " ___ Base de données prête. Application des migrations..."
 alembic upgrade head
 

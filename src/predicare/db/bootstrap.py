@@ -148,11 +148,134 @@ _DEMO_USERS = [
 ]
 
 
+EXCLUDED_PRESTATAIRES_BOOTSTRAP: tuple[str, ...] = ("PRE-00050",)
+
+
+def filter_bootstrap_data(
+    tables: dict[str, Any],
+    excluded_prestataires: tuple[str, ...] = EXCLUDED_PRESTATAIRES_BOOTSTRAP,
+) -> dict[str, Any]:
+    """Exclut les factures, lignes de facture et ordonnances associées aux prestataires de démo.
+
+    Garantit que le compte professionnel de santé de démonstration (pro1 / PRE-00050)
+    démarre avec un historique vierge pour les recettes sans briser l'intégrité référentielle.
+    """
+    if not excluded_prestataires:
+        return tables
+
+    if "factures" in tables:
+        df_fac = tables["factures"]
+        fac_mask = df_fac["prestataire_id"].isin(excluded_prestataires)
+        excluded_fac_ids = set(df_fac.loc[fac_mask, "facture_id"])
+        excluded_ordo_ids_from_fac = set(df_fac.loc[fac_mask, "ordonnance_id"].dropna())
+
+        tables["factures"] = df_fac.loc[~fac_mask].copy()
+
+        if "lignes_facture" in tables:
+            df_lf = tables["lignes_facture"]
+            tables["lignes_facture"] = df_lf.loc[~df_lf["facture_id"].isin(excluded_fac_ids)].copy()
+
+        if "ordonnances" in tables:
+            df_ord = tables["ordonnances"]
+            remaining_ordo_in_fac = set(tables["factures"]["ordonnance_id"].dropna())
+
+            ord_mask = df_ord["prescripteur_id"].isin(excluded_prestataires) | (
+                df_ord["ordonnance_id"].isin(excluded_ordo_ids_from_fac)
+                & ~df_ord["ordonnance_id"].isin(remaining_ordo_in_fac)
+            )
+            excluded_ordo_ids = set(df_ord.loc[ord_mask, "ordonnance_id"])
+            tables["ordonnances"] = df_ord.loc[~ord_mask].copy()
+
+            if "ordonnance_lignes" in tables:
+                df_ol = tables["ordonnance_lignes"]
+                tables["ordonnance_lignes"] = df_ol.loc[
+                    ~df_ol["ordonnance_id"].isin(excluded_ordo_ids)
+                ].copy()
+
+        logger.info(
+            "Filtre prestataire démo (%s) : %d factures, %d lignes, %d ordonnances exclues.",
+            ", ".join(excluded_prestataires),
+            len(excluded_fac_ids),
+            len(df_lf) - len(tables["lignes_facture"]) if "lignes_facture" in tables else 0,
+            len(excluded_ordo_ids) if "ordonnances" in tables else 0,
+        )
+
+    return tables
+
+
+def cleanup_demo_provider_claims(
+    conn: Connection,
+    prestataire_id: str = "PRE-00050",
+) -> None:
+    """Nettoie toute facture et ordonnance résiduelle en base pour le prestataire de démo."""
+    fac_ids = [
+        row[0]
+        for row in conn.execute(
+            text("SELECT facture_id FROM factures WHERE prestataire_id = :pid"),
+            {"pid": prestataire_id},
+        ).fetchall()
+    ]
+    # Identifier les ordonnances associées qui ne sont utilisées par aucun autre prestataire
+    orphaned_ordos = [
+        row[0]
+        for row in conn.execute(
+            text("""
+                SELECT DISTINCT o.ordonnance_id FROM ordonnances o
+                WHERE (o.prescripteur_id = :pid OR o.ordonnance_id IN (
+                    SELECT f.ordonnance_id FROM factures f WHERE f.prestataire_id = :pid AND f.ordonnance_id IS NOT NULL
+                ))
+                AND NOT EXISTS (
+                    SELECT 1 FROM factures f2
+                    WHERE f2.ordonnance_id = o.ordonnance_id
+                    AND f2.prestataire_id != :pid
+                )
+            """),
+            {"pid": prestataire_id},
+        ).fetchall()
+    ]
+
+    # 1. Supprimer les décisions du gestionnaire liées (FK RESTRICT)
+    conn.execute(
+        text(
+            "DELETE FROM decisions_gestionnaire "
+            "WHERE facture_id IN (SELECT facture_id FROM factures WHERE prestataire_id = :pid)"
+        ),
+        {"pid": prestataire_id},
+    )
+
+    # 2. Supprimer les factures en premier (pour libérer factures.ordonnance_id RESTRICT)
+    conn.execute(
+        text("DELETE FROM factures WHERE prestataire_id = :pid"),
+        {"pid": prestataire_id},
+    )
+
+    # 3. Supprimer les ordonnance_lignes et ordonnances devenues orphelines
+    if orphaned_ordos:
+        conn.execute(
+            text("DELETE FROM ordonnance_lignes WHERE ordonnance_id = ANY(:oids)"),
+            {"oids": orphaned_ordos},
+        )
+        conn.execute(
+            text("DELETE FROM ordonnances WHERE ordonnance_id = ANY(:oids)"),
+            {"oids": orphaned_ordos},
+        )
+
+    logger.info(
+        "cleanup_demo_provider_claims : %d factures et %d ordonnances supprimées pour %s.",
+        len(fac_ids),
+        len(orphaned_ordos),
+        prestataire_id,
+    )
+
+
 def seed_users(conn: Connection) -> None:
     """Insère les comptes de démonstration s'ils n'existent pas encore (idempotent)."""
     from predicare.core.security import hash_password
 
-    # Résoudre un vrai assure_id et prestataire_id depuis les données chargées
+    # Nettoyage préventif des données du prestataire de démo (idempotent)
+    cleanup_demo_provider_claims(conn, "PRE-00050")
+
+    # Résoudre un vrai assure_id et prestataire_id de secours depuis les données chargées
     first_assure = conn.execute(text("SELECT assure_id FROM assures LIMIT 1")).scalar()
     first_prestataire = conn.execute(
         text("SELECT prestataire_id FROM prestataires LIMIT 1")
@@ -160,10 +283,27 @@ def seed_users(conn: Connection) -> None:
 
     users_inserted = 0
     for user in _DEMO_USERS:
-        assure_id = first_assure if user["role"] == "assure" else user["assure_id"]
-        prestataire_id = (
-            first_prestataire if user["role"] == "professionnel_sante" else user["prestataire_id"]
-        )
+        assure_id = user["assure_id"]
+        if assure_id:
+            exists = conn.execute(
+                text("SELECT 1 FROM assures WHERE assure_id = :id"), {"id": assure_id}
+            ).scalar()
+            if not exists:
+                assure_id = first_assure
+        elif user["role"] == "assure":
+            assure_id = first_assure
+
+        prestataire_id = user["prestataire_id"]
+        if prestataire_id:
+            exists = conn.execute(
+                text("SELECT 1 FROM prestataires WHERE prestataire_id = :id"),
+                {"id": prestataire_id},
+            ).scalar()
+            if not exists:
+                prestataire_id = first_prestataire
+        elif user["role"] == "professionnel_sante":
+            prestataire_id = first_prestataire
+
         conn.execute(
             text("""
                 INSERT INTO utilisateurs (
@@ -459,6 +599,9 @@ def bootstrap(
                 report.get("total_quarantaine_conflits_pk", 0),
                 len(report.get("anomalies_orphelins", [])),
             )
+
+            # Exclusion des données du prestataire de démo (pro1 / PRE-00050)
+            tables = filter_bootstrap_data(tables)
 
             with conn.begin():
                 counts = load_all(conn, tables, pii_key, version)

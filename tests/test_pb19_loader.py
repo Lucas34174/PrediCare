@@ -8,7 +8,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from predicare.db.bootstrap import BootstrapError, source_checksum
+from predicare.db.bootstrap import (
+    BootstrapError,
+    filter_bootstrap_data,
+    source_checksum,
+)
 from predicare.db.load import _normalise_value
 
 
@@ -55,3 +59,52 @@ def test_missing_values_become_none():
 def test_source_checksum_rejects_missing_files(tmp_path: Path):
     with pytest.raises(BootstrapError, match="Fichiers sources manquants"):
         source_checksum(tmp_path)
+
+
+def test_filter_bootstrap_data_excludes_demo_provider():
+    tables = {
+        "factures": pd.DataFrame(
+            [
+                {"facture_id": "F1", "prestataire_id": "PRE-00050", "ordonnance_id": "ORD-1"},
+                {"facture_id": "F2", "prestataire_id": "PRE-00050", "ordonnance_id": "ORD-SHARED"},
+                {"facture_id": "F3", "prestataire_id": "PRE-00099", "ordonnance_id": "ORD-SHARED"},
+                {"facture_id": "F4", "prestataire_id": "PRE-00099", "ordonnance_id": "ORD-2"},
+            ]
+        ),
+        "lignes_facture": pd.DataFrame(
+            [
+                {"ligne_id": "L1", "facture_id": "F1"},
+                {"ligne_id": "L2", "facture_id": "F2"},
+                {"ligne_id": "L3", "facture_id": "F3"},
+                {"ligne_id": "L4", "facture_id": "F4"},
+            ]
+        ),
+        "ordonnances": pd.DataFrame(
+            [
+                {"ordonnance_id": "ORD-1", "prescripteur_id": "PRE-00010"},
+                {"ordonnance_id": "ORD-SHARED", "prescripteur_id": "PRE-00010"},
+                {"ordonnance_id": "ORD-2", "prescripteur_id": "PRE-00010"},
+                {"ordonnance_id": "ORD-EXCL-DOC", "prescripteur_id": "PRE-00050"},
+            ]
+        ),
+        "ordonnance_lignes": pd.DataFrame(
+            [
+                {"ordonnance_id": "ORD-1", "num_ligne": 1},
+                {"ordonnance_id": "ORD-SHARED", "num_ligne": 1},
+                {"ordonnance_id": "ORD-2", "num_ligne": 1},
+                {"ordonnance_id": "ORD-EXCL-DOC", "num_ligne": 1},
+            ]
+        ),
+    }
+
+    filtered = filter_bootstrap_data(tables, excluded_prestataires=("PRE-00050",))
+
+    # PRE-00050 factures excluded
+    assert list(filtered["factures"]["facture_id"]) == ["F3", "F4"]
+    # Corresponding lignes_facture excluded
+    assert list(filtered["lignes_facture"]["ligne_id"]) == ["L3", "L4"]
+    # ORD-1 excluded (only PRE-50), ORD-EXCL-DOC excluded (prescriber PRE-50),
+    # ORD-SHARED kept (used by F3), ORD-2 kept (used by F4)
+    assert set(filtered["ordonnances"]["ordonnance_id"]) == {"ORD-SHARED", "ORD-2"}
+    # Corresponding ordonnance_lignes excluded
+    assert set(filtered["ordonnance_lignes"]["ordonnance_id"]) == {"ORD-SHARED", "ORD-2"}

@@ -274,36 +274,44 @@ FEATURE_LABELS.update(
     }
 )
 
-# Libellés des 23 features du modèle champion
+# Libellés des features du modèle de détection de fraude
 FEATURE_LABELS.update(
     {
-        "f_ecart_tarif_max_moy": "Écart moyen au tarif maximal",
-        "f_ratio_tarif_ref_max": "Ratio au tarif de référence maximal",
-        "f_ecart_grille_prest_moy": "Écart moyen à la grille du prestataire",
-        "f_nb_lignes_hors_tarif_max": "Nombre de lignes hors tarif maximal",
-        "f_ratio_med_prix_ref_max": "Ratio prix médicament / référence max",
-        "f_qte_fac_vs_prescrite_max": "Quantité facturée vs prescrite max",
-        "f_nb_lignes_qte_excessive": "Nombre de lignes à quantité excessive",
-        "f_part_lignes_hors_ordonnance": "Part des lignes non prescrites",
-        "f_med_hors_ordo_cher": "Médicament cher hors ordonnance",
-        "f_ordonnance_absente_requise": "Ordonnance requise mais absente",
-        "f_ordonnance_autre_assure": "Ordonnance d'un autre assuré",
-        "f_delai_soin_prescription_j": "Délai soin vs prescription (jours)",
-        "f_ordonnance_expiree": "Ordonnance expirée",
-        "f_soin_jour_ferme": "Soin un jour de fermeture",
-        "f_age_au_soin": "Âge au moment du soin",
-        "f_age_hors_bornes_ref": "Âge hors bornes du référentiel",
-        "f_sexe_incompatible_ref": "Sexe incompatible avec l'acte",
+        "f_ecart_tarif_max_moy": "Dépassement du tarif plafond légal",
+        "f_ratio_tarif_ref_max": "Multiplicateur de tarif de référence",
+        "f_ecart_grille_prest_moy": "Dépassement de la grille conventionnelle",
+        "f_nb_lignes_hors_tarif_max": "Lignes excédant le tarif plafond",
+        "f_ratio_med_prix_ref_max": "Surcoût médicament vs référence",
+        "f_qte_fac_vs_prescrite_max": "Quantité supérieure à la prescription",
+        "f_nb_lignes_qte_excessive": "Prestations en quantité anormale",
+        "f_part_lignes_hors_ordonnance": "Actes non prescrits sur l'ordonnance",
+        "f_med_hors_ordo_cher": "Médicament coûteux non prescrit",
+        "f_ordonnance_absente_requise": "Ordonnance obligatoire non transmise",
+        "f_ordonnance_autre_assure": "Ordonnance au nom d'un tiers",
+        "f_delai_soin_prescription_j": "Délai prescription - soin anormal",
+        "f_ordonnance_expiree": "Ordonnance médicalement expirée",
+        "f_soin_jour_ferme": "Soin un jour de fermeture déclaré",
+        "f_nb_doublons_anterieurs": "Prestation identique déjà enregistrée",
+        "f_numero_facture_deja_vu": "Numéro de facture déjà transmis (doublon)",
+        "f_nb_factures_meme_jour_prest": "Multiples factures le même jour (fractionnement)",
+        "f_nb_prest_meme_ordo_anterieurs": "Ordonnance multi-prestataires (nomadisme)",
+        "f_age_au_soin": "Âge de l'assuré au moment du soin",
+        "f_age_hors_bornes_ref": "Âge incompatible avec l'acte médical",
+        "f_sexe_incompatible_ref": "Incompatibilité sexe / acte médical",
         "f_prestataire_non_conventionne": "Prestataire non conventionné",
-        "f_soin_apres_fin_convention": "Soin après fin de convention",
-        "f_soin_avant_adhesion": "Soin avant adhésion",
-        "f_soin_apres_radiation": "Soin après radiation",
-        "f_soin_hors_periode_contrat": "Soin hors période de contrat",
-        "f_type_prest_vs_cat_acte": "Type de prestataire vs catégorie d'acte",
+        "f_soin_apres_fin_convention": "Convention échue au moment du soin",
+        "f_soin_avant_adhesion": "Soin antérieur à l'adhésion",
+        "f_soin_apres_radiation": "Soin postérieur à la radiation",
+        "f_soin_hors_periode_contrat": "Soin hors période de garantie contrat",
+        "f_soin_en_carence": "Période de carence non purgée",
+        "f_type_prest_vs_cat_acte": "Incohérence spécialité prestataire vs acte (upcoding)",
     }
 )
 
 
 def feature_label(name: str) -> str:
-    """Libellé métier lisible d'une variable (repli : nom technique)."""
-    return FEATURE_LABELS.get(name, name.replace("_", " "))
+    """Libellé métier lisible d'une variable (repli : nom technique nettoyé)."""
+    if name in FEATURE_LABELS:
+        return FEATURE_LABELS[name]
+    clean_name = name.removeprefix("f_").replace("_", " ").strip()
+    return clean_name.capitalize() if clean_name else "Facteur non renseigné"

@@ -329,17 +329,30 @@ def _lire_prediction_db(facture_id: str) -> PredictionResponse | None:
             else:
                 top_facteurs_data = []
 
-            top_facteurs = [
-                ShapFactor(
-                    feature=f.get("feature", ""),
-                    valeur=float(f.get("valeur", 0.0))
-                    if isinstance(f.get("valeur"), (int, float))
-                    else 0.0,
-                    impact_shap=float(f.get("impact_shap", 0.0)),
-                    description=f.get("description", ""),
+            from predicare.ml.config import feature_label
+
+            top_facteurs = []
+            for f in top_facteurs_data:
+                feat = f.get("feature", "")
+                raw_desc = f.get("description", "")
+                if "= nan" in raw_desc.lower() or raw_desc.strip().lower().endswith("nan"):
+                    desc = feature_label(feat)
+                else:
+                    desc = raw_desc or feature_label(feat)
+                raw_val = f.get("valeur")
+                valeur = (
+                    float(raw_val)
+                    if isinstance(raw_val, (int, float)) and not math.isnan(raw_val)
+                    else 0.0
                 )
-                for f in top_facteurs_data
-            ]
+                top_facteurs.append(
+                    ShapFactor(
+                        feature=feat,
+                        valeur=valeur,
+                        impact_shap=float(f.get("impact_shap", 0.0)),
+                        description=desc,
+                    )
+                )
             recommandation = (
                 "Contrôle requis : anomalie détectée."
                 if row["est_anomalie"]
@@ -852,6 +865,11 @@ def get_prediction(
 ) -> PredictionResponse:
     """Score de fraude réel et explicabilité SHAP (réservé aux gestionnaires et administrateurs)."""
     # 1. Contrôle RBAC
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentification requise pour consulter l'analyse de risque.",
+        )
     if current_user.role not in {Role.GESTIONNAIRE, Role.ADMINISTRATEUR}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

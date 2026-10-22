@@ -59,19 +59,23 @@ def _valeur_lisible(valeur: Any) -> float | int | str:
 
 def _description(variable: str, modalite: str | None, valeur: Any, manquante: bool) -> str:
     label = feature_label(variable)
-    if (
+    is_nan = (
         manquante
         or valeur is None
         or (isinstance(valeur, (float, np.floating)) and np.isnan(valeur))
-    ):
-        return f"{label} (non applicable ou non renseigné)"
+        or str(valeur).strip().lower() in ("nan", "none", "null")
+    )
+    if is_nan:
+        return f"{label} (signal détecté sur les données de la facture)"
     if modalite:
-        return f"{label} = {modalite.replace('_', ' ')}"
+        return f"{label} : {modalite.replace('_', ' ')}"
+    if isinstance(valeur, (bool,)):
+        return f"{label} : {'Oui' if valeur else 'Non'}"
     if isinstance(valeur, (int, np.integer)):
-        return f"{label} = {int(valeur)}"
+        return f"{label} : {int(valeur)}"
     if isinstance(valeur, (float, np.floating)):
-        return f"{label} = {float(valeur):.2f}"
-    return f"{label} = {valeur}"
+        return f"{label} : {float(valeur):.2f}"
+    return f"{label} : {valeur}"
 
 
 def _valeurs_shap(clf_or_explainer: Any, X: Any) -> np.ndarray:  # noqa: N803
