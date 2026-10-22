@@ -33,7 +33,7 @@ class ReactAgent:
         engine: Engine,
         retriever: Retriever,
         config: RagConfig,
-        llm_model: str = "phi3:mini",
+        llm_model: str = "qwen2.5:7b",
     ) -> None:
         self._engine = engine
         self._retriever = retriever

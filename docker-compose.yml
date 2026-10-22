@@ -82,6 +82,7 @@ services:
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/fraud-alert}
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b}
       DATA_DIR: /data/raw
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
@@ -191,10 +192,22 @@ services:
     image: ollama/ollama:0.3.14
     container_name: predicare-ollama
     restart: unless-stopped
+    environment:
+      # -1 = charger toutes les couches du modèle sur GPU (0 = CPU uniquement)
+      OLLAMA_NUM_GPU: ${OLLAMA_NUM_GPU:--1}
     volumes:
       - ollama_data:/root/.ollama
     ports:
       - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+    # Accès GPU NVIDIA via CUDA — nécessite nvidia-container-toolkit sur l'hôte.
+    # Si pas de GPU disponible, supprimer ou commenter le bloc `deploy` ci-dessous.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
     healthcheck:
       test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
       interval: 10s
@@ -213,7 +226,7 @@ services:
       - |
         echo "  ___ Téléchargement des modèles (cela peut prendre 5-10 min)..."
         OLLAMA_HOST=http://ollama:11434 ollama pull bge-m3
-        OLLAMA_HOST=http://ollama:11434 ollama pull phi3:mini
+        OLLAMA_HOST=http://ollama:11434 ollama pull qwen2.5:7b
         echo "  ___ Modèles prêts."
     restart: "no"
 
