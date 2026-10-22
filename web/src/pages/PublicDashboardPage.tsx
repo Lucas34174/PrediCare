@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { request } from '@/api/request'
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid 
+  PieChart, Pie, Cell 
 } from 'recharts'
 import { Briefcase, ShieldCheck, BrainCircuit, Zap, TrendingUp, AlertTriangle } from 'lucide-react'
 
@@ -107,7 +107,7 @@ export function PublicDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={data.metier.distribution_fraudes} dataKey="count" nameKey="type" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
-                    {data.metier.distribution_fraudes.map((e: any, index: number) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                    {data.metier.distribution_fraudes.map((_e: any, index: number) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
                   </Pie>
                   <RechartsTooltip />
                 </PieChart>

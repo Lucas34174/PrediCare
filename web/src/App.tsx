@@ -21,7 +21,6 @@ import { AuthProvider, useAuth } from '@/auth/AuthContext'
 import { ProDashboardPage } from '@/pages/ProDashboardPage'
 import { ProDossierListPage, ProDossierDetailPage } from '@/pages/ProDossierPage'
 import { AssureDashboardHome } from '@/pages/AssureDashboardHome'
-import { ProClaimDetailPage } from '@/pages/ProClaimDetailPage'
 import { PublicDashboardPage } from '@/pages/PublicDashboardPage'
 
 const ManagerClaimDetailPage = lazy(() =>
