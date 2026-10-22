@@ -5,7 +5,7 @@
       "cree": "2026-10-22T04:44:51+00:00",
       "artefact": "models/v1.0.0-xgb/model.joblib",
       "sha256": "7867b07aa862ea2a0e0d3c013a91a83cea498c2600b2609de18b9b2c72324399",
-      "statut": "production",
+      "statut": "archive",
       "metadonnees": {
         "recall_test": 0.8846,
         "precision_test": 0.9973,
@@ -117,7 +117,7 @@
       "cree": "2026-10-22T04:44:51+00:00",
       "artefact": "models/v2.0.0-xgb/model.joblib",
       "sha256": "7867b07aa862ea2a0e0d3c013a91a83cea498c2600b2609de18b9b2c72324399",
-      "statut": "staging",
+      "statut": "production",
       "metadonnees": {
         "recall_test": 0.8846,
         "precision_test": 0.9973,
@@ -213,8 +213,9 @@
       }
     }
   ],
-  "production": "v1.0.0-xgb",
+  "production": "v2.0.0-xgb",
   "historique_production": [
-    "v1.0.0-xgb"
+    "v1.0.0-xgb",
+    "v2.0.0-xgb"
   ]
 }
