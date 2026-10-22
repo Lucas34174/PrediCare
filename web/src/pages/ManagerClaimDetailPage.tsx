@@ -456,6 +456,24 @@ export function ManagerClaimDetailPage() {
                           <span>Constat relevé :</span> <strong>{selectedFactor.formattedValue}</strong>
                         </div>
                       )}
+                    {selectedFactor.descriptionML && (
+                      <div className="factor-selected-ml-desc">
+                        <div className="factor-selected-ml-header">
+                          <span className="factor-selected-ml-label">
+                            <Info size={13} aria-hidden="true" />
+                            <span>Règle de calcul & Définition ML</span>
+                          </span>
+                          {selectedFactor.fraudeVisee && (
+                            <span className="factor-selected-ml-target">
+                              Typologie : {selectedFactor.fraudeVisee.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="factor-selected-ml-text">
+                          {selectedFactor.descriptionML}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

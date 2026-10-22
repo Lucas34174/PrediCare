@@ -1,7 +1,9 @@
 import type { TopFactor } from '@/api/types'
 import {
   factorCategory,
+  factorDescriptionML,
   factorExplanation,
+  factorFraudeVisee,
   factorLabel,
   formatFactorValue,
   type FactorCategory,
@@ -12,6 +14,10 @@ export interface NormalizedFactor {
   label: string
   category: FactorCategory
   explanation: string
+  /** Description technique/métier issue directement de features.py (FEATURE_CATALOGUE) */
+  descriptionML?: string
+  /** Typologie de fraude ciblée dans features.py */
+  fraudeVisee?: string
   shap_value?: number
   direction?: 'increases' | 'decreases' | 'neutral'
   /** Explication lisible pour ce facteur, garantie sans variable ni nan */
@@ -28,6 +34,8 @@ export function normalizeFactors(factors: readonly TopFactor[] | null | undefine
         label: factorLabel(factor),
         category: factorCategory(factor),
         explanation: factorExplanation(factor),
+        descriptionML: factorDescriptionML(factor),
+        fraudeVisee: factorFraudeVisee(factor),
       }
     }
 
@@ -42,6 +50,8 @@ export function normalizeFactors(factors: readonly TopFactor[] | null | undefine
       label: factorLabel(factor.feature),
       category: factorCategory(factor.feature),
       explanation: factorExplanation(factor.feature, cleanDesc),
+      descriptionML: factorDescriptionML(factor.feature),
+      fraudeVisee: factorFraudeVisee(factor.feature),
       shap_value: shapValue,
       direction: shapValue === undefined ? undefined : shapValue > 0 ? 'increases' : shapValue < 0 ? 'decreases' : 'neutral',
       description: cleanDesc ?? factorExplanation(factor.feature),
