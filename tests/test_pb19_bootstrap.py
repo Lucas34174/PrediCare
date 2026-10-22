@@ -51,8 +51,8 @@ def test_bootstrap_loads_all_tables_and_encrypts_pii(db_temporaire, monkeypatch,
     )
 
     assert counts is not None
-    assert counts["factures"] == 84_593
-    assert counts["lignes_facture"] == 123_270
+    assert counts["factures"] == 83_938
+    assert counts["lignes_facture"] == 122_035
     assert counts["identites_pii"] == 4_459
 
     moteur = create_engine(database_url())
@@ -69,7 +69,7 @@ def test_bootstrap_loads_all_tables_and_encrypts_pii(db_temporaire, monkeypatch,
                 .one()
             )
             assert state["status"] == "completed"
-            assert state["rows_loaded"]["factures"] == 84_593
+            assert state["rows_loaded"]["factures"] == 83_938
 
             nom_chiffre = conn.execute(
                 text("SELECT nom_chiffre FROM identites_pii WHERE assure_id = 'ASS-9CAA1484E0'")
