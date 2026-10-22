@@ -294,28 +294,7 @@ export function ManagerClaimDetailPage() {
             <p className="fiche-note">Aucun facteur explicatif n’est transmis pour ce dossier.</p>
           ) : (
             <>
-              <div className="factors-summary-bar">
-                <div className="factors-summary-pill factors-summary-pill--risk">
-                  <AlertCircle aria-hidden="true" size={15} />
-                  <span>
-                    <strong>{riskIncreasingCount}</strong> indicateur{riskIncreasingCount > 1 ? 's' : ''} aggravant{riskIncreasingCount > 1 ? 's' : ''} le risque
-                  </span>
-                </div>
-                {riskDecreasingCount > 0 && (
-                  <div className="factors-summary-pill factors-summary-pill--safe">
-                    <CheckCircle2 aria-hidden="true" size={15} />
-                    <span>
-                      <strong>{riskDecreasingCount}</strong> facteur{riskDecreasingCount > 1 ? 's' : ''} atténuant{riskDecreasingCount > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
-                <div className="factors-summary-note">
-                  <Info aria-hidden="true" size={14} />
-                  <span>
-                    L’indice SHAP mesure l’impact marginal de chaque contrôle : un indice positif (+) augmente la suspicion, un indice négatif (−) confirme la conformité.
-                  </span>
-                </div>
-              </div>
+              
 
               {chartFactors.length > 0 && (
                 <div className="fiche-chart-card">
@@ -335,7 +314,23 @@ export function ManagerClaimDetailPage() {
                       </span>
                     </div>
                   </div>
-
+                  <div className="factors-summary-bar">
+                    <div className="factors-summary-pill factors-summary-pill--risk">
+                      <AlertCircle aria-hidden="true" size={15} />
+                      <span>
+                        <strong>{riskIncreasingCount}</strong> indicateur{riskIncreasingCount > 1 ? 's' : ''} aggravant{riskIncreasingCount > 1 ? 's' : ''} le risque
+                      </span>
+                    </div>
+                    {riskDecreasingCount > 0 && (
+                      <div className="factors-summary-pill factors-summary-pill--safe">
+                        <CheckCircle2 aria-hidden="true" size={15} />
+                        <span>
+                          <strong>{riskDecreasingCount}</strong> facteur{riskDecreasingCount > 1 ? 's' : ''} atténuant{riskDecreasingCount > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+{/* 
                   <div className="factor-selector-chips" role="tablist" aria-label="Sélection rapide d’un facteur">
                     {chartFactors.map((f) => {
                       const isSelected = selectedFeature === f.feature
@@ -357,7 +352,7 @@ export function ManagerClaimDetailPage() {
                         </button>
                       )
                     })}
-                  </div>
+                  </div> */}
 
                   <div className="fiche-chart" aria-hidden="true">
                     <ResponsiveContainer width="100%" height={Math.max(180, chartFactors.length * 48)}>
