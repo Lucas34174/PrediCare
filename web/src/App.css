@@ -382,15 +382,411 @@ button:disabled { cursor: progress; }
 .fiche-score-meta .claim-reference { margin: 0; }
 .fiche-disclaimer { margin: 0; padding: 10px 12px; border-left: 3px solid var(--warning); background: var(--warning-soft); color: var(--warning-soft-foreground); font-size: 11px; line-height: 1.55; }
 .fiche-note { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.55; }
-.fiche-chart { margin-bottom: 14px; }
-.fiche-chart .recharts-cartesian-axis-tick-value { fill: var(--ink-muted); font-size: 11px; }
-.fiche-chart .recharts-bar-rectangle path { fill: var(--primary); }
-.factor-detail { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
-.factor-detail > li { display: grid; gap: 4px; padding: 11px 12px; border-radius: 9px; background: var(--surface-soft); }
-.factor-detail-label { color: var(--ink); font-size: 12px; font-weight: 590; }
-.factor-detail-direction { display: flex; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 11px; }
-.factor-detail-direction > em { padding: 2px 6px; border-radius: 5px; background: var(--surface); color: var(--ink); font-size: 11px; font-style: normal; font-weight: 590; font-variant-numeric: tabular-nums; }
-.factor-detail > li > small { color: var(--ink-muted); font-size: 10px; line-height: 1.5; }
+/* Recommandation de l'audit IA */
+.factors-recommendation-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  transition: border-color .15s ease;
+}
+.factors-recommendation-box--alert {
+  border-left: 4px solid var(--danger);
+  background: color-mix(in srgb, var(--danger-soft) 85%, var(--surface));
+}
+.factors-recommendation-box--alert .factors-recommendation-icon {
+  color: var(--danger);
+}
+.factors-recommendation-box--ok {
+  border-left: 4px solid var(--success);
+  background: color-mix(in srgb, var(--success-soft) 85%, var(--surface));
+}
+.factors-recommendation-box--ok .factors-recommendation-icon {
+  color: var(--success);
+}
+.factors-recommendation-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.factors-recommendation-content {
+  display: grid;
+  gap: 4px;
+}
+.factors-recommendation-content strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.factors-recommendation-content p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Barre de synthèse des facteurs */
+.factors-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.factors-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 550;
+}
+.factors-summary-pill--risk {
+  background: var(--danger-soft);
+  color: var(--danger-soft-foreground);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+}
+.factors-summary-pill--safe {
+  background: var(--success-soft);
+  color: var(--success-soft-foreground);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+}
+.factors-summary-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+@media (max-width: 860px) {
+  .factors-summary-note {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Carte du graphique SHAP */
+.fiche-chart-card {
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.fiche-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.fiche-chart-title {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 620;
+}
+.fiche-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.legend-dot--risk { background: #EF4444; }
+.legend-dot--safe { background: #10B981; }
+
+.fiche-chart {
+  width: 100%;
+}
+.fiche-chart .recharts-cartesian-axis-tick-value {
+  fill: var(--ink);
+  font-size: 11px;
+}
+
+/* Tooltip custom du graphique */
+.factor-chart-tooltip {
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  display: grid;
+  gap: 6px;
+}
+.factor-chart-tooltip-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.factor-chart-tooltip-badge .tooltip-risk {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--danger);
+}
+.factor-chart-tooltip-badge .tooltip-safe {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--success);
+}
+.factor-chart-tooltip-title {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.factor-chart-tooltip-text {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Grille de cartes de facteurs */
+.factors-grid {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.factor-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.factor-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+.factor-card--risk {
+  border-left: 4px solid var(--danger);
+}
+.factor-card--safe {
+  border-left: 4px solid var(--success);
+}
+.factor-card--neutral {
+  border-left: 4px solid var(--line);
+}
+
+.factor-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Catégories de facteurs */
+.factor-cat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+.factor-cat--tarif {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1px solid #FFEDD5;
+}
+.dark .factor-cat--tarif {
+  background: rgba(194, 65, 12, 0.2);
+  color: #FDBA74;
+  border-color: rgba(194, 65, 12, 0.4);
+}
+.factor-cat--prescription {
+  background: #F5F3FF;
+  color: #6D28D9;
+  border: 1px solid #EDE9FE;
+}
+.dark .factor-cat--prescription {
+  background: rgba(109, 40, 217, 0.2);
+  color: #DDD6FE;
+  border-color: rgba(109, 40, 217, 0.4);
+}
+.factor-cat--profil {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1px solid #DCFCE7;
+}
+.dark .factor-cat--profil {
+  background: rgba(21, 128, 61, 0.2);
+  color: #86EFAC;
+  border-color: rgba(21, 128, 61, 0.4);
+}
+.factor-cat--prestataire {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #DBEAFE;
+}
+.dark .factor-cat--prestataire {
+  background: rgba(29, 78, 216, 0.2);
+  color: #93C5FD;
+  border-color: rgba(29, 78, 216, 0.4);
+}
+.factor-cat--couverture {
+  background: #F0FDFA;
+  color: #0F766E;
+  border: 1px solid #CCFBF1;
+}
+.dark .factor-cat--couverture {
+  background: rgba(15, 118, 110, 0.2);
+  color: #5EEAD4;
+  border-color: rgba(15, 118, 110, 0.4);
+}
+.factor-cat--doublon {
+  background: #FFF1F2;
+  color: #BE123C;
+  border: 1px solid #FFE4E6;
+}
+.dark .factor-cat--doublon {
+  background: rgba(190, 18, 60, 0.2);
+  color: #FDA4AF;
+  border-color: rgba(190, 18, 60, 0.4);
+}
+.factor-cat--general {
+  background: var(--surface-soft);
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
+}
+
+/* Badges de direction / impact */
+.factor-direction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 550;
+}
+.factor-direction-badge--risk {
+  background: var(--danger-soft);
+  color: var(--danger-soft-foreground);
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+}
+.factor-direction-badge--safe {
+  background: var(--success-soft);
+  color: var(--success-soft-foreground);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+}
+.factor-direction-badge--neutral {
+  background: var(--surface-soft);
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
+}
+.factor-impact-val {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 2px;
+}
+
+/* Corps de la carte */
+.factor-card-main {
+  display: grid;
+  gap: 4px;
+}
+.factor-card-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.4;
+}
+.factor-card-explanation {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* Jauge de poids relatif */
+.factor-gauge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+.factor-gauge-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.factor-gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+.factor-gauge-fill--risk {
+  background: linear-gradient(90deg, #F87171, #EF4444);
+}
+.factor-gauge-fill--safe {
+  background: linear-gradient(90deg, #34D399, #10B981);
+}
+.factor-gauge-caption {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.factor-gauge-caption strong {
+  color: var(--ink);
+}
+
+/* Pied de carte */
+.factor-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+}
+.factor-obs-value {
+  color: var(--ink-muted);
+}
+.factor-obs-value strong {
+  color: var(--ink);
+  font-weight: 600;
+}
 @media (max-width: 980px) {
   .fiche-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fiche-score { grid-template-columns: 1fr; gap: 14px; }

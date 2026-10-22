@@ -1,8 +1,21 @@
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ClipboardCheck, SearchX, TriangleAlert } from 'lucide-react'
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  ClipboardCheck,
+  Info,
+  Minus,
+  SearchX,
+  ShieldAlert,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
+} from 'lucide-react'
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getClaim, getClaimPrediction } from '@/api/claims'
 import type { RejectionReason } from '@/api/types'
 import { Money } from '@/components/Money'
@@ -24,12 +37,35 @@ function hasShapValue(factor: NormalizedFactor): factor is ChartFactor {
   return typeof factor.shap_value === 'number'
 }
 
-/** Le sens est toujours écrit ; la couleur ne porte jamais l'information seule. */
+/** Le sens est toujours écrit en français clair ; la couleur ne porte jamais l'information seule. */
 function directionLabel(direction: NormalizedFactor['direction']): string {
-  if (direction === 'increases') return 'augmente le risque'
-  if (direction === 'decreases') return 'diminue le risque'
-  if (direction === 'neutral') return 'effet neutre sur le score'
-  return 'sens non transmis'
+  if (direction === 'increases') return 'Augmente le risque'
+  if (direction === 'decreases') return 'Diminue le risque'
+  if (direction === 'neutral') return 'Effet neutre sur le score'
+  return 'Sens non transmis'
+}
+
+interface FactorTooltipProps {
+  active?: boolean
+  payload?: Array<{ payload: ChartFactor }>
+}
+
+function FactorTooltip({ active, payload }: FactorTooltipProps) {
+  if (!active || !payload || !payload.length) return null
+  const factor = payload[0].payload
+  const isRisk = factor.shap_value > 0
+  return (
+    <div className="factor-chart-tooltip" role="tooltip">
+      <div className="factor-chart-tooltip-badge">
+        <span className={`factor-cat-pill ${factor.category.badgeClass}`}>{factor.category.label}</span>
+        <span className={isRisk ? 'tooltip-risk' : 'tooltip-safe'}>
+          {isRisk ? '+ Risque' : '− Modérateur'} ({shapFormat.format(factor.shap_value)})
+        </span>
+      </div>
+      <strong className="factor-chart-tooltip-title">{factor.label}</strong>
+      <p className="factor-chart-tooltip-text">{factor.explanation}</p>
+    </div>
+  )
 }
 
 /** `motif_rejet` est une chaîne libre côté API : une valeur inconnue reste lisible. */
@@ -59,6 +95,20 @@ export function ManagerClaimDetailPage() {
     [analysis],
   )
   const chartFactors = useMemo(() => factors.filter(hasShapValue), [factors])
+
+  const maxAbsShap = useMemo(() => {
+    if (!chartFactors.length) return 1
+    return Math.max(...chartFactors.map((f) => Math.abs(f.shap_value)), 0.01)
+  }, [chartFactors])
+
+  const riskIncreasingCount = useMemo(
+    () => chartFactors.filter((f) => f.shap_value > 0).length,
+    [chartFactors],
+  )
+  const riskDecreasingCount = useMemo(
+    () => chartFactors.filter((f) => f.shap_value < 0).length,
+    [chartFactors],
+  )
 
   const scorePercent = analysis ? Math.round(analysis.prediction.score_fraude * 100) : null
 
@@ -208,36 +258,173 @@ export function ManagerClaimDetailPage() {
           <div className="claim-section-heading">
             <div>
               <h2 id="fiche-factors-title">Facteurs explicatifs</h2>
-              <p>Ce que le modèle a retenu. Un facteur qui augmente le risque n’établit aucun manquement.</p>
+              <p>Décomposition métier des signaux ayant motivé l’évaluation de risque par l’intelligence artificielle.</p>
             </div>
           </div>
+
+          {analysis?.explicabilite?.recommandation && (
+            <div
+              className={`factors-recommendation-box ${
+                analysis.prediction.est_anomalie
+                  ? 'factors-recommendation-box--alert'
+                  : 'factors-recommendation-box--ok'
+              }`}
+            >
+              <div className="factors-recommendation-icon">
+                {analysis.prediction.est_anomalie ? (
+                  <ShieldAlert aria-hidden="true" size={22} />
+                ) : (
+                  <ShieldCheck aria-hidden="true" size={22} />
+                )}
+              </div>
+              <div className="factors-recommendation-content">
+                <strong>Recommandation d’audit : {analysis.explicabilite.recommandation}</strong>
+                <p>
+                  {analysis.prediction.est_anomalie
+                    ? 'Ce dossier présente des écarts significatifs par rapport aux référentiels conventionnels. Une vérification attentive des justificatifs est conseillée avant décision.'
+                    : 'Les indicateurs analysés sont en cohérence avec les seuils de référence usuels.'}
+                </p>
+              </div>
+            </div>
+          )}
 
           {factors.length === 0 ? (
             <p className="fiche-note">Aucun facteur explicatif n’est transmis pour ce dossier.</p>
           ) : (
             <>
+              <div className="factors-summary-bar">
+                <div className="factors-summary-pill factors-summary-pill--risk">
+                  <AlertCircle aria-hidden="true" size={15} />
+                  <span>
+                    <strong>{riskIncreasingCount}</strong> indicateur{riskIncreasingCount > 1 ? 's' : ''} aggravant{riskIncreasingCount > 1 ? 's' : ''} le risque
+                  </span>
+                </div>
+                {riskDecreasingCount > 0 && (
+                  <div className="factors-summary-pill factors-summary-pill--safe">
+                    <CheckCircle2 aria-hidden="true" size={15} />
+                    <span>
+                      <strong>{riskDecreasingCount}</strong> facteur{riskDecreasingCount > 1 ? 's' : ''} atténuant{riskDecreasingCount > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+                <div className="factors-summary-note">
+                  <Info aria-hidden="true" size={14} />
+                  <span>
+                    L’indice SHAP mesure l’impact marginal de chaque contrôle : un indice positif (+) augmente la suspicion, un indice négatif (−) confirme la conformité.
+                  </span>
+                </div>
+              </div>
+
               {chartFactors.length > 0 && (
-                <div className="fiche-chart" aria-hidden="true">
-                  <ResponsiveContainer width="100%" height={Math.max(160, chartFactors.length * 46)}>
-                    <BarChart data={chartFactors} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
-                      <XAxis type="number" hide />
-                      <YAxis type="category" dataKey="label" width={190} tickLine={false} axisLine={false} />
-                      <Bar dataKey="shap_value" radius={[0, 3, 3, 0]} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="fiche-chart-card">
+                  <div className="fiche-chart-header">
+                    <span className="fiche-chart-title">Visualisation de l’impact des facteurs (SHAP)</span>
+                    <div className="fiche-chart-legend">
+                      <span className="legend-chip legend-chip--risk">
+                        <span className="legend-dot legend-dot--risk" /> Augmente le risque
+                      </span>
+                      <span className="legend-chip legend-chip--safe">
+                        <span className="legend-dot legend-dot--safe" /> Réduit le risque
+                      </span>
+                    </div>
+                  </div>
+                  <div className="fiche-chart" aria-hidden="true">
+                    <ResponsiveContainer width="100%" height={Math.max(180, chartFactors.length * 48)}>
+                      <BarChart data={chartFactors} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 16 }}>
+                        <XAxis type="number" hide />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          width={240}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: 'var(--ink)', fontSize: 11, fontWeight: 500 }}
+                        />
+                        <Tooltip content={<FactorTooltip />} cursor={{ fill: 'var(--surface-soft)', opacity: 0.6 }} />
+                        <Bar dataKey="shap_value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+                          {chartFactors.map((entry) => (
+                            <Cell
+                              key={`cell-${entry.feature}`}
+                              fill={entry.shap_value > 0 ? '#EF4444' : '#10B981'}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               )}
-              <ol className="factor-detail">
-                {factors.map((factor) => (
-                  <li key={factor.feature}>
-                    <span className="factor-detail-label">{factor.label}</span>
-                    <span className="factor-detail-direction">
-                      {directionLabel(factor.direction)}
-                      {typeof factor.shap_value === 'number' && <em>{shapFormat.format(factor.shap_value)}</em>}
-                    </span>
-                    {factor.description && <small>{factor.description}</small>}
-                  </li>
-                ))}
+
+              <ol className="factors-grid">
+                {factors.map((factor) => {
+                  const isRisk = factor.direction === 'increases'
+                  const isSafe = factor.direction === 'decreases'
+                  const relativeWeight =
+                    typeof factor.shap_value === 'number'
+                      ? Math.min(100, Math.round((Math.abs(factor.shap_value) / maxAbsShap) * 100))
+                      : null
+
+                  return (
+                    <li
+                      key={factor.feature}
+                      className={`factor-card ${
+                        isRisk ? 'factor-card--risk' : isSafe ? 'factor-card--safe' : 'factor-card--neutral'
+                      }`}
+                    >
+                      <div className="factor-card-top">
+                        <span className={`factor-cat-pill ${factor.category.badgeClass}`}>
+                          {factor.category.label}
+                        </span>
+                        <span
+                          className={`factor-direction-badge ${
+                            isRisk
+                              ? 'factor-direction-badge--risk'
+                              : isSafe
+                              ? 'factor-direction-badge--safe'
+                              : 'factor-direction-badge--neutral'
+                          }`}
+                        >
+                          {isRisk && <TrendingUp aria-hidden="true" size={13} />}
+                          {isSafe && <TrendingDown aria-hidden="true" size={13} />}
+                          {!isRisk && !isSafe && <Minus aria-hidden="true" size={13} />}
+                          <span>{directionLabel(factor.direction)}</span>
+                          {typeof factor.shap_value === 'number' && (
+                            <span className="factor-impact-val">{shapFormat.format(factor.shap_value)}</span>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="factor-card-main">
+                        <h3 className="factor-card-title">{factor.label}</h3>
+                        <p className="factor-card-explanation">{factor.explanation}</p>
+                      </div>
+
+                      {relativeWeight !== null && (
+                        <div className="factor-gauge" aria-hidden="true">
+                          <div className="factor-gauge-track">
+                            <div
+                              className={`factor-gauge-fill ${
+                                isRisk ? 'factor-gauge-fill--risk' : 'factor-gauge-fill--safe'
+                              }`}
+                              style={{ width: `${Math.max(8, relativeWeight)}%` }}
+                            />
+                          </div>
+                          <span className="factor-gauge-caption">
+                            Poids relatif : <strong>{relativeWeight}%</strong>
+                          </span>
+                        </div>
+                      )}
+
+                      {factor.formattedValue && (
+                        <div className="factor-card-footer">
+                          <span className="factor-obs-value">
+                            Valeur constatée : <strong>{factor.formattedValue}</strong>
+                          </span>
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
               </ol>
             </>
           )}
