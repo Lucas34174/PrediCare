@@ -134,7 +134,7 @@ _DEMO_USERS = [
         "identifiant": "assure1",
         "mot_de_passe": "assure123",
         "role": "assure",
-        "assure_id": None,  # sera mis à jour ci-dessous si un assuré existe
+        "assure_id": "ASS-AB83472054",
         "prestataire_id": None,
     },
     {
@@ -143,7 +143,7 @@ _DEMO_USERS = [
         "mot_de_passe": "pro123",
         "role": "professionnel_sante",
         "assure_id": None,
-        "prestataire_id": None,  # sera mis à jour ci-dessous si un prestataire existe
+        "prestataire_id": "PRE-00050",
     },
 ]
 
@@ -172,7 +172,11 @@ def seed_users(conn: Connection) -> None:
                 VALUES (
                     :id, :identifiant, :hash, :role, :assure_id, :prestataire_id, TRUE
                 )
-                ON CONFLICT (id) DO NOTHING
+                ON CONFLICT (identifiant) DO UPDATE SET
+                    role = EXCLUDED.role,
+                    assure_id = EXCLUDED.assure_id,
+                    prestataire_id = EXCLUDED.prestataire_id,
+                    actif = TRUE
             """),
             {
                 "id": user["id"],
