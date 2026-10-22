@@ -133,6 +133,7 @@ function AppRoutes() {
           {/* Gestionnaire */}
           <Route path="/gestionnaire/dossiers" element={<ProtectedRoute allowedRoles={['gestionnaire']}><ManagerQueuePage /></ProtectedRoute>} />
           <Route path="/gestionnaire/dossiers/:factureId" element={<ProtectedRoute allowedRoles={['gestionnaire']}><Suspense fallback={<PageFallback />}><ManagerClaimDetailPage /></Suspense></ProtectedRoute>} />
+          <Route path="/gestionnaire/dashboard-bi" element={<ProtectedRoute allowedRoles={['gestionnaire']}><PublicDashboardPage /></ProtectedRoute>} />
 
           {/* Assuré */}
           <Route path="/assure" element={<ProtectedRoute allowedRoles={['assure']}><AssureDashboardPage /></ProtectedRoute>} />
@@ -158,7 +159,6 @@ function AppRoutes() {
         {/* 3. Route par défaut */}
         <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="*" element={<NotFoundPage />} />
-        <Route path="/dashboard-public" element={<PublicDashboardPage />} />
       </Routes>
     </div>
   )
@@ -183,4 +183,3 @@ function App() {
 }
 
 export default App
-

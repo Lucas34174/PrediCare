@@ -1,17 +1,25 @@
 """Routeur pour le Dashboard BI Public (Démonstration Jury)."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from predicare.api.deps import _db_engine
+from predicare.api.deps import _db_engine, require_roles
+from predicare.api.schemas import Role, UserInfo
 
 router = APIRouter(prefix="/dashboard/public", tags=["dashboard-public"])
 
 
 @router.get("/kpis")
-def get_public_kpis(engine: Engine = Depends(_db_engine)):
-    """Renvoie tous les KPIs pour la démo publique (sans JWT)."""
+def get_public_kpis(
+    _current_user: Annotated[
+        UserInfo, Depends(require_roles([Role.GESTIONNAIRE]))
+    ],
+    engine: Engine = Depends(_db_engine),
+):
+    """Renvoie les KPIs de pilotage réservés aux gestionnaires."""
 
     with engine.connect() as conn:
         # ═══════════════════════════════════════════════════════════

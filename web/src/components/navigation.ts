@@ -38,6 +38,7 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
   gestionnaire: [
     { label: 'Vue d’ensemble', path: '/app', icon: Gauge },
     { label: 'Dossiers à examiner', path: '/gestionnaire/dossiers', icon: ClipboardCheck },
+    { label: 'Pilotage stratégique', path: '/gestionnaire/dashboard-bi', icon: LayoutDashboard },
   //   {
   //   path: '/dashboardi',
   //   label: 'Tableau de bord',
@@ -57,11 +58,6 @@ export const roleMenus: Record<UiRole, MenuEntry[]> = {
     { label: 'Supervision', path: '/admin', icon: Gauge },
     { label: 'Configuration', path: '/admin/config', icon: Settings },
     { label: 'Modèles ML', path: '/admin/models', icon: Cpu },
-    {
-    path: '/dashboardi',
-    label: 'Dasboard BI',
-    icon: LayoutDashboard,
-  },
   ],
 }
 

@@ -23,6 +23,9 @@ function renderProtectedRoute(initialEntry = '/admin') {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<p>Administration</p>} />
           </Route>
+          <Route element={<ProtectedRoute allowedRoles={['gestionnaire']} />}>
+            <Route path="/gestionnaire/dashboard-bi" element={<p>Dashboard public</p>} />
+          </Route>
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -55,5 +58,17 @@ describe('ProtectedRoute', () => {
     setStoredSession({ ...assureSession, user: { ...assureSession.user, role: 'administrateur' } })
     renderProtectedRoute()
     expect(screen.getByText('Administration')).toBeInTheDocument()
+  })
+
+  it('autorise le dashboard public uniquement au gestionnaire', () => {
+    setStoredSession({ ...assureSession, user: { ...assureSession.user, role: 'gestionnaire' } })
+    renderProtectedRoute('/gestionnaire/dashboard-bi')
+    expect(screen.getByText('Dashboard public')).toBeInTheDocument()
+  })
+
+  it('refuse le dashboard public aux autres rôles', () => {
+    setStoredSession(assureSession)
+    renderProtectedRoute('/gestionnaire/dashboard-bi')
+    expect(screen.getByText('Accès refusé')).toBeInTheDocument()
   })
 })
