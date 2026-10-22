@@ -1,0 +1,439 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2026-10-16",
+    "description": "Jeu de test pour l'audit d'équité du pipeline RAG PrediCare TPA",
+    "method": "recall@k par groupe, écart cible < 10%",
+    "dimensions": ["sexe", "age", "formule", "categorie", "ville"]
+  },
+  "cases": [
+    
+ 
+    {
+      "id": "sexe_F_01",
+      "question": "Quel est le tarif du dosage bêta-HCG ?",
+      "group": {"dimension": "sexe", "value": "F"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-BHCG"},
+      "notes": "Bêta-HCG : restriction sexe F, âge 12-55"
+    },
+    {
+      "id": "sexe_F_02",
+      "question": "Combien coûte une consultation prénatale ?",
+      "group": {"dimension": "sexe", "value": "F"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-PRENAT"},
+      "notes": "Consultation prénatale : restriction sexe F, âge 14-50"
+    },
+    {
+      "id": "sexe_F_03",
+      "question": "Quel est le tarif d'une échographie obstétricale ?",
+      "group": {"dimension": "sexe", "value": "F"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "IMG-ECHO-OBS"},
+      "notes": "Échographie obstétricale : restriction sexe F"
+    },
+    {
+      "id": "sexe_F_04",
+      "question": "Forfait accouchement par voie basse ?",
+      "group": {"dimension": "sexe", "value": "F"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "ACC-NORMAL"},
+      "notes": "Accouchement voie basse"
+    },
+    {
+      "id": "sexe_F_05",
+      "question": "Tarif de la césarienne ?",
+      "group": {"dimension": "sexe", "value": "F"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "ACC-CESAR"},
+      "notes": "Accouchement par césarienne"
+    },
+    {
+      "id": "sexe_M_01",
+      "question": "Quel est le tarif du dosage PSA ?",
+      "group": {"dimension": "sexe", "value": "M"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-PSA"},
+      "notes": "PSA : restriction sexe M, âge 40-120"
+    },
+    {
+      "id": "sexe_M_02",
+      "question": "Tarif d'une consultation urologie ?",
+      "group": {"dimension": "sexe", "value": "M"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-URO"},
+      "notes": "Consultation urologie (majoritairement M mais non restreinte)"
+    },
+    {
+      "id": "sexe_M_03",
+      "question": "Combien coûte une consultation de cardiologie ?",
+      "group": {"dimension": "sexe", "value": "M"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-CARDIO"},
+      "notes": "Question neutre, sert de contrôle"
+    },
+    {
+      "id": "sexe_neutre_01",
+      "question": "Quel est le tarif d'une consultation de médecine générale ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-GEN"}
+    },
+    {
+      "id": "sexe_neutre_02",
+      "question": "Combien coûte une radiographie standard ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "IMG-RADIO"}
+    },
+    {
+      "id": "sexe_neutre_03",
+      "question": "Tarif de la numération formule sanguine ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-NFS"}
+    },
+    {
+      "id": "sexe_neutre_04",
+      "question": "Quel est le tarif d'une glycémie à jeun ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-GLY"}
+    },
+    {
+      "id": "sexe_neutre_05",
+      "question": "Combien coûte une séance de kinésithérapie ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "KINE-SEANCE"}
+    },
+    {
+      "id": "sexe_neutre_06",
+      "question": "Tarif d'une consultation ophtalmologie ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-OPHTA"}
+    },
+    {
+      "id": "sexe_neutre_07",
+      "question": "Combien coûte une consultation dermatologie ?",
+      "group": {"dimension": "sexe", "value": "neutre"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-DERMATO"}
+    },
+
+
+    {
+      "id": "age_0_17_01",
+      "question": "Quel est le tarif d'une consultation pédiatrie ?",
+      "group": {"dimension": "age", "value": "0-17"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-PEDIA"},
+      "notes": "Pédiatrie : restriction âge 0-17"
+    },
+    {
+      "id": "age_0_17_02",
+      "question": "Combien coûte un traitement orthodontique ?",
+      "group": {"dimension": "age", "value": "0-17"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "DENT-ORTHO"},
+      "notes": "Orthodontie : restriction âge 6-17"
+    },
+    {
+      "id": "age_0_17_03",
+      "question": "Quel pédiatre puis-je consulter à Toamasina ?",
+      "group": {"dimension": "age", "value": "0-17"},
+      "expected": {"chunk_type": "prestataire", "categorie": "PEDIATRIE", "ville": "Toamasina"},
+      "notes": "Formulation ciblée prestataire (pas tarif)"
+    },
+    {
+      "id": "age_18_39_01",
+      "question": "Quel est le tarif d'une consultation gynécologie ?",
+      "group": {"dimension": "age", "value": "18-39"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-GYNECO"}
+    },
+    {
+      "id": "age_18_39_02",
+      "question": "Combien coûte un dosage bêta-HCG ?",
+      "group": {"dimension": "age", "value": "18-39"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-BHCG"}
+    },
+    {
+      "id": "age_40_64_01",
+      "question": "Quel est le tarif du dosage PSA ?",
+      "group": {"dimension": "age", "value": "40-64"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-PSA"},
+      "notes": "PSA : restriction âge 40-120"
+    },
+    {
+      "id": "age_40_64_02",
+      "question": "Combien coûte une consultation endocrinologie ?",
+      "group": {"dimension": "age", "value": "40-64"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-ENDOC"}
+    },
+    {
+      "id": "age_65_plus_01",
+      "question": "Quel est le tarif d'une séance d'hémodialyse ?",
+      "group": {"dimension": "age", "value": "65+"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "DIALYSE"}
+    },
+    {
+      "id": "age_65_plus_02",
+      "question": "Combien coûte un scanner tomodensitométrie ?",
+      "group": {"dimension": "age", "value": "65+"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "IMG-SCANNER"}
+    },
+    {
+      "id": "age_neutre_01",
+      "question": "Quel est le plafond annuel global pour la formule PREMIUM ?",
+      "group": {"dimension": "age", "value": "neutre"},
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"}
+    },
+
+
+    {
+      "id": "formule_CONFORT_01",
+      "question": "Quel est le plafond annuel global de la formule CONFORT ?",
+      "group": {"dimension": "formule", "value": "CONFORT"},
+      "expected": {"chunk_type": "article", "formule": "CONFORT"}
+    },
+    {
+      "id": "formule_CONFORT_02",
+      "question": "Quelles sont les exclusions de la formule CONFORT ?",
+      "group": {"dimension": "formule", "value": "CONFORT"},
+      "expected": {"chunk_type": "article", "formule": "CONFORT"}
+    },
+    {
+      "id": "formule_CONFORT_03",
+      "question": "Quel est le délai de carence maternité en CONFORT ?",
+      "group": {"dimension": "formule", "value": "CONFORT"},
+      "expected": {"chunk_type": "article", "formule": "CONFORT"}
+    },
+    {
+      "id": "formule_CONFORT_04",
+      "question": "Quel est le taux de remboursement dentaire en CONFORT ?",
+      "group": {"dimension": "formule", "value": "CONFORT"},
+      "expected": {"chunk_type": "article", "formule": "CONFORT"}
+    },
+    {
+      "id": "formule_ESSENTIEL_01",
+      "question": "Quel est le plafond annuel global de la formule ESSENTIEL ?",
+      "group": {"dimension": "formule", "value": "ESSENTIEL"},
+      "expected": {"chunk_type": "article", "formule": "ESSENTIEL"}
+    },
+    {
+      "id": "formule_ESSENTIEL_02",
+      "question": "Quelles sont les exclusions de la formule ESSENTIEL ?",
+      "group": {"dimension": "formule", "value": "ESSENTIEL"},
+      "expected": {"chunk_type": "article", "formule": "ESSENTIEL"}
+    },
+    {
+      "id": "formule_ESSENTIEL_03",
+      "question": "Quel est le délai de carence optique en ESSENTIEL ?",
+      "group": {"dimension": "formule", "value": "ESSENTIEL"},
+      "expected": {"chunk_type": "article", "formule": "ESSENTIEL"}
+    },
+    {
+      "id": "formule_ESSENTIEL_04",
+      "question": "Le forfait chirurgie est-il couvert en ESSENTIEL ?",
+      "group": {"dimension": "formule", "value": "ESSENTIEL"},
+      "expected": {"chunk_type": "article", "formule": "ESSENTIEL"}
+    },
+    {
+      "id": "formule_PREMIUM_01",
+      "question": "Quel est le plafond annuel global de la formule PREMIUM ?",
+      "group": {"dimension": "formule", "value": "PREMIUM"},
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"}
+    },
+    {
+      "id": "formule_PREMIUM_02",
+      "question": "Quelles sont les exclusions de la formule PREMIUM ?",
+      "group": {"dimension": "formule", "value": "PREMIUM"},
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"},
+      "filters": {"chunk_type": "article"},
+      "notes": "Filtre chunk_type=article pour éviter section_garanties"
+    },
+    {
+      "id": "formule_PREMIUM_03",
+      "question": "Quel est le taux de remboursement pharmacie en PREMIUM ?",
+      "group": {"dimension": "formule", "value": "PREMIUM"},
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"}
+    },
+    {
+      "id": "formule_PREMIUM_04",
+      "question": "Y a-t-il une franchise hospitalisation en PREMIUM ?",
+      "group": {"dimension": "formule", "value": "PREMIUM"},
+      "expected": {"chunk_type": "article", "formule": "PREMIUM"}
+    },
+
+
+    {
+      "id": "categorie_consultation_01",
+      "question": "Combien coûte une consultation chez un neurologue ?",
+      "group": {"dimension": "categorie", "value": "CONSULTATION"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-NEURO"}
+    },
+    {
+      "id": "categorie_consultation_02",
+      "question": "Tarif d'une consultation ORL ?",
+      "group": {"dimension": "categorie", "value": "CONSULTATION"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "CONS-ORL"}
+    },
+    {
+      "id": "categorie_imagerie_01",
+      "question": "Combien coûte un scanner ?",
+      "group": {"dimension": "categorie", "value": "IMAGERIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "IMG-SCANNER"}
+    },
+    {
+      "id": "categorie_imagerie_02",
+      "question": "Quel est le tarif d'une IRM ?",
+      "group": {"dimension": "categorie", "value": "IMAGERIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "IMG-IRM"}
+    },
+    {
+      "id": "categorie_laboratoire_01",
+      "question": "Combien coûte un bilan lipidique ?",
+      "group": {"dimension": "categorie", "value": "LABORATOIRE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-LIPIDE"}
+    },
+    {
+      "id": "categorie_laboratoire_02",
+      "question": "Quel est le tarif de la CRP ?",
+      "group": {"dimension": "categorie", "value": "LABORATOIRE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "LAB-CRP"}
+    },
+    {
+      "id": "categorie_pharmacie_01",
+      "question": "Quel est le prix du paracétamol 500 mg ?",
+      "group": {"dimension": "categorie", "value": "PHARMACIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_medicament": "MED-PARA500"}
+    },
+    {
+      "id": "categorie_pharmacie_02",
+      "question": "Combien coûte l'amoxicilline 500 mg ?",
+      "group": {"dimension": "categorie", "value": "PHARMACIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_medicament": "MED-AMOX500"}
+    },
+    {
+      "id": "categorie_pharmacie_03",
+      "question": "Quel est le prix de l'insuline humaine ?",
+      "group": {"dimension": "categorie", "value": "PHARMACIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_medicament": "MED-INSUL"}
+    },
+    {
+      "id": "categorie_dentaire_01",
+      "question": "Quel est le tarif d'un détartrage ?",
+      "group": {"dimension": "categorie", "value": "DENTAIRE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "DENT-DETART"}
+    },
+    {
+      "id": "categorie_dentaire_02",
+      "question": "Combien coûte une prothèse dentaire ?",
+      "group": {"dimension": "categorie", "value": "DENTAIRE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "DENT-PROTH"}
+    },
+    {
+      "id": "categorie_optique_01",
+      "question": "Quel est le tarif d'un verre correcteur ?",
+      "group": {"dimension": "categorie", "value": "OPTIQUE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "OPT-VERRE"}
+    },
+    {
+      "id": "categorie_kinesitherapie_01",
+      "question": "Combien coûte une séance de kinésithérapie respiratoire ?",
+      "group": {"dimension": "categorie", "value": "KINESITHERAPIE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "KINE-RESP"}
+    },
+    {
+      "id": "categorie_hospitalisation_01",
+      "question": "Quel est le tarif d'une journée d'hospitalisation ?",
+      "group": {"dimension": "categorie", "value": "HOSPITALISATION"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "HOSP-JOUR"}
+    },
+    {
+      "id": "categorie_maternite_01",
+      "question": "Combien coûte un accouchement normal ?",
+      "group": {"dimension": "categorie", "value": "MATERNITE"},
+      "expected": {"chunk_type": "ligne_bareme", "code_acte": "ACC-NORMAL"}
+    },
+
+
+    {
+      "id": "ville_Antananarivo_01",
+      "question": "Quelle pharmacie est ouverte 24h/24 à Antananarivo ?",
+      "group": {"dimension": "ville", "value": "Antananarivo"},
+      "expected": {"chunk_type": "prestataire", "categorie": "PHARMACIES", "ville": "Antananarivo"}
+    },
+    {
+      "id": "ville_Antananarivo_02",
+      "question": "Où trouver un dentiste à Antananarivo ?",
+      "group": {"dimension": "ville", "value": "Antananarivo"},
+      "expected": {"chunk_type": "prestataire", "categorie": "DENTISTES", "ville": "Antananarivo"}
+    },
+    {
+      "id": "ville_Toamasina_01",
+      "question": "Quel généraliste consulter à Toamasina ?",
+      "group": {"dimension": "ville", "value": "Toamasina"},
+      "expected": {"chunk_type": "prestataire", "categorie": "GÉNÉRALISTES", "ville": "Toamasina"}
+    },
+    {
+      "id": "ville_Toamasina_02",
+      "question": "Y a-t-il un laboratoire à Toamasina ?",
+      "group": {"dimension": "ville", "value": "Toamasina"},
+      "expected": {"chunk_type": "prestataire", "categorie": "LABORATOIRES", "ville": "Toamasina"}
+    },
+    {
+      "id": "ville_Antsirabe_01",
+      "question": "Quel est le tarif d'une consultation pédiatrie à Antsirabe ?",
+      "group": {"dimension": "ville", "value": "Antsirabe"},
+      "expected": {"chunk_type": "prestataire", "categorie": "PEDIATRIE", "ville": "Antsirabe"}
+    },
+    {
+      "id": "ville_Fianarantsoa_01",
+      "question": "Y a-t-il un opticien à Fianarantsoa ?",
+      "group": {"dimension": "ville", "value": "Fianarantsoa"},
+      "expected": {"chunk_type": "prestataire", "categorie": "OPTICIENS", "ville": "Fianarantsoa"}
+    },
+    {
+      "id": "ville_Mahajanga_01",
+      "question": "Quel généraliste à Mahajanga ?",
+      "group": {"dimension": "ville", "value": "Mahajanga"},
+      "expected": {"chunk_type": "prestataire", "categorie": "GÉNÉRALISTES", "ville": "Mahajanga"}
+    },
+    {
+      "id": "ville_Toliara_01",
+      "question": "Y a-t-il une pharmacie à Toliara ?",
+      "group": {"dimension": "ville", "value": "Toliara"},
+      "expected": {"chunk_type": "prestataire", "categorie": "PHARMACIES", "ville": "Toliara"}
+    },
+    {
+      "id": "ville_Antsiranana_01",
+      "question": "Où trouver un dentiste à Antsiranana ?",
+      "group": {"dimension": "ville", "value": "Antsiranana"},
+      "expected": {"chunk_type": "prestataire", "categorie": "DENTISTES", "ville": "Antsiranana"}
+    },
+    {
+      "id": "ville_national_01",
+      "question": "Quels sont les hôpitaux conventionnés au niveau national ?",
+      "group": {"dimension": "ville", "value": "national"},
+      "expected": {"chunk_type": "prestataire", "categorie": "CLINIQUES ET CENTRES MÉDICAUX"}
+    },
+
+
+    {
+      "id": "controle_01",
+      "question": "Qui est le souscripteur du contrat CTR-000048 ?",
+      "group": {"dimension": "controle", "value": "tous"},
+      "expected": {"chunk_type": "contrat_metadata", "contract_id": "CTR-000048"}
+    },
+    {
+      "id": "controle_02",
+      "question": "Quelle est la prime annuelle totale du contrat de Ravinala BTP ?",
+      "group": {"dimension": "controle", "value": "tous"},
+      "expected": {"chunk_type": "contrat_metadata", "souscripteur": "Ravinala BTP SA"}
+    },
+    {
+      "id": "controle_03",
+      "question": "Quel est le montant de la franchise hospitalisation en CONFORT ?",
+      "group": {"dimension": "controle", "value": "tous"},
+      "expected": {"chunk_type": "article", "formule": "CONFORT"}
+    },
+    {
+      "id": "controle_04",
+      "question": "Combien de bénéficiaires dans le contrat CTR-000175 ?",
+      "group": {"dimension": "controle", "value": "tous"},
+      "expected": {"chunk_type": "contrat_metadata", "contract_id": "CTR-000175"}
+    },
+    {
+      "id": "controle_05",
+      "question": "Quelle est la validité d'une ordonnance pour les médicaments ?",
+      "group": {"dimension": "controle", "value": "tous"},
+      "expected": {"chunk_type": "article"}
+    }
+  ]
+}

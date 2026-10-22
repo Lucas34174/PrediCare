@@ -1,0 +1,221 @@
+{
+  "versions": [
+    {
+      "version": "v1.0.0-xgb",
+      "cree": "2026-10-22T04:44:51+00:00",
+      "artefact": "models/v1.0.0-xgb/model.joblib",
+      "sha256": "7867b07aa862ea2a0e0d3c013a91a83cea498c2600b2609de18b9b2c72324399",
+      "statut": "archive",
+      "metadonnees": {
+        "recall_test": 0.8846,
+        "precision_test": 0.9973,
+        "f1_score": 0.9376,
+        "pr_auc": 0.9843,
+        "roc_auc": 0.9957,
+        "recall_by_fraud_type": {
+          "ACTE_FICTIF": {
+            "total_cas": 55,
+            "detectes": 47,
+            "rates": 8,
+            "recall": 0.8545
+          },
+          "DOUBLON": {
+            "total_cas": 89,
+            "detectes": 70,
+            "rates": 19,
+            "recall": 0.7865
+          },
+          "FRACTIONNEMENT": {
+            "total_cas": 27,
+            "detectes": 10,
+            "rates": 17,
+            "recall": 0.3704
+          },
+          "HORS_COUVERTURE": {
+            "total_cas": 86,
+            "detectes": 85,
+            "rates": 1,
+            "recall": 0.9884
+          },
+          "INCOHERENCE_PROFIL": {
+            "total_cas": 41,
+            "detectes": 41,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "LIGNES_NON_PRESCRITES": {
+            "total_cas": 68,
+            "detectes": 67,
+            "rates": 1,
+            "recall": 0.9853
+          },
+          "ORDONNANCE_EXPIREE": {
+            "total_cas": 39,
+            "detectes": 39,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "PRESTATAIRE_RADIE": {
+            "total_cas": 31,
+            "detectes": 31,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "QUANTITE_EXCESSIVE": {
+            "total_cas": 43,
+            "detectes": 43,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "SOINS_JOUR_FERME": {
+            "total_cas": 14,
+            "detectes": 13,
+            "rates": 1,
+            "recall": 0.9286
+          },
+          "SUBSTITUTION_PRODUIT": {
+            "total_cas": 33,
+            "detectes": 33,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "SURCONSOMMATION": {
+            "total_cas": 79,
+            "detectes": 62,
+            "rates": 17,
+            "recall": 0.7848
+          },
+          "SURFACTURATION": {
+            "total_cas": 144,
+            "detectes": 142,
+            "rates": 2,
+            "recall": 0.9861
+          },
+          "UPCODING": {
+            "total_cas": 83,
+            "detectes": 53,
+            "rates": 30,
+            "recall": 0.6386
+          }
+        }
+      }
+    },
+    {
+      "version": "v2.0.0-weak",
+      "cree": "2026-10-22T04:44:51+00:00",
+      "artefact": "models/v2.0.0-weak/model.joblib",
+      "sha256": "7867b07aa862ea2a0e0d3c013a91a83cea498c2600b2609de18b9b2c72324399",
+      "statut": "staging",
+      "metadonnees": {
+        "recall_test": 0.8846,
+        "precision_test": 0.9973,
+        "f1_score": 0.9376
+      }
+    },
+    {
+      "version": "v2.0.0-xgb",
+      "cree": "2026-10-22T04:44:51+00:00",
+      "artefact": "models/v2.0.0-xgb/model.joblib",
+      "sha256": "7867b07aa862ea2a0e0d3c013a91a83cea498c2600b2609de18b9b2c72324399",
+      "statut": "production",
+      "metadonnees": {
+        "recall_test": 0.8846,
+        "precision_test": 0.9973,
+        "f1_score": 0.9376,
+        "pr_auc": 0.9843,
+        "roc_auc": 0.9957,
+        "recall_by_fraud_type": {
+          "ACTE_FICTIF": {
+            "total_cas": 55,
+            "detectes": 47,
+            "rates": 8,
+            "recall": 0.8545
+          },
+          "DOUBLON": {
+            "total_cas": 89,
+            "detectes": 70,
+            "rates": 19,
+            "recall": 0.7865
+          },
+          "FRACTIONNEMENT": {
+            "total_cas": 27,
+            "detectes": 10,
+            "rates": 17,
+            "recall": 0.3704
+          },
+          "HORS_COUVERTURE": {
+            "total_cas": 86,
+            "detectes": 85,
+            "rates": 1,
+            "recall": 0.9884
+          },
+          "INCOHERENCE_PROFIL": {
+            "total_cas": 41,
+            "detectes": 41,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "LIGNES_NON_PRESCRITES": {
+            "total_cas": 68,
+            "detectes": 67,
+            "rates": 1,
+            "recall": 0.9853
+          },
+          "ORDONNANCE_EXPIREE": {
+            "total_cas": 39,
+            "detectes": 39,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "PRESTATAIRE_RADIE": {
+            "total_cas": 31,
+            "detectes": 31,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "QUANTITE_EXCESSIVE": {
+            "total_cas": 43,
+            "detectes": 43,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "SOINS_JOUR_FERME": {
+            "total_cas": 14,
+            "detectes": 13,
+            "rates": 1,
+            "recall": 0.9286
+          },
+          "SUBSTITUTION_PRODUIT": {
+            "total_cas": 33,
+            "detectes": 33,
+            "rates": 0,
+            "recall": 1.0
+          },
+          "SURCONSOMMATION": {
+            "total_cas": 79,
+            "detectes": 62,
+            "rates": 17,
+            "recall": 0.7848
+          },
+          "SURFACTURATION": {
+            "total_cas": 144,
+            "detectes": 142,
+            "rates": 2,
+            "recall": 0.9861
+          },
+          "UPCODING": {
+            "total_cas": 83,
+            "detectes": 53,
+            "rates": 30,
+            "recall": 0.6386
+          }
+        }
+      }
+    }
+  ],
+  "production": "v2.0.0-xgb",
+  "historique_production": [
+    "v1.0.0-xgb",
+    "v2.0.0-xgb"
+  ]
+}

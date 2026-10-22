@@ -1,0 +1,32 @@
+{
+  "active_version": "v1.0.0-xgb",
+  "available_models": [
+    {
+      "version_id": "v1.0.0-xgb",
+      "type": "XGBoost",
+      "recall_test": 0.8846,
+      "precision_test": 0.9973,
+      "f1_score": 0.9376,
+      "date_entrainement": "2026-10-22",
+      "statut": "ACTIVE"
+    },
+    {
+      "version_id": "v0.9.0-baseline",
+      "type": "LogisticRegression",
+      "recall_test": 0.9026,
+      "precision_test": 0.7235,
+      "f1_score": 0.8032,
+      "date_entrainement": "2026-10-22",
+      "statut": "STANDBY"
+    },
+    {
+      "version_id": "v2.0.0-xgb",
+      "type": "XGBoost",
+      "recall_test": 0.8846,
+      "precision_test": 0.9973,
+      "f1_score": 0.9376,
+      "date_entrainement": "2026-10-22",
+      "statut": "STANDBY"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "amelioration": "Recalibrage seuil operationnel 0.30 -> 0.25",
+  "decision": "GARDER",
+  "justification": "Gain net de +14.29 pts de Recall et +9.53 pts de Précision. Récupération de 20 000 MGA de perte (FAC-00083354 interceptée). Aucun faux positif supplémentaire généré (FP reste stable à 4). Aucune régression sur les autres types.",
+  "avant": {
+    "seuil": 0.3,
+    "tp": 2,
+    "fp": 4,
+    "fn": 5,
+    "tn": 80,
+    "recall": 0.2857,
+    "precision": 0.3333,
+    "f1": 0.3077,
+    "f2": 0.2941,
+    "nb_alertes": 6,
+    "taux_alerte_pct": 6.59,
+    "montant_manque_ariary": 99000,
+    "par_type": {
+      "DOUBLON": {
+        "type_fraude": "DOUBLON",
+        "total_fraudes": 4,
+        "detectes_tp": 0,
+        "manques_fn": 4,
+        "recall": 0.0,
+        "score_moyen_fn": 0.082,
+        "score_median_fn": 0.0195,
+        "montant_total_ariary": 63000,
+        "montant_manque_ariary": 63000
+      },
+      "PRESTATAIRE_RADIE": {
+        "type_fraude": "PRESTATAIRE_RADIE",
+        "total_fraudes": 1,
+        "detectes_tp": 0,
+        "manques_fn": 1,
+        "recall": 0.0,
+        "score_moyen_fn": 0.0021,
+        "score_median_fn": 0.0021,
+        "montant_total_ariary": 36000,
+        "montant_manque_ariary": 36000
+      },
+      "ACTE_FICTIF": {
+        "type_fraude": "ACTE_FICTIF",
+        "total_fraudes": 1,
+        "detectes_tp": 1,
+        "manques_fn": 0,
+        "recall": 1.0,
+        "score_moyen_fn": 0.0,
+        "score_median_fn": 0.0,
+        "montant_total_ariary": 68500,
+        "montant_manque_ariary": 0
+      },
+      "SURFACTURATION": {
+        "type_fraude": "SURFACTURATION",
+        "total_fraudes": 1,
+        "detectes_tp": 1,
+        "manques_fn": 0,
+        "recall": 1.0,
+        "score_moyen_fn": 0.0,
+        "score_median_fn": 0.0,
+        "montant_total_ariary": 70000,
+        "montant_manque_ariary": 0
+      }
+    }
+  },
+  "apres": {
+    "seuil": 0.25,
+    "tp": 3,
+    "fp": 4,
+    "fn": 4,
+    "tn": 80,
+    "recall": 0.4286,
+    "precision": 0.4286,
+    "f1": 0.4286,
+    "f2": 0.4286,
+    "nb_alertes": 7,
+    "taux_alerte_pct": 7.69,
+    "montant_manque_ariary": 79000,
+    "par_type": {
+      "PRESTATAIRE_RADIE": {
+        "type_fraude": "PRESTATAIRE_RADIE",
+        "total_fraudes": 1,
+        "detectes_tp": 0,
+        "manques_fn": 1,
+        "recall": 0.0,
+        "score_moyen_fn": 0.0021,
+        "score_median_fn": 0.0021,
+        "montant_total_ariary": 36000,
+        "montant_manque_ariary": 36000
+      },
+      "DOUBLON": {
+        "type_fraude": "DOUBLON",
+        "total_fraudes": 4,
+        "detectes_tp": 1,
+        "manques_fn": 3,
+        "recall": 0.25,
+        "score_moyen_fn": 0.0192,
+        "score_median_fn": 0.0191,
+        "montant_total_ariary": 63000,
+        "montant_manque_ariary": 43000
+      },
+      "ACTE_FICTIF": {
+        "type_fraude": "ACTE_FICTIF",
+        "total_fraudes": 1,
+        "detectes_tp": 1,
+        "manques_fn": 0,
+        "recall": 1.0,
+        "score_moyen_fn": 0.0,
+        "score_median_fn": 0.0,
+        "montant_total_ariary": 68500,
+        "montant_manque_ariary": 0
+      },
+      "SURFACTURATION": {
+        "type_fraude": "SURFACTURATION",
+        "total_fraudes": 1,
+        "detectes_tp": 1,
+        "manques_fn": 0,
+        "recall": 1.0,
+        "score_moyen_fn": 0.0,
+        "score_median_fn": 0.0,
+        "montant_total_ariary": 70000,
+        "montant_manque_ariary": 0
+      }
+    }
+  }
+}

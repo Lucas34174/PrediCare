@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Inter Variable', Inter, sans-serif;
+  --font-heading: 'Inter Variable', Inter, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-input: var(--input-border);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-foreground: var(--danger-soft-foreground);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-foreground: var(--info-soft-foreground);
+  --radius-sm: calc(var(--radius) * .65);
+  --radius-md: calc(var(--radius) * .82);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.7);
+}
+
+:root {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Nouvelle palette bleue (basée sur le Login) */
+  --canvas: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-soft: #F1F5F9;
+  --ink: #0F172A;
+  --ink-muted: #64748B;
+  
+  --green: #3B82F6;         /* Le bleu clair du login (remplace le vert) */
+  --green-dark: #1D4ED8;    /* Bleu plus foncé pour le hover */
+  --green-light: #EFF6FF;   /* Bleu très clair pour les fonds */
+  
+  --amber: #D97706;
+  --line: #E2E8F0;
+  --red: #DC2626;
+  --input-border: #CBD5E1;
+  
+  --primary-soft: #EFF6FF;
+  --primary-soft-foreground: #1E3A8A;
+  --accent: #3B82F6;
+  --accent-soft: #DBEAFE;
+  --accent-soft-foreground: #1D4ED8;
+  
+  --success: #10B981;
+  --success-soft: #ECFDF5;
+  --success-soft-foreground: #047857;
+  
+  --warning: #D97706;
+  --warning-soft: #FFFBEB;
+  --warning-soft-foreground: #B45309;
+  
+  --danger: #DC2626;
+  --danger-soft: #FEF2F2;
+  --danger-soft-foreground: #991B1B;
+  
+  --info: #3B82F6;
+  --info-soft: #EFF6FF;
+  --info-soft-foreground: #1D4ED8;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --primary: var(--green);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--surface-soft);
+  --muted: var(--surface-soft);
+  --muted-foreground: var(--ink-muted);
+  --border: var(--line);
+  --ring: #3B82F6;
+  --radius: 0.8rem;
+  --shadow-soft: 0 10px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.01);
+}
+
+.app-root.dark {
+  color-scheme: dark;
+  --canvas: #0B1120;
+  --surface: #0F172A;
+  --surface-soft: #1E293B;
+  --ink: #F8FAFC;
+  --ink-muted: #94A3B8;
+  
+  --green: #60A5FA;
+  --green-dark: #93C5FD;
+  --green-light: #1E3A8A;
+  
+  --amber: #FBBF24;
+  --line: #334155;
+  --red: #F87171;
+  --input-border: #475569;
+  --ring: #60A5FA;
+  
+  --primary-foreground: #0F172A;
+  --primary-soft: #1E3A8A;
+  --primary-soft-foreground: #BFDBFE;
+  
+  --success: #34D399;
+  --success-soft: #064E3B;
+  --success-soft-foreground: #A7F3D0;
+  
+  --warning: #FBBF24;
+  --warning-soft: #78350F;
+  --warning-soft-foreground: #FDE68A;
+  
+  --danger: #F87171;
+  --danger-soft: #7F1D1D;
+  --danger-soft-foreground: #FECACA;
+  
+  --info: #60A5FA;
+  --info-soft: #172554;
+  --info-soft-foreground: #BFDBFE;
+  
+  --shadow-soft: 0 10px 25px -5px rgb(0 0 0 / 0.5);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { min-width: 320px; min-height: 100%; font-family: var(--font-sans); }
+  body { @apply bg-background text-foreground; margin: 0; min-width: 320px; min-height: 100vh; }
+  button, input { font: inherit; }
+  button { color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+  ::selection { background: var(--green-light); color: var(--ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

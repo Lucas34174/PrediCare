@@ -47,6 +47,7 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+agent-ressources/*
 
 # Artefacts de modèles volumineux (à versionner via registre/volume/DVC/MLflow)
 models/*
@@ -57,7 +58,8 @@ models/*
 *.pt
 *.pth
 *.safetensors
-
+web/.agents
+web/@
 # Interface Web / Node (si applicable dans /web)
 node_modules/
 .streamlit/secrets.toml
@@ -70,3 +72,15 @@ node_modules/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Backups PostgreSQL
+backups/
+*.dump
+
+# Artefacts de modèles volumineux (à versionner via registre/volume/DVC/MLflow)
+models/*
+!models/.gitkeep
+!models/*.json
+!models/model_champion.joblib
+
+generate_eda_notebook.py

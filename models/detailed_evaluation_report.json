@@ -1,0 +1,1051 @@
+{
+  "global": {
+    "metrics_seuil_production": {
+      "seuil": 0.8,
+      "matrice_brute": {
+        "tp": 2,
+        "fp": 1,
+        "fn": 5,
+        "tn": 83
+      },
+      "matrice_normalisee_pct": {
+        "tp": 2.2,
+        "fp": 1.1,
+        "fn": 5.49,
+        "tn": 91.21
+      },
+      "recall": 0.2857,
+      "precision": 0.6667,
+      "f1": 0.4,
+      "f2": 0.3226,
+      "specificite": 0.9881,
+      "nb_alertes": 3,
+      "taux_alerte_pct": 3.3
+    },
+    "metrics_seuil_optimal": {
+      "seuil": 0.3,
+      "matrice_brute": {
+        "tp": 2,
+        "fp": 4,
+        "fn": 5,
+        "tn": 80
+      },
+      "matrice_normalisee_pct": {
+        "tp": 2.2,
+        "fp": 4.4,
+        "fn": 5.49,
+        "tn": 87.91
+      },
+      "recall": 0.2857,
+      "precision": 0.3333,
+      "f1": 0.3077,
+      "f2": 0.2941,
+      "specificite": 0.9524,
+      "nb_alertes": 6,
+      "taux_alerte_pct": 6.59
+    },
+    "courbes": {
+      "pr_auc": 0.434,
+      "prevalence_baseline": 0.0769,
+      "roc_auc": 0.7517,
+      "pr_points": [
+        {
+          "recall": 1.0,
+          "precision": 0.0769
+        },
+        {
+          "recall": 1.0,
+          "precision": 0.0795
+        },
+        {
+          "recall": 1.0,
+          "precision": 0.0824
+        },
+        {
+          "recall": 1.0,
+          "precision": 0.0854
+        },
+        {
+          "recall": 1.0,
+          "precision": 0.0886
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0789
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0822
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0857
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0896
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0938
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.0984
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1034
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1091
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1154
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1224
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1304
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1395
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.15
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1622
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1765
+        },
+        {
+          "recall": 0.8571,
+          "precision": 0.1935
+        },
+        {
+          "recall": 0.5714,
+          "precision": 0.1429
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.12
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.1364
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.1579
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.1875
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.2308
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.3
+        },
+        {
+          "recall": 0.4286,
+          "precision": 0.4286
+        },
+        {
+          "recall": 0.2857,
+          "precision": 0.5
+        },
+        {
+          "recall": 0.1429,
+          "precision": 1.0
+        }
+      ],
+      "roc_points": [
+        {
+          "fpr": 0.0,
+          "tpr": 0.0
+        },
+        {
+          "fpr": 0.0,
+          "tpr": 0.1429
+        },
+        {
+          "fpr": 0.0,
+          "tpr": 0.2857
+        },
+        {
+          "fpr": 0.0476,
+          "tpr": 0.2857
+        },
+        {
+          "fpr": 0.0476,
+          "tpr": 0.4286
+        },
+        {
+          "fpr": 0.2619,
+          "tpr": 0.4286
+        },
+        {
+          "fpr": 0.2619,
+          "tpr": 0.5714
+        },
+        {
+          "fpr": 0.2857,
+          "tpr": 0.5714
+        },
+        {
+          "fpr": 0.2857,
+          "tpr": 0.7143
+        },
+        {
+          "fpr": 0.2976,
+          "tpr": 0.7143
+        },
+        {
+          "fpr": 0.2976,
+          "tpr": 0.8571
+        },
+        {
+          "fpr": 0.8452,
+          "tpr": 0.8571
+        },
+        {
+          "fpr": 0.8452,
+          "tpr": 1.0
+        },
+        {
+          "fpr": 1.0,
+          "tpr": 1.0
+        }
+      ]
+    },
+    "calibration": {
+      "brier_score": 0.0647,
+      "curve_points": [
+        {
+          "prob_predite": 0.0172,
+          "fraction_reelle": 0.0494
+        },
+        {
+          "prob_predite": 0.281,
+          "fraction_reelle": 0.1667
+        },
+        {
+          "prob_predite": 0.4047,
+          "fraction_reelle": 0.0
+        },
+        {
+          "prob_predite": 0.9314,
+          "fraction_reelle": 0.6667
+        }
+      ]
+    },
+    "baseline_naive": {
+      "type": "NaivePriorClassifier",
+      "prevalence": 0.0769,
+      "brier_score": 0.071
+    },
+    "sensibilite_seuils": [
+      {
+        "seuil": 0.05,
+        "matrice_brute": {
+          "tp": 3,
+          "fp": 14,
+          "fn": 4,
+          "tn": 70
+        },
+        "matrice_normalisee_pct": {
+          "tp": 3.3,
+          "fp": 15.38,
+          "fn": 4.4,
+          "tn": 76.92
+        },
+        "recall": 0.4286,
+        "precision": 0.1765,
+        "f1": 0.25,
+        "f2": 0.3333,
+        "specificite": 0.8333,
+        "nb_alertes": 17,
+        "taux_alerte_pct": 18.68
+      },
+      {
+        "seuil": 0.1,
+        "matrice_brute": {
+          "tp": 3,
+          "fp": 11,
+          "fn": 4,
+          "tn": 73
+        },
+        "matrice_normalisee_pct": {
+          "tp": 3.3,
+          "fp": 12.09,
+          "fn": 4.4,
+          "tn": 80.22
+        },
+        "recall": 0.4286,
+        "precision": 0.2143,
+        "f1": 0.2857,
+        "f2": 0.3571,
+        "specificite": 0.869,
+        "nb_alertes": 14,
+        "taux_alerte_pct": 15.38
+      },
+      {
+        "seuil": 0.15,
+        "matrice_brute": {
+          "tp": 3,
+          "fp": 8,
+          "fn": 4,
+          "tn": 76
+        },
+        "matrice_normalisee_pct": {
+          "tp": 3.3,
+          "fp": 8.79,
+          "fn": 4.4,
+          "tn": 83.52
+        },
+        "recall": 0.4286,
+        "precision": 0.2727,
+        "f1": 0.3333,
+        "f2": 0.3846,
+        "specificite": 0.9048,
+        "nb_alertes": 11,
+        "taux_alerte_pct": 12.09
+      },
+      {
+        "seuil": 0.2,
+        "matrice_brute": {
+          "tp": 3,
+          "fp": 7,
+          "fn": 4,
+          "tn": 77
+        },
+        "matrice_normalisee_pct": {
+          "tp": 3.3,
+          "fp": 7.69,
+          "fn": 4.4,
+          "tn": 84.62
+        },
+        "recall": 0.4286,
+        "precision": 0.3,
+        "f1": 0.3529,
+        "f2": 0.3947,
+        "specificite": 0.9167,
+        "nb_alertes": 10,
+        "taux_alerte_pct": 10.99
+      },
+      {
+        "seuil": 0.25,
+        "matrice_brute": {
+          "tp": 3,
+          "fp": 4,
+          "fn": 4,
+          "tn": 80
+        },
+        "matrice_normalisee_pct": {
+          "tp": 3.3,
+          "fp": 4.4,
+          "fn": 4.4,
+          "tn": 87.91
+        },
+        "recall": 0.4286,
+        "precision": 0.4286,
+        "f1": 0.4286,
+        "f2": 0.4286,
+        "specificite": 0.9524,
+        "nb_alertes": 7,
+        "taux_alerte_pct": 7.69
+      },
+      {
+        "seuil": 0.3,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 4,
+          "fn": 5,
+          "tn": 80
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 4.4,
+          "fn": 5.49,
+          "tn": 87.91
+        },
+        "recall": 0.2857,
+        "precision": 0.3333,
+        "f1": 0.3077,
+        "f2": 0.2941,
+        "specificite": 0.9524,
+        "nb_alertes": 6,
+        "taux_alerte_pct": 6.59
+      },
+      {
+        "seuil": 0.35,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 5,
+          "tn": 82
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 2.2,
+          "fn": 5.49,
+          "tn": 90.11
+        },
+        "recall": 0.2857,
+        "precision": 0.5,
+        "f1": 0.3636,
+        "f2": 0.3125,
+        "specificite": 0.9762,
+        "nb_alertes": 4,
+        "taux_alerte_pct": 4.4
+      },
+      {
+        "seuil": 0.4,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 2,
+          "fn": 5,
+          "tn": 82
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 2.2,
+          "fn": 5.49,
+          "tn": 90.11
+        },
+        "recall": 0.2857,
+        "precision": 0.5,
+        "f1": 0.3636,
+        "f2": 0.3125,
+        "specificite": 0.9762,
+        "nb_alertes": 4,
+        "taux_alerte_pct": 4.4
+      },
+      {
+        "seuil": 0.45,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.5,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.55,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.6,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.65,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.7,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.75,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.8,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.85,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 5,
+          "tn": 83
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 1.1,
+          "fn": 5.49,
+          "tn": 91.21
+        },
+        "recall": 0.2857,
+        "precision": 0.6667,
+        "f1": 0.4,
+        "f2": 0.3226,
+        "specificite": 0.9881,
+        "nb_alertes": 3,
+        "taux_alerte_pct": 3.3
+      },
+      {
+        "seuil": 0.9,
+        "matrice_brute": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 5,
+          "tn": 84
+        },
+        "matrice_normalisee_pct": {
+          "tp": 2.2,
+          "fp": 0.0,
+          "fn": 5.49,
+          "tn": 92.31
+        },
+        "recall": 0.2857,
+        "precision": 1.0,
+        "f1": 0.4444,
+        "f2": 0.3333,
+        "specificite": 1.0,
+        "nb_alertes": 2,
+        "taux_alerte_pct": 2.2
+      },
+      {
+        "seuil": 0.95,
+        "matrice_brute": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 6,
+          "tn": 84
+        },
+        "matrice_normalisee_pct": {
+          "tp": 1.1,
+          "fp": 0.0,
+          "fn": 6.59,
+          "tn": 92.31
+        },
+        "recall": 0.1429,
+        "precision": 1.0,
+        "f1": 0.25,
+        "f2": 0.1724,
+        "specificite": 1.0,
+        "nb_alertes": 1,
+        "taux_alerte_pct": 1.1
+      }
+    ]
+  },
+  "by_fraud_type_optimal_0_30": {
+    "SURFACTURATION": {
+      "effectif_test": 1,
+      "detectes": 1,
+      "rates": 0,
+      "recall": 1.0,
+      "recall_ic_wilson_95": [
+        0.2065,
+        1.0
+      ],
+      "precision_part_alertes": 0.1667,
+      "score_moyen": 0.9819,
+      "statut": "DETECTE_100%"
+    },
+    "QUANTITE_EXCESSIVE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "UPCODING": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "LIGNES_NON_PRESCRITES": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SUBSTITUTION_PRODUIT": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "ORDONNANCE_EXPIREE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SOINS_JOUR_FERME": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "DOUBLON": {
+      "effectif_test": 4,
+      "detectes": 0,
+      "rates": 4,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.4899
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.082,
+      "statut": "NON_DETECTE"
+    },
+    "FRACTIONNEMENT": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SURCONSOMMATION": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "ACTE_FICTIF": {
+      "effectif_test": 1,
+      "detectes": 1,
+      "rates": 0,
+      "recall": 1.0,
+      "recall_ic_wilson_95": [
+        0.2065,
+        1.0
+      ],
+      "precision_part_alertes": 0.1667,
+      "score_moyen": 0.9173,
+      "statut": "DETECTE_100%"
+    },
+    "INCOHERENCE_PROFIL": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "PRESTATAIRE_RADIE": {
+      "effectif_test": 1,
+      "detectes": 0,
+      "rates": 1,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.7935
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0021,
+      "statut": "NON_DETECTE"
+    },
+    "HORS_COUVERTURE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    }
+  },
+  "by_fraud_type_production_0_80": {
+    "SURFACTURATION": {
+      "effectif_test": 1,
+      "detectes": 1,
+      "rates": 0,
+      "recall": 1.0,
+      "recall_ic_wilson_95": [
+        0.2065,
+        1.0
+      ],
+      "precision_part_alertes": 0.3333,
+      "score_moyen": 0.9819,
+      "statut": "DETECTE_100%"
+    },
+    "QUANTITE_EXCESSIVE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "UPCODING": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "LIGNES_NON_PRESCRITES": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SUBSTITUTION_PRODUIT": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "ORDONNANCE_EXPIREE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SOINS_JOUR_FERME": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "DOUBLON": {
+      "effectif_test": 4,
+      "detectes": 0,
+      "rates": 4,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.4899
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.082,
+      "statut": "NON_DETECTE"
+    },
+    "FRACTIONNEMENT": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "SURCONSOMMATION": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "ACTE_FICTIF": {
+      "effectif_test": 1,
+      "detectes": 1,
+      "rates": 0,
+      "recall": 1.0,
+      "recall_ic_wilson_95": [
+        0.2065,
+        1.0
+      ],
+      "precision_part_alertes": 0.3333,
+      "score_moyen": 0.9173,
+      "statut": "DETECTE_100%"
+    },
+    "INCOHERENCE_PROFIL": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    },
+    "PRESTATAIRE_RADIE": {
+      "effectif_test": 1,
+      "detectes": 0,
+      "rates": 1,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.7935
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0021,
+      "statut": "NON_DETECTE"
+    },
+    "HORS_COUVERTURE": {
+      "effectif_test": 0,
+      "detectes": 0,
+      "rates": 0,
+      "recall": 0.0,
+      "recall_ic_wilson_95": [
+        0.0,
+        0.0
+      ],
+      "precision_part_alertes": 0.0,
+      "score_moyen": 0.0,
+      "statut": "ABSENT_DU_TEST"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# Fins de ligne en LF partout (poste Windows / WSL2), indispensable pour les scripts des conteneurs Linux
+* text=auto eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
