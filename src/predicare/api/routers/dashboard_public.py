@@ -14,9 +14,7 @@ router = APIRouter(prefix="/dashboard/public", tags=["dashboard-public"])
 
 @router.get("/kpis")
 def get_public_kpis(
-    _current_user: Annotated[
-        UserInfo, Depends(require_roles([Role.GESTIONNAIRE]))
-    ],
+    _current_user: Annotated[UserInfo, Depends(require_roles([Role.GESTIONNAIRE]))],
     engine: Engine = Depends(_db_engine),
 ):
     """Renvoie les KPIs de pilotage réservés aux gestionnaires."""
