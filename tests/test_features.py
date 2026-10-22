@@ -1007,3 +1007,53 @@ def test_sans_ordonnance_nb_prest_nan():
     )
     out = build_features(fac, {}, hist)
     assert pd.isna(out.loc["F1", "f_nb_prest_meme_ordo_anterieurs"])
+
+
+def test_point_in_time_batch_et_parite():
+    """Vérifie la garantie point-in-time en batch et la parité avec l'inférence unitaire."""
+    f1 = {
+        "facture_id": "F1",
+        "numero_facture": "NUM-001",
+        "prestataire_id": "P1",
+        "assure_id": "A1",
+        "date_soin": "2025-01-01",
+        "date_reception": "2025-01-02",
+        "montant_total": 10000,
+        "nb_lignes": 2,
+    }
+    f2 = {
+        "facture_id": "F2",
+        "numero_facture": "NUM-002",
+        "prestataire_id": "P1",
+        "assure_id": "A1",
+        "date_soin": "2025-01-01",
+        "date_reception": "2025-01-05",  # Reçue après F1
+        "montant_total": 10000,
+        "nb_lignes": 2,
+    }
+    # 1. Mode batch : F1 et F2 dans le même DataFrame, sans historique séparé
+    batch_fac = _fac([f1, f2])
+    out_batch = build_features(batch_fac, {}, pd.DataFrame())
+
+    # F1 est la première : aucun antécédent
+    assert out_batch.loc["F1", "f_nb_doublons_anterieurs"] == pytest.approx(0.0)
+    assert out_batch.loc["F1", "f_nb_factures_meme_jour_prest"] == pytest.approx(0.0)
+
+    # F2 arrive après : elle voit F1 comme antécédent doublon
+    assert out_batch.loc["F2", "f_nb_doublons_anterieurs"] == pytest.approx(1.0)
+    assert out_batch.loc["F2", "f_nb_factures_meme_jour_prest"] == pytest.approx(1.0)
+
+    # 2. Mode unitaire : F2 évaluée seule avec F1 dans history
+    unit_fac = _fac([f2])
+    hist = _fac([f1])
+    out_unit = build_features(unit_fac, {}, hist)
+
+    # Parité exacte entre mode batch et mode unitaire
+    assert (
+        out_unit.loc["F2", "f_nb_doublons_anterieurs"]
+        == out_batch.loc["F2", "f_nb_doublons_anterieurs"]
+    )
+    assert (
+        out_unit.loc["F2", "f_nb_factures_meme_jour_prest"]
+        == out_batch.loc["F2", "f_nb_factures_meme_jour_prest"]
+    )

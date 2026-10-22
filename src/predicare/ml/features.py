@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 logger = logging.getLogger("predicare.ml.features")
@@ -718,15 +719,18 @@ def _add_historique_features(
     factures: pd.DataFrame,
     history: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Groupes 6 et 7 – Features historiques sans fuite temporelle.
+    """Groupes 6 et 7 – Features historiques sans fuite temporelle (point-in-time).
 
     Groupe 6 – DOUBLON / FRACTIONNEMENT :
       f_nb_doublons_anterieurs, f_numero_facture_deja_vu, f_nb_factures_meme_jour_prest.
     Groupe 7 – SURCONSOMMATION :
       f_nb_prest_meme_ordo_anterieurs.
 
-    Contrat appelant : `history` ne contient QUE des factures antérieures à celles
-    de `factures` (garantie par PB-06 / PB-22 ; aucune vérification temporelle ici).
+    Garantie point-in-time :
+      Chaque facture n'est comparée qu'aux factures reçues strictement antérieurement
+      (date_reception_prev < date_reception) et ne se compare jamais à elle-même.
+      Si history est vide mais que factures contient un lot (batch/entraînement),
+      factures sert lui-même de vivier historique point-in-time.
     """
     _hcols = [
         "f_nb_doublons_anterieurs",
@@ -734,67 +738,144 @@ def _add_historique_features(
         "f_nb_factures_meme_jour_prest",
         "f_nb_prest_meme_ordo_anterieurs",
     ]
-    if history.empty:
+    if (history is None or history.empty) and len(factures) <= 1:
         for col in _hcols:
             feat[col] = float("nan")
         return feat
 
-    # Sélection sécurisée : colonnes absentes dans history → NaN
+    pool = history if (history is not None and not history.empty) else factures
+
     _need = [
         "facture_id",
         "assure_id",
         "prestataire_id",
         "date_soin",
+        "date_reception",
         "montant_total",
         "numero_facture",
+        "nb_lignes",
         "ordonnance_id",
     ]
-    hist_safe = _cols(history, _need)
+    fac_safe = _cols(factures, _need)
+    hist_safe = _cols(pool, _need)
 
-    # ---- f_nb_doublons_anterieurs et f_nb_factures_meme_jour_prest ----
-    _jk = ["assure_id", "prestataire_id", "date_soin"]
-    hist_j = hist_safe.dropna(subset=_jk).rename(
-        columns={"facture_id": "hist_id", "montant_total": "hist_montant"}
+    # Conversion sécurisée des dates
+    has_date_rec = (
+        "date_reception" in fac_safe.columns
+        and "date_reception" in hist_safe.columns
+        and fac_safe["date_reception"].notna().any()
+        and hist_safe["date_reception"].notna().any()
     )
-    hist_j = hist_j[["hist_id"] + _jk + ["hist_montant"]]
-    fac_j = factures[["facture_id"] + _jk + ["montant_total"]].dropna(subset=_jk)
-    mg = fac_j.merge(hist_j, on=_jk, how="left")
-    mg["has_match"] = mg["hist_id"].notna().astype(float)
-    mg_f = mg["montant_total"].astype("float64")
-    mg_h = mg["hist_montant"].astype("float64")
-    mg["doublon"] = (mg["hist_id"].notna() & (mg_f == mg_h)).astype(float)
-    grp = mg.groupby("facture_id")
-    feat["f_nb_factures_meme_jour_prest"] = (
-        grp["has_match"].sum().reindex(feat.index, fill_value=0.0)
-    )
-    feat["f_nb_doublons_anterieurs"] = grp["doublon"].sum().reindex(feat.index, fill_value=0.0)
+
+    if has_date_rec:
+        fac_safe["dr"] = pd.to_datetime(fac_safe["date_reception"], errors="coerce")
+        hist_safe["dr"] = pd.to_datetime(hist_safe["date_reception"], errors="coerce")
+    else:
+        fac_safe["dr"] = np.nan
+        hist_safe["dr"] = np.nan
+
+    fac_safe["ds"] = pd.to_datetime(fac_safe["date_soin"], errors="coerce")
+    hist_safe["ds"] = pd.to_datetime(hist_safe["date_soin"], errors="coerce")
+
+    # ---- Groupe 6 : Doublons & Même jour (assure_id, prestataire_id) ----
+    _jk = ["assure_id", "prestataire_id"]
+    f_j = fac_safe.dropna(subset=_jk)
+    h_j = hist_safe.dropna(subset=_jk)
+
+    if not f_j.empty and not h_j.empty:
+        m = f_j.merge(h_j, on=_jk, suffixes=("", "_prev"))
+        if not m.empty:
+            # Ne jamais matcher avec soi-même
+            m = m[m["facture_id"] != m["facture_id_prev"]]
+            # Filtrage point-in-time
+            if has_date_rec:
+                m = m[m["dr_prev"].notna() & m["dr"].notna() & (m["dr_prev"] < m["dr"])]
+            else:
+                m = m[m["ds_prev"].isna() | m["ds"].isna() | (m["ds_prev"] <= m["ds"])]
+
+            # 1. Même jour prestataire
+            m_jour = m[m["ds"].notna() & m["ds_prev"].notna() & (m["ds"] == m["ds_prev"])]
+            grp_jour = m_jour.groupby("facture_id").size()
+            feat["f_nb_factures_meme_jour_prest"] = grp_jour.reindex(feat.index, fill_value=0.0)
+
+            # 2. Doublon : dates proches (<=3j) et montants proches (<=2% ou exact)
+            m_f = m["montant_total"].astype("float64")
+            m_h = m["montant_total_prev"].astype("float64")
+            mt_diff = (m_f - m_h).abs()
+            mt_rel = mt_diff / m_f.clip(lower=1.0)
+            doublon_mt = (m_f == m_h) | (mt_rel <= 0.02)
+
+            ds_diff = (m["ds"] - m["ds_prev"]).abs().dt.days
+            doublon_date = (m["ds"] == m["ds_prev"]) | (ds_diff <= 3)
+
+            same_nb = (
+                m["nb_lignes"].isna()
+                | m["nb_lignes_prev"].isna()
+                | (m["nb_lignes"] == m["nb_lignes_prev"])
+            )
+
+            m_dbl = m[doublon_mt & doublon_date & same_nb]
+            grp_dbl = m_dbl.groupby("facture_id").size()
+            feat["f_nb_doublons_anterieurs"] = grp_dbl.reindex(feat.index, fill_value=0.0)
+        else:
+            feat["f_nb_factures_meme_jour_prest"] = 0.0
+            feat["f_nb_doublons_anterieurs"] = 0.0
+    else:
+        feat["f_nb_factures_meme_jour_prest"] = 0.0
+        feat["f_nb_doublons_anterieurs"] = 0.0
 
     # ---- f_numero_facture_deja_vu ----
-    hist_nums = set(hist_safe["numero_facture"].dropna())
-    fac_num = factures[["facture_id", "numero_facture"]].copy()
-    fac_num["deja_vu"] = fac_num["numero_facture"].isin(hist_nums).astype(float)
-    feat["f_numero_facture_deja_vu"] = fac_num.set_index("facture_id")["deja_vu"]
+    f_num = fac_safe.dropna(subset=["numero_facture"])
+    h_num = hist_safe.dropna(subset=["numero_facture"])
+    if not f_num.empty and not h_num.empty:
+        # Match sur numero_facture parmi les factures antérieures
+        m_num = f_num.merge(h_num, on="numero_facture", suffixes=("", "_prev"))
+        if not m_num.empty:
+            m_num = m_num[m_num["facture_id"] != m_num["facture_id_prev"]]
+            if has_date_rec:
+                m_num = m_num[
+                    m_num["dr_prev"].notna()
+                    & m_num["dr"].notna()
+                    & (m_num["dr_prev"] < m_num["dr"])
+                ]
+            else:
+                m_num = m_num[
+                    m_num["ds_prev"].isna() | m_num["ds"].isna() | (m_num["ds_prev"] <= m_num["ds"])
+                ]
+            vu_ids = set(m_num["facture_id"])
+            feat["f_numero_facture_deja_vu"] = feat.index.isin(vu_ids).astype(float)
+        else:
+            feat["f_numero_facture_deja_vu"] = 0.0
+    else:
+        feat["f_numero_facture_deja_vu"] = 0.0
 
-    # ---- f_nb_prest_meme_ordo_anterieurs ----
-    fac_ordo = factures[["facture_id", "ordonnance_id"]].dropna(subset=["ordonnance_id"])
-    hist_ordo = hist_safe[["ordonnance_id", "prestataire_id"]].dropna(subset=["ordonnance_id"])
-
-    feat["f_nb_prest_meme_ordo_anterieurs"] = float("nan")  # NaN par défaut
+    # ---- Groupe 7 : Surconsommation d'ordonnance (ordonnance_id) ----
+    feat["f_nb_prest_meme_ordo_anterieurs"] = float("nan")
+    fac_ordo = fac_safe.dropna(subset=["ordonnance_id"])
+    hist_ordo = hist_safe.dropna(subset=["ordonnance_id"])
     if not fac_ordo.empty:
         if not hist_ordo.empty:
-            mg_o = fac_ordo.merge(hist_ordo, on="ordonnance_id", how="left")
-            nb_prest = (
-                mg_o[mg_o["prestataire_id"].notna()]
-                .groupby("facture_id")["prestataire_id"]
-                .nunique()
-                .astype(float)
-            )
-            feat["f_nb_prest_meme_ordo_anterieurs"] = nb_prest
-        # Factures avec ordonnance sans match → 0 (pas NaN)
+            m_o = fac_ordo.merge(hist_ordo, on="ordonnance_id", suffixes=("", "_prev"))
+            if not m_o.empty:
+                m_o = m_o[m_o["facture_id"] != m_o["facture_id_prev"]]
+                if has_date_rec:
+                    m_o = m_o[
+                        m_o["dr_prev"].notna() & m_o["dr"].notna() & (m_o["dr_prev"] < m_o["dr"])
+                    ]
+                else:
+                    m_o = m_o[
+                        m_o["ds_prev"].isna() | m_o["ds"].isna() | (m_o["ds_prev"] <= m_o["ds"])
+                    ]
+                cnt_o = (
+                    m_o[m_o["prestataire_id_prev"].notna()]
+                    .groupby("facture_id")["prestataire_id_prev"]
+                    .nunique()
+                    .astype(float)
+                )
+                feat["f_nb_prest_meme_ordo_anterieurs"] = cnt_o.reindex(feat.index)
         ordo_ids = set(fac_ordo["facture_id"])
         null_mask = feat.index.isin(ordo_ids) & feat["f_nb_prest_meme_ordo_anterieurs"].isna()
         feat.loc[null_mask, "f_nb_prest_meme_ordo_anterieurs"] = 0.0
-    # Factures sans ordonnance → NaN (déjà initialisé)
 
     return feat
 

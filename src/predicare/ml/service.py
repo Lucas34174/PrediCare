@@ -278,16 +278,22 @@ def construire_features_facture(
         "contrat_id",
         "ordonnance_id",
         "date_soin",
+        "date_reception",
+        "nb_lignes",
     ):
         if col not in fac_df.columns:
             fac_df[col] = None
     if fac_df["facture_id"].isna().all():
         fac_df["facture_id"] = "TEMP-001"
+    if fac_df["date_reception"].isna().all():
+        fac_df["date_reception"] = datetime.now(UTC).strftime("%Y-%m-%d")
 
     lignes_clean = [{k: v for k, v in l.items() if k not in FORBIDDEN_FEATURE_COLS} for l in lignes]
     lignes_df = pd.DataFrame(lignes_clean)
     if not lignes_df.empty and "facture_id" not in lignes_df.columns:
         lignes_df["facture_id"] = fac_df["facture_id"].iloc[0]
+    if fac_df["nb_lignes"].isna().all():
+        fac_df["nb_lignes"] = len(lignes_df)
 
     base_tables = get_reference_tables() if ref_tables is None else ref_tables
     tables = dict(base_tables)
@@ -303,19 +309,25 @@ def construire_features_facture(
         if engine is not None:
             pid = fac_df["prestataire_id"].iloc[0] if "prestataire_id" in fac_df.columns else None
             aid = fac_df["assure_id"].iloc[0] if "assure_id" in fac_df.columns else None
+            oid = fac_df["ordonnance_id"].iloc[0] if "ordonnance_id" in fac_df.columns else None
             current_fid = fac_df["facture_id"].iloc[0] if "facture_id" in fac_df.columns else None
-            if pid or aid:
+            if pid or aid or oid:
                 with engine.connect() as conn:
                     history_df = pd.read_sql(
                         text(
                             "SELECT facture_id, assure_id, prestataire_id, date_soin, "
-                            "montant_total, numero_facture, ordonnance_id "
+                            "date_reception, montant_total, numero_facture, ordonnance_id, nb_lignes "
                             "FROM factures "
-                            "WHERE (prestataire_id = :pid OR assure_id = :aid) "
+                            "WHERE (assure_id = :aid OR (ordonnance_id IS NOT NULL AND ordonnance_id = :oid) OR prestataire_id = :pid) "
                             "AND facture_id != :cfid"
                         ),
                         conn,
-                        params={"pid": pid, "aid": aid, "cfid": current_fid or ""},
+                        params={
+                            "pid": pid or "",
+                            "aid": aid or "",
+                            "oid": oid or "",
+                            "cfid": current_fid or "",
+                        },
                     )
     except Exception as exc:
         logger.warning("Chargement de l'historique impossible : %s", exc)
