@@ -173,9 +173,7 @@ def filter_bootstrap_data(
 
         if "lignes_facture" in tables:
             df_lf = tables["lignes_facture"]
-            tables["lignes_facture"] = df_lf.loc[
-                ~df_lf["facture_id"].isin(excluded_fac_ids)
-            ].copy()
+            tables["lignes_facture"] = df_lf.loc[~df_lf["facture_id"].isin(excluded_fac_ids)].copy()
 
         if "ordonnances" in tables:
             df_ord = tables["ordonnances"]
@@ -298,7 +296,8 @@ def seed_users(conn: Connection) -> None:
         prestataire_id = user["prestataire_id"]
         if prestataire_id:
             exists = conn.execute(
-                text("SELECT 1 FROM prestataires WHERE prestataire_id = :id"), {"id": prestataire_id}
+                text("SELECT 1 FROM prestataires WHERE prestataire_id = :id"),
+                {"id": prestataire_id},
             ).scalar()
             if not exists:
                 prestataire_id = first_prestataire
