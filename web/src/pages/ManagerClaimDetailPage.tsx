@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -7,13 +7,13 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Info,
-  Minus,
   SearchX,
   ShieldAlert,
   ShieldCheck,
   TrendingDown,
   TrendingUp,
   TriangleAlert,
+  X,
 } from 'lucide-react'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { getClaim, getClaimPrediction } from '@/api/claims'
@@ -96,10 +96,12 @@ export function ManagerClaimDetailPage() {
   )
   const chartFactors = useMemo(() => factors.filter(hasShapValue), [factors])
 
-  const maxAbsShap = useMemo(() => {
-    if (!chartFactors.length) return 1
-    return Math.max(...chartFactors.map((f) => Math.abs(f.shap_value)), 0.01)
-  }, [chartFactors])
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null)
+
+  const selectedFactor = useMemo(
+    () => (selectedFeature ? factors.find((f) => f.feature === selectedFeature) ?? null : null),
+    [factors, selectedFeature],
+  )
 
   const riskIncreasingCount = useMemo(
     () => chartFactors.filter((f) => f.shap_value > 0).length,
@@ -318,7 +320,12 @@ export function ManagerClaimDetailPage() {
               {chartFactors.length > 0 && (
                 <div className="fiche-chart-card">
                   <div className="fiche-chart-header">
-                    <span className="fiche-chart-title">Visualisation de l’impact des facteurs (SHAP)</span>
+                    <div>
+                      <span className="fiche-chart-title">Visualisation de l’impact des facteurs (SHAP)</span>
+                      <p className="fiche-chart-subtitle">
+                        Cliquez sur une barre pour afficher l’explication détaillée du facteur.
+                      </p>
+                    </div>
                     <div className="fiche-chart-legend">
                       <span className="legend-chip legend-chip--risk">
                         <span className="legend-dot legend-dot--risk" /> Augmente le risque
@@ -328,9 +335,37 @@ export function ManagerClaimDetailPage() {
                       </span>
                     </div>
                   </div>
+
+                  <div className="factor-selector-chips" role="tablist" aria-label="Sélection rapide d’un facteur">
+                    {chartFactors.map((f) => {
+                      const isSelected = selectedFeature === f.feature
+                      const isRisk = f.shap_value > 0
+                      return (
+                        <button
+                          key={f.feature}
+                          type="button"
+                          role="tab"
+                          aria-selected={isSelected}
+                          className={`factor-chip ${isSelected ? 'factor-chip--active' : ''} ${
+                            isRisk ? 'factor-chip--risk' : 'factor-chip--safe'
+                          }`}
+                          onClick={() => setSelectedFeature((cur) => (cur === f.feature ? null : f.feature))}
+                        >
+                          <span className={`factor-chip-dot ${isRisk ? 'factor-chip-dot--risk' : 'factor-chip-dot--safe'}`} />
+                          <span className="factor-chip-label">{f.label}</span>
+                          <span className="factor-chip-val">{shapFormat.format(f.shap_value)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
                   <div className="fiche-chart" aria-hidden="true">
                     <ResponsiveContainer width="100%" height={Math.max(180, chartFactors.length * 48)}>
-                      <BarChart data={chartFactors} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 16 }}>
+                      <BarChart
+                        data={chartFactors}
+                        layout="vertical"
+                        margin={{ top: 8, right: 24, bottom: 8, left: 16 }}
+                      >
                         <XAxis type="number" hide />
                         <YAxis
                           type="category"
@@ -341,13 +376,34 @@ export function ManagerClaimDetailPage() {
                           tick={{ fill: 'var(--ink)', fontSize: 11, fontWeight: 500 }}
                         />
                         <Tooltip content={<FactorTooltip />} cursor={{ fill: 'var(--surface-soft)', opacity: 0.6 }} />
-                        <Bar dataKey="shap_value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
-                          {chartFactors.map((entry) => (
-                            <Cell
-                              key={`cell-${entry.feature}`}
-                              fill={entry.shap_value > 0 ? '#EF4444' : '#10B981'}
-                            />
-                          ))}
+                        <Bar
+                          dataKey="shap_value"
+                          radius={[0, 4, 4, 0]}
+                          isAnimationActive={false}
+                          cursor="pointer"
+                          onClick={(data) => {
+                            const feat = (data as { feature?: string; payload?: { feature?: string } })?.feature
+                              ?? (data as { payload?: { feature?: string } })?.payload?.feature
+                            if (feat) {
+                              setSelectedFeature((cur) => (cur === feat ? null : feat))
+                            }
+                          }}
+                        >
+                          {chartFactors.map((entry) => {
+                            const isSelected = selectedFeature === entry.feature
+                            return (
+                              <Cell
+                                key={`cell-${entry.feature}`}
+                                fill={
+                                  isSelected
+                                    ? (entry.shap_value > 0 ? '#B91C1C' : '#047857')
+                                    : (entry.shap_value > 0 ? '#EF4444' : '#10B981')
+                                }
+                                stroke={isSelected ? 'var(--ink)' : 'none'}
+                                strokeWidth={isSelected ? 2 : 0}
+                              />
+                            )
+                          })}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -355,77 +411,66 @@ export function ManagerClaimDetailPage() {
                 </div>
               )}
 
-              <ol className="factors-grid">
-                {factors.map((factor) => {
-                  const isRisk = factor.direction === 'increases'
-                  const isSafe = factor.direction === 'decreases'
-                  const relativeWeight =
-                    typeof factor.shap_value === 'number'
-                      ? Math.min(100, Math.round((Math.abs(factor.shap_value) / maxAbsShap) * 100))
-                      : null
-
-                  return (
-                    <li
-                      key={factor.feature}
-                      className={`factor-card ${
-                        isRisk ? 'factor-card--risk' : isSafe ? 'factor-card--safe' : 'factor-card--neutral'
-                      }`}
+              {selectedFactor ? (
+                <div className="factor-selected-panel" role="region" aria-labelledby="selected-factor-title">
+                  <div className="factor-selected-top">
+                    <div className="factor-selected-badges">
+                      <span className={`factor-cat-pill ${selectedFactor.category.badgeClass}`}>
+                        {selectedFactor.category.label}
+                      </span>
+                      <span
+                        className={`factor-direction-badge ${
+                          selectedFactor.direction === 'increases'
+                            ? 'factor-direction-badge--risk'
+                            : selectedFactor.direction === 'decreases'
+                            ? 'factor-direction-badge--safe'
+                            : 'factor-direction-badge--neutral'
+                        }`}
+                      >
+                        {selectedFactor.direction === 'increases' && <TrendingUp aria-hidden="true" size={13} />}
+                        {selectedFactor.direction === 'decreases' && <TrendingDown aria-hidden="true" size={13} />}
+                        <span>{directionLabel(selectedFactor.direction)}</span>
+                        {typeof selectedFactor.shap_value === 'number' && (
+                          <span className="factor-impact-val">{shapFormat.format(selectedFactor.shap_value)}</span>
+                        )}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="factor-selected-close"
+                      onClick={() => setSelectedFeature(null)}
+                      title="Masquer le détail"
                     >
-                      <div className="factor-card-top">
-                        <span className={`factor-cat-pill ${factor.category.badgeClass}`}>
-                          {factor.category.label}
-                        </span>
-                        <span
-                          className={`factor-direction-badge ${
-                            isRisk
-                              ? 'factor-direction-badge--risk'
-                              : isSafe
-                              ? 'factor-direction-badge--safe'
-                              : 'factor-direction-badge--neutral'
-                          }`}
-                        >
-                          {isRisk && <TrendingUp aria-hidden="true" size={13} />}
-                          {isSafe && <TrendingDown aria-hidden="true" size={13} />}
-                          {!isRisk && !isSafe && <Minus aria-hidden="true" size={13} />}
-                          <span>{directionLabel(factor.direction)}</span>
-                          {typeof factor.shap_value === 'number' && (
-                            <span className="factor-impact-val">{shapFormat.format(factor.shap_value)}</span>
-                          )}
-                        </span>
-                      </div>
+                      <X size={14} aria-hidden="true" />
+                      <span>Masquer le détail</span>
+                    </button>
+                  </div>
 
-                      <div className="factor-card-main">
-                        <h3 className="factor-card-title">{factor.label}</h3>
-                        <p className="factor-card-explanation">{factor.explanation}</p>
-                      </div>
-
-                      {relativeWeight !== null && (
-                        <div className="factor-gauge" aria-hidden="true">
-                          <div className="factor-gauge-track">
-                            <div
-                              className={`factor-gauge-fill ${
-                                isRisk ? 'factor-gauge-fill--risk' : 'factor-gauge-fill--safe'
-                              }`}
-                              style={{ width: `${Math.max(8, relativeWeight)}%` }}
-                            />
-                          </div>
-                          <span className="factor-gauge-caption">
-                            Poids relatif : <strong>{relativeWeight}%</strong>
-                          </span>
+                  <div className="factor-selected-main">
+                    <h3 id="selected-factor-title" className="factor-selected-title">
+                      {selectedFactor.label}
+                    </h3>
+                    <p className="factor-selected-explanation">
+                      {selectedFactor.explanation}
+                    </p>
+                    {selectedFactor.formattedValue &&
+                      selectedFactor.formattedValue !== 'Non constaté' &&
+                      selectedFactor.formattedValue !== '0' &&
+                      selectedFactor.formattedValue !== '0,0' && (
+                        <div className="factor-selected-obs">
+                          <span>Constat relevé :</span> <strong>{selectedFactor.formattedValue}</strong>
                         </div>
                       )}
-
-                      {factor.formattedValue && (
-                        <div className="factor-card-footer">
-                          <span className="factor-obs-value">
-                            Valeur constatée : <strong>{factor.formattedValue}</strong>
-                          </span>
-                        </div>
-                      )}
-                    </li>
-                  )
-                })}
-              </ol>
+                  </div>
+                </div>
+              ) : (
+                <div className="factor-empty-hint">
+                  <Info aria-hidden="true" size={15} />
+                  <span>
+                    Cliquez sur une barre ou une étiquette ci-dessus pour inspecter l’explication détaillée et la consigne de contrôle associée.
+                  </span>
+                </div>
+              )}
             </>
           )}
         </section>
