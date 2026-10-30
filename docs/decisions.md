@@ -64,8 +64,6 @@ Limites connues, volontairement reportées :
 - `PUT /admin/config` et `POST /admin/models/{id}/activate` ne persistent rien : un `GET` ultérieur renvoie les valeurs d'origine
 - Le validator `montant_coherent` ne contrôle que `quantite × prix_unitaire` par ligne. Les contrôles de la facture entière (somme des lignes, part assuré, dates) relèvent de .
 
-Incohérences à traiter dans des PR `docs/` séparées : `distribution_fraudes` du contrat cite des types (`TARIF_ABUSIF`, `PRESCRIPTION_NON_CONFORME`) absents des 14 types de fraude du dictionnaire de données, et le document « Choix technologiques » mentionne Streamlit alors que le front est en React.
-
 ### Authentification, rôles et isolation des assurés (PB-20) :
 
 L'authentification de l'API repose sur des tokens JWT signés avec l'algorithme HS256 (`PyJWT`), dont la clé secrète provient de la variable d'environnement `JWT_SECRET`. Les mots de passe sont hachés avec `bcrypt`.
